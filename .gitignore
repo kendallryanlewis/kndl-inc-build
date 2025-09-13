@@ -1,7 +1,6 @@
 node_modules
 
-# Ignore Angular build output and cache
-dist/
+# Ignore Angular cache only
 .angular/
 .angular/cache/
 tmp/
