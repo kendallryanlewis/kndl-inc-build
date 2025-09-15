@@ -22,7 +22,6 @@ import { PaymentSectionComponent } from "./dashboard/payment-section/payment-sec
 import { PreferencesComponent } from "./dashboard/preferences/preferences.component";
 import { TabViewerComponent } from "./dashboard/tab-viewer/tab-viewer.component";
 import { KndlAboutComponent } from "./kndl/kndl-about/kndl-about.component";
-import { KndlPricingComponent } from "./kndl/kndl-pricing/kndl-pricing.component";
 import { KndlServiceComponent } from "./kndl/kndl-service/kndl-service.component";
 import { KndlTopNavigationComponent } from "./kndl/kndl-top-navigation/kndl-top-navigation.component";
 import { KndlComponent } from "./kndl/kndl.component";
@@ -76,7 +75,6 @@ import { AdminSitesComponent } from './dashboard/admin/admin-sites/admin-sites.c
     KndlComponent,
     KndlServiceComponent,
     KndlTopNavigationComponent,
-    KndlPricingComponent,
     KndlAboutComponent,
     DashboardComponent,
     OnBoardingComponent,

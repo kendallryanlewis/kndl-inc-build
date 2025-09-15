@@ -6,7 +6,14 @@ import { Component } from '@angular/core';
   styleUrls: ['./kndl-top-navigation.component.scss']
 })
 export class KndlTopNavigationComponent {
-  isLoggingIn = localStorage.getItem('administrator') !== 'true';
+
+  isLoggingIn = this.userExists();
+
+  userExists(): boolean {
+    const user = localStorage.getItem('user');
+    // Optionally, check for a valid user object/structure
+    return user !== null && user !== undefined && user !== '';
+  }
 
   scrollToSection(sectionSelector: string) {
     const element = document.querySelector(sectionSelector);

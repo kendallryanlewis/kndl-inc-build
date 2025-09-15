@@ -1,5 +1,5 @@
 <section class="p-5 pt-0">
-    <div class="section-wrapper bg-white p-0 p-lg-5">
+    <div class="section-wrapper bg-light p-0 p-lg-5 rounded">
         <div class="addons-header text-start">
             <h1 class="">Subscription <span appAnimateOnScroll animationClass="fade" class="text-tan">Plans</span></h1>
             <hr class="my-5 " style="width:200px;">
@@ -10,9 +10,9 @@
             </p>
         </div>
         <div class="row row-cols-1 row-cols-md-3 my-4">
-            <ng-container *ngFor="let addon of recurringAddons | slice:0:popularAddonsCount">
+            <ng-container *ngFor="let addon of subscriptions | slice:0:popularAddonsCount">
                 <div class="p-3 pt-0">
-                    <div class="addon-card mb-4">
+                    <div appAnimateOnScroll animationClass="fade" class="addon-card mb-4 bg-white">
                         <h3>{{addon.title}}</h3>
                         <p>{{addon.desc}}</p>
                         <p class="addon-price">{{addon.price}}</p>

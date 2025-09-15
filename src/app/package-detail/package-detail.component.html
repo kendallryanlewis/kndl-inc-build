@@ -305,8 +305,8 @@
                     <div class="summary-content">
                         <div
                             class="d-flex justify-content-between align-items-center mb-3 base-package border-bottom pb-2">
-                            <span class="fw-bold">{{ packageData.name }} Package</span>
-                            <span class="fw-bold">{{ packageData.price }}</span>
+                            <span class="fw-bold">{{ packageData.name }} Package (Base)</span>
+                            <span class="fw-bold">${{ basePrice.toLocaleString() }}</span>
                         </div>
                         <div class="selected-addons mb-3">
                             <div class="addon-line d-flex justify-content-between align-items-center py-1 border-bottom py-3"
@@ -321,9 +321,15 @@
                         </div>
                         <div
                             class="d-flex justify-content-between align-items-center total-line bg-light rounded p-3 mt-3 mb-2 border">
-                            <span class="total-label fw-bold">Total Investment:</span>
+                            <span class="total-label fw-bold">Amount Due Today:</span>
                             <span class="total-price fs-4 fw-bold" [style.color]="packageData.color">${{
-                                totalPrice.toLocaleString()}}</span>
+                                amountDueToday.toLocaleString() }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center total-line bg-light rounded p-3 mb-2 border"
+                            *ngIf="monthlyAmount > 0">
+                            <span class="total-label fw-bold">Monthly Recurring:</span>
+                            <span class="total-price fs-5 fw-bold" [style.color]="packageData.color">${{
+                                monthlyAmount.toLocaleString() }}</span>
                         </div>
                         <button class="checkout-btn w-100 mt-3" (click)="scrollToSection('addons')">
                             View Add-ons

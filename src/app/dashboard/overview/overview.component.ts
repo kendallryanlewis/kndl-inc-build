@@ -61,7 +61,7 @@ export class OverviewComponent implements OnInit {
   isLoading = true;
   websites: string[] = [];
   selectedSite: string = "Kendallryanlewis.com";
-  companyName: string = "KNDL Inc.";
+  companyName: string = "Pixel & Post (KNDL Inc.)";
 
   constructor(
     private communicationService: ComponentCommunicationService,

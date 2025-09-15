@@ -1,5 +1,6 @@
 import { Component, AfterViewInit, Output, EventEmitter } from '@angular/core';
 import { User } from 'src/app/models/User';
+import { filteredSubscriptionPlans, oneTimeAddons } from 'src/app/kndl/addons.data';
 
 interface MetricCard {
   icon: string;
@@ -43,6 +44,50 @@ interface RevenueMonth {
 
 export class AdminComponent implements AfterViewInit {
   @Output() sectionIds = new EventEmitter<string[]>();
+
+  // Configuration properties
+  packages: any[] = [
+    {
+      id: 'starter',
+      name: 'Starter',
+      tagline: 'Brand Essentials',
+      price: '$325 – $780',
+      color: '#364074',
+      description: 'For solo founders, local service pros, and small businesses who need a credible web presence fast.',
+      features: ['Single-page build', 'Contact form', 'SEO & performance', 'WordPress core setup']
+    },
+    {
+      id: 'growth',
+      name: 'Growth',
+      tagline: 'Digital + Print',
+      price: '$1,040 – $1,950',
+      color: '#197c65ff',
+      description: 'For growing businesses ready for a multi-page site, blog, and enhanced forms or bookings.',
+      features: ['Multi-page build', 'Blog & CPT', 'Enhanced forms', 'Bookings/payments']
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      tagline: 'Total Brand Presence',
+      price: '$2,600 – $4,550+',
+      color: '#d2b48c',
+      description: 'For teams needing advanced custom development, integrations, and scalable WordPress solutions.',
+      features: ['Custom dev & integrations', 'WooCommerce', 'Memberships/roles', 'Headless/Angular components']
+    }
+  ];
+
+  oneTimeAddons: any[] = oneTimeAddons;
+  subscriptions: any[] = filteredSubscriptionPlans;
+
+  // Modal configuration properties
+  showConfigModal = false;
+  modalTitle = '';
+  configType: 'package' | 'addon' | 'subscription' = 'package';
+  currentConfig: any = {};
+  isEditing = false;
+  editingIndex = -1;
+  featuresText = '';
+
   // Metrics for cards
   user: User = {} as User;
   totalRevenue = 285400;
@@ -232,5 +277,137 @@ export class AdminComponent implements AfterViewInit {
 
   getMaxRevenue(): number {
     return Math.max(...this.monthlyRevenue.map(m => m.revenue));
+  }
+
+  // Configuration Management Methods
+
+  // Package Management
+  addNewPackage(): void {
+    this.configType = 'package';
+    this.modalTitle = 'Add New Package';
+    this.isEditing = false;
+    this.currentConfig = {
+      id: '',
+      name: '',
+      tagline: '',
+      price: '',
+      color: '#364074',
+      description: '',
+      features: []
+    };
+    this.featuresText = '';
+    this.showConfigModal = true;
+  }
+
+  editPackage(index: number): void {
+    this.configType = 'package';
+    this.modalTitle = 'Edit Package';
+    this.isEditing = true;
+    this.editingIndex = index;
+    this.currentConfig = { ...this.packages[index] };
+    this.featuresText = this.currentConfig.features.join('\n');
+    this.showConfigModal = true;
+  }
+
+  deletePackage(index: number): void {
+    if (confirm('Are you sure you want to delete this package?')) {
+      this.packages.splice(index, 1);
+    }
+  }
+
+  // One-Time Add-on Management
+  addNewOneTimeAddon(): void {
+    this.configType = 'addon';
+    this.modalTitle = 'Add New One-Time Add-on';
+    this.isEditing = false;
+    this.currentConfig = {
+      title: '',
+      price: '',
+      category: 'digitalGrowthAddons',
+      desc: ''
+    };
+    this.showConfigModal = true;
+  }
+
+  editOneTimeAddon(index: number): void {
+    this.configType = 'addon';
+    this.modalTitle = 'Edit One-Time Add-on';
+    this.isEditing = true;
+    this.editingIndex = index;
+    this.currentConfig = { ...this.oneTimeAddons[index] };
+    this.showConfigModal = true;
+  }
+
+  deleteOneTimeAddon(index: number): void {
+    if (confirm('Are you sure you want to delete this add-on?')) {
+      this.oneTimeAddons.splice(index, 1);
+    }
+  }
+
+  // Subscription Management
+  addNewSubscription(): void {
+    this.configType = 'subscription';
+    this.modalTitle = 'Add New Subscription';
+    this.isEditing = false;
+    this.currentConfig = {
+      title: '',
+      price: '',
+      category: 'digitalGrowthAddons',
+      desc: ''
+    };
+    this.showConfigModal = true;
+  }
+
+  editSubscription(index: number): void {
+    this.configType = 'subscription';
+    this.modalTitle = 'Edit Subscription';
+    this.isEditing = true;
+    this.editingIndex = index;
+    this.currentConfig = { ...this.subscriptions[index] };
+    this.showConfigModal = true;
+  }
+
+  deleteSubscription(index: number): void {
+    if (confirm('Are you sure you want to delete this subscription?')) {
+      this.subscriptions.splice(index, 1);
+    }
+  }
+
+  // Modal Management
+  closeConfigModal(): void {
+    this.showConfigModal = false;
+    this.currentConfig = {};
+    this.featuresText = '';
+    this.isEditing = false;
+    this.editingIndex = -1;
+  }
+
+  saveConfiguration(): void {
+    if (this.configType === 'package') {
+      // Process features text into array
+      this.currentConfig.features = this.featuresText.split('\n').filter(f => f.trim());
+
+      if (this.isEditing) {
+        this.packages[this.editingIndex] = { ...this.currentConfig };
+      } else {
+        // Generate ID for new package
+        this.currentConfig.id = this.currentConfig.name.toLowerCase().replace(/\s+/g, '-');
+        this.packages.push({ ...this.currentConfig });
+      }
+    } else if (this.configType === 'addon') {
+      if (this.isEditing) {
+        this.oneTimeAddons[this.editingIndex] = { ...this.currentConfig };
+      } else {
+        this.oneTimeAddons.push({ ...this.currentConfig });
+      }
+    } else if (this.configType === 'subscription') {
+      if (this.isEditing) {
+        this.subscriptions[this.editingIndex] = { ...this.currentConfig };
+      } else {
+        this.subscriptions.push({ ...this.currentConfig });
+      }
+    }
+
+    this.closeConfigModal();
   }
 }

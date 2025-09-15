@@ -1,6 +1,9 @@
 
 import { Component } from '@angular/core';
-import { Addon, recurringAddons, oneTimeAddons } from '../addons.data';
+import {
+  filteredSubscriptionPlans,
+  oneTimeAddons
+} from '../addons.data';
 
 @Component({
   selector: 'app-kndl-add-ons',
@@ -11,6 +14,7 @@ export class KndlAddOnsComponent {
   showAllAddons = false;
   popularAddonsCount = 6;
 
-  recurringAddons = recurringAddons;
+  // Legacy data for backward compatibility
+  subscriptions = filteredSubscriptionPlans;
   oneTimeAddons = oneTimeAddons;
 }

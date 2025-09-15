@@ -1,66 +1,87 @@
 <div class="p-5 pt-0">
     <div class="section-wrapper bg-white p-0 p-lg-5">
         <div class="section-header text-start pb-5">
-            <h1 class="">Stand <span appAnimateOnScroll animationClass="fade" class="text-tan">Out</span></h1>
+            <h1 class="">Web Development <span appAnimateOnScroll animationClass="fade" class="text-tan">Packages</span>
+            </h1>
             <hr class="my-5" style="width:200px;">
-            <p appAnimateOnScroll animationClass="fade">We help small businesses and ambitious teams create a brand
-                presence that is modern, memorable, and built to grow. From logos to websites to ongoing support,
-                we provide everything you need under one roof—at prices that make sense for growing businesses.</p>
+            <p appAnimateOnScroll animationClass="fade">Development-focused packages with clean WordPress builds, fast
+                delivery, and transparent pricing. Add‑ons & subscriptions available for everything else.</p>
         </div>
 
-        <div appAnimateOnScroll animationClass="fade-up" class="service-grid">
-            <div appAnimateOnScroll animationClass="fade-up">
-                <h3 class="header">Starter — Informational Sites</h3>
-                <div class="service-box">
-                    <p>For individuals and businesses who just need a simple, professional web presence—no complex
-                        features.</p>
-                    <ul class="service-list">
-                        <li>Personal portfolios & resumes</li>
-                        <li>Local service providers (plumbers, cleaners, landscapers)</li>
-                        <li>Community groups & nonprofits</li>
-                        <li>Pop-up vendors & market sellers</li>
-                        <li>Basic brochure sites for small businesses</li>
+        <!-- Combined Pricing Cards with Detailed Info -->
+        <div class="pricing-grid">
+            <!-- Starter Plan -->
+            <div appAnimateOnScroll animationClass="fade-up" class="pricing-card" style="cursor: pointer;"
+                (click)="selectPackage('Starter')">
+                <div>
+                    <h3>Starter — "Brand Essentials"</h3>
+                    <div class="price-range">$325 – $780 one-time</div>
+                    <p><strong>Dev Scope:</strong> Single-page WordPress site with clean design and core functionality
+                        to get you online fast.</p>
+                    <ul class="features">
+                        <li>Single-page WordPress site (responsive)</li>
+                        <li>Up to 4 sections (Hero, Services, About, Contact)</li>
+                        <li>Contact form + basic anti-spam</li>
+                        <li>Core technical SEO & performance setup</li>
+                        <li><em>Custom development available at custom-dev rate</em></li>
                     </ul>
                 </div>
+                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage('Starter')">Start with
+                    Starter</button>
             </div>
-            <div appAnimateOnScroll animationClass="fade-up" style="transition-delay: 0.2s;">
-                <h3 class="header">Growth — Booking & Engagement</h3>
-                <div class="service-box">
-                    <p>For clients who need their site to handle bookings, reservations, or interactive features.</p>
-                    <ul class="service-list">
-                        <li>Fitness studios & personal trainers (class scheduling)</li>
-                        <li>Health & wellness practices (appointment booking)</li>
-                        <li>Salons, spas, and barbershops (online reservations)</li>
-                        <li>Consultants & coaches (discovery call booking)</li>
-                        <li>Restaurants & cafes (table reservations or online ordering)</li>
+
+            <!-- Growth Plan -->
+            <div appAnimateOnScroll animationClass="fade-up" style="transition-delay: 0.2s; cursor: pointer;"
+                class="pricing-card" (click)="selectPackage('Growth')">
+                <div>
+                    <h3>Growth — "Digital + Print"</h3>
+                    <div class="price-range">$1,040 – $1,950 one-time</div>
+                    <p><strong>Dev Scope:</strong> Multi-page WordPress site with enhanced functionality and booking
+                        capabilities.</p>
+                    <ul class="features">
+                        <li>Multi-page WordPress site (5–12 pages)</li>
+                        <li>2–3 reusable page templates + blog setup</li>
+                        <li>1 simple Custom Post Type (CPT) + taxonomy</li>
+                        <li>Enhanced forms (conditional fields, multi-step)</li>
+                        <li>Reservations/appointments with payments</li>
+                        <li><em>Custom development available at custom-dev rate</em></li>
                     </ul>
                 </div>
+                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage('Growth')">Grow with
+                    Growth</button>
             </div>
-            <div appAnimateOnScroll animationClass="fade-up" style="transition-delay: 0.4s;">
-                <h3 class="header">Pro — Advanced Platforms</h3>
-                <div class="service-box">
-                    <p>For businesses or teams that need a more complex platform, custom integrations, or multi-user
-                        features.</p>
-                    <ul class="service-list">
-                        <li>Multi-location businesses with staff logins</li>
-                        <li>Education/tutoring centers (class management)</li>
-                        <li>Event planners & creative studios (event registration, galleries)</li>
-                        <li>Clinics & dental offices (HIPAA-compliant forms, patient portals)</li>
-                        <li>Any business needing custom workflows or integrations</li>
+
+            <!-- Pro Plan -->
+            <div appAnimateOnScroll animationClass="fade-up" style="transition-delay: 0.4s; cursor: pointer;"
+                class="pricing-card" (click)="selectPackage('Pro')">
+                <div>
+                    <h3>Pro — "Total Brand Presence"</h3>
+                    <div class="price-range">$2,600 – $4,550+ one-time</div>
+                    <p><strong>Dev Scope:</strong> Advanced WordPress build with heavy custom development and enterprise
+                        functionality.</p>
+                    <ul class="features">
+                        <li>Advanced WordPress build with heavy custom development</li>
+                        <li>User registration & roles (memberships, gated content)</li>
+                        <li>WooCommerce (store or subscriptions)</li>
+                        <li>Multiple CPTs & taxonomies; advanced search/filters</li>
+                        <li>Third‑party integrations (CRM, accounting, Zapier/Make)</li>
+                        <li>Headless/Angular components & custom APIs as needed</li>
                     </ul>
                 </div>
+                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage('Pro')">Level Up with
+                    Pro</button>
             </div>
         </div>
-        <div appAnimateOnScroll animationClass="fade-up" class="feature-section">
-            <h3>Our Process</h3>
-            <p>We keep things simple: <strong>Discover</strong> your goals and audience → <strong>Design &
-                    Build</strong> your brand and website → <strong>Launch & Support</strong> with optional ongoing
-                care.</p>
-            <p>You'll work directly with us—no account managers or middlemen. Projects are delivered in clear
-                milestones
-                with upfront pricing, so you always know what to expect.</p>
-            <p class="m-0">Ready to get started? <strong>Book a free 15-minute discovery call</strong> and we'll
-                create
-                a custom plan for your business within 48 hours.</p>
+        <div appAnimateOnScroll animationClass="fade-up" class="feature-section mt-5">
+            <h3>Process: Discover → Build → Launch → Care Plan</h3>
+            <p>We keep things simple: <strong>Discover</strong> your goals, audience, refs, sitemap, KPIs →
+                <strong>Brand & Build</strong> logo/refresh, palette, wireframes → design → build → QA → <strong>Launch
+                    & Care Plan</strong> enrollment with optional ongoing management.
+            </p>
+            <p>You'll work directly with our team—no account managers or middlemen. Projects are delivered with staged
+                payments (50% deposit; 40% at design approval; 10% at launch), upfront pricing, and clear scope
+                guardrails.</p>
+            <p class="m-0">Ready for total brand presence with measurable results? <strong>Get a dev quote</strong> and
+                we'll provide a menu of add‑ons/subscriptions.</p>
         </div>
     </div>

@@ -16,7 +16,8 @@
     <app-admin-users class="h-100" [selectedTab]="subTab" *ngSwitchCase="'users'"></app-admin-users>
     <app-admin-billing *ngSwitchCase="'adminBilling'"></app-admin-billing>
     <app-admin-task *ngSwitchCase="'adminTasks'"></app-admin-task>
-    <app-admin-wiki *ngSwitchCase="'adminWiki'"></app-admin-wiki>
-    <app-admin-sites class="h-100" [(selectedTab)]=" subTab" (selectedTabChange)="onSetSubTab($any($event))"
+    <app-admin-wiki [selectedTab]="subTab" (selectedTabChange)="onSetSubTab($any($event))"
+        *ngSwitchCase="'adminWiki'"></app-admin-wiki>
+    <app-admin-sites class="h-100" [selectedTab]="subTab" (selectedTabChange)="onSetSubTab($any($event))"
         *ngSwitchCase="'adminSites'"></app-admin-sites>
 </ng-container>

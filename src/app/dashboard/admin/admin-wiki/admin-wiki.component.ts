@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, SimpleChanges } from '@angular/core';
 
 export interface WikiPage {
   id: string;
   title: string;
   content: string;
+  section: 'notes' | 'walkthroughs' | 'troubleshooting';
   category: string;
   tags: string[];
   createdDate: string;
@@ -12,20 +13,8 @@ export interface WikiPage {
   views: number;
   isPublished: boolean;
   slug: string;
-}
-
-export interface WikiPage {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  createdDate: string;
-  lastModified: string;
-  author: string;
-  views: number;
-  isPublished: boolean;
-  slug: string;
+  priority?: 'low' | 'medium' | 'high';
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface WikiCategory {
@@ -42,8 +31,12 @@ export interface WikiCategory {
 })
 export class AdminWikiComponent {
 
+  // Allow parent to set the selected tab by id
+  @Input() selectedTab: string = 'overview';
+
   // Current view state
-  currentView: 'list' | 'page' | 'edit' | 'create' = 'list';
+  currentView: 'overview' | 'list' | 'page' | 'edit' | 'create' | 'section' | 'search' | 'wordpress' | 'services' = 'list';
+  selectedSection: string = 'overview';
   selectedPage: WikiPage | null = null;
   searchTerm = '';
   selectedCategory = 'All';
@@ -56,9 +49,12 @@ export class AdminWikiComponent {
   newPage: Partial<WikiPage> = {
     title: '',
     content: '',
+    section: 'notes',
     category: '',
     tags: [],
-    isPublished: true
+    isPublished: true,
+    priority: 'medium',
+    difficulty: 'intermediate'
   };
 
   // Categories
@@ -72,7 +68,61 @@ export class AdminWikiComponent {
     { name: 'FAQ', icon: 'fa-question-circle', count: 9, color: '#34495e' }
   ];
 
-  // Sample wiki pages
+  constructor(private cdr: ChangeDetectorRef) {
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['selectedTab']) {
+      this.onTabChange(this.selectedTab);
+    }
+  }
+
+  onTabChange(tab: string) {
+    this.handleTabSelection(tab);
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Call this to handle tab selection by id (stat card or nav id)
+   * @param tabId The id of the tab/section (e.g. 'notes', 'walkthroughs', etc)
+   */
+  handleTabSelection(tabId: string): void {
+    switch (tabId) {
+      case 'overview':
+        this.selectedSection = 'overview';
+        this.currentView = 'list';
+        break;
+      case 'notes':
+        this.selectedSection = 'notes';
+        this.currentView = 'section';
+        break;
+      case 'walkthroughs':
+        this.selectedSection = 'walkthroughs';
+        this.currentView = 'section';
+        break;
+      case 'troubleshooting':
+        this.selectedSection = 'troubleshooting';
+        this.currentView = 'section';
+        break;
+      case 'wordpress':
+        this.selectedSection = 'wordpress';
+        this.currentView = 'wordpress';
+        break;
+      case 'services':
+        this.selectedSection = 'services';
+        this.currentView = 'services';
+        break;
+      case 'add-new':
+        this.currentView = 'create';
+        break;
+      default:
+        // fallback to overview
+        this.selectedSection = 'overview';
+        this.currentView = 'list';
+    }
+  }
+
+  // Sample wiki pages with sections
   pages: WikiPage[] = [
     {
       id: 'WIKI-001',
@@ -117,6 +167,7 @@ cd /dashboard/websites
 ## Need Help?
 
 If you run into any issues, check out our other documentation pages or contact support.`,
+      section: 'notes',
       category: 'Documentation',
       tags: ['getting-started', 'beginner', 'setup'],
       createdDate: '2025-01-15',
@@ -124,7 +175,9 @@ If you run into any issues, check out our other documentation pages or contact s
       author: 'Admin Team',
       views: 245,
       isPublished: true,
-      slug: 'getting-started-guide'
+      slug: 'getting-started-guide',
+      priority: 'high',
+      difficulty: 'beginner'
     },
     {
       id: 'WIKI-002',
@@ -185,6 +238,7 @@ At the new registrar:
 - **Authorization Failed**: Double-check the EPP code
 
 **Contact Support** if you encounter persistent issues.`,
+      section: 'walkthroughs',
       category: 'How-to Guides',
       tags: ['domain', 'transfer', 'registrar', 'dns'],
       createdDate: '2025-01-20',
@@ -192,7 +246,9 @@ At the new registrar:
       author: 'Technical Team',
       views: 189,
       isPublished: true,
-      slug: 'domain-transfer-process'
+      slug: 'domain-transfer-process',
+      priority: 'medium',
+      difficulty: 'intermediate'
     },
     {
       id: 'WIKI-003',
@@ -299,6 +355,7 @@ git push origin feature/homepage-design
 | Testing & Launch | 1 week | Live website with full functionality |
 
 *Note: Timeline may vary based on project complexity and client feedback cycles.*`,
+      section: 'walkthroughs',
       category: 'Processes',
       tags: ['website', 'workflow', 'development', 'design', 'process'],
       createdDate: '2025-01-10',
@@ -306,7 +363,675 @@ git push origin feature/homepage-design
       author: 'Project Management',
       views: 156,
       isPublished: true,
-      slug: 'website-creation-workflow'
+      slug: 'website-creation-workflow',
+      priority: 'high',
+      difficulty: 'advanced'
+    },
+    // Additional sample entries for different sections
+    {
+      id: 'WIKI-004',
+      title: 'CSS Grid Layout Discovery',
+      content: `# CSS Grid Layout Investigation
+
+## Problem
+Need to understand CSS Grid for better layout control in responsive designs.
+
+## Research Findings
+- CSS Grid is superior to Flexbox for 2D layouts
+- \`grid-template-areas\` provides semantic layout naming
+- \`fr\` unit distributes available space proportionally
+
+## Code Examples
+\`\`\`css
+.container {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  grid-template-areas: 
+    "header header header"
+    "sidebar main aside"
+    "footer footer footer";
+  gap: 1rem;
+}
+\`\`\`
+
+## Next Steps
+- Test browser compatibility
+- Create reusable grid templates
+- Document best practices`,
+      section: 'notes',
+      category: 'Development',
+      tags: ['css', 'grid', 'layout', 'responsive'],
+      createdDate: '2025-02-05',
+      lastModified: '2025-02-05',
+      author: 'Developer',
+      views: 34,
+      isPublished: true,
+      slug: 'css-grid-discovery',
+      priority: 'medium',
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'WIKI-005',
+      title: 'Server Memory Issues - Feb 2025',
+      content: `# Server Memory Investigation - February 2025
+
+## Issue Description
+Production server experiencing memory leaks causing 503 errors during peak traffic.
+
+## Symptoms Observed
+- Memory usage climbing to 95%+ during business hours
+- Application becoming unresponsive
+- Database connections timing out
+
+## Root Cause Analysis
+\`\`\`bash
+# Memory analysis commands used
+top -p $(pgrep node)
+htop
+cat /proc/meminfo
+\`\`\`
+
+## Solution Applied
+1. **Immediate Fix**: Increased swap space from 2GB to 4GB
+2. **Code Fix**: Fixed memory leak in image processing module
+3. **Monitoring**: Added memory alerts at 80% usage
+
+## Prevention Measures
+- Implemented garbage collection monitoring
+- Added memory usage dashboards
+- Scheduled weekly memory audits
+
+## Files Modified
+- \`/server/image-processor.js\` - Fixed buffer cleanup
+- \`/config/monitoring.yml\` - Added memory alerts
+- \`/scripts/memory-check.sh\` - Weekly audit script`,
+      section: 'troubleshooting',
+      category: 'Infrastructure',
+      tags: ['server', 'memory', 'debugging', 'performance'],
+      createdDate: '2025-02-12',
+      lastModified: '2025-02-14',
+      author: 'DevOps Team',
+      views: 67,
+      isPublished: true,
+      slug: 'server-memory-issues-feb-2025',
+      priority: 'high',
+      difficulty: 'advanced'
+    },
+    {
+      id: 'WIKI-006',
+      title: 'Quick Note: API Rate Limiting',
+      content: `# API Rate Limiting Implementation
+
+Quick note on implementing rate limiting for our API endpoints.
+
+## Key Points
+- Use Redis for distributed rate limiting
+- Implement sliding window algorithm
+- Different limits for different user tiers
+
+## Code Snippet
+\`\`\`javascript
+const rateLimit = require('express-rate-limit');
+const RedisStore = require('rate-limit-redis');
+
+const limiter = rateLimit({
+  store: new RedisStore({
+    client: redisClient
+  }),
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+\`\`\`
+
+## References
+- Express Rate Limit docs
+- Redis sliding window pattern`,
+      section: 'notes',
+      category: 'Development',
+      tags: ['api', 'rate-limiting', 'redis', 'express'],
+      createdDate: '2025-02-10',
+      lastModified: '2025-02-10',
+      author: 'Backend Developer',
+      views: 23,
+      isPublished: true,
+      slug: 'api-rate-limiting-note',
+      priority: 'low',
+      difficulty: 'intermediate'
+    },
+    // Pixel & Post Business Plan v2 Entries
+    {
+      id: 'WIKI-007',
+      title: 'Pixel & Post - Business Plan v2 Executive Summary',
+      content: `# Pixel & Post Business Plan v2 - Executive Summary
+
+**Last Updated:** September 14, 2025
+
+## Company Overview
+Pixel & Post is a brand + web studio helping local businesses launch or level-up their online presence with clean design, fast builds, and measurable growth. We sell one-time build packages plus monthly management to drive recurring revenue.
+
+## 2025 Objectives
+- Close 6–10 new build projects across Starter/Growth/Pro tiers
+- Grow to 12+ monthly retainers at $400–$2,500+/mo
+- Ship reusable templates/components to reduce build hours by 25–40%
+- Showcase 3 flagship case studies (before/after SEO, lead gen, revenue lift)
+
+## What We Do
+Brand identity, websites, on-page SEO, content & social setup, print collateral, analytics, and paid acquisition frameworks.
+
+**Positioning:** "Total brand presence, measurable results."
+
+## Key Service Tiers
+- **Starter** — "Brand Essentials" ($325–$780)
+- **Growth** — "Digital + Print" ($1,040–$1,950)  
+- **Pro** — "Total Brand Presence" ($2,600–$4,550+)
+
+## Target Metrics
+- Builds/month: 1 Starter + 1 Growth (+ Pro every 1–2 months)
+- MRR goal: $4k–$8k from 10–15 retainers
+- Effective rate: $55/hr mid-range
+
+## Next Steps
+See related wiki entries for detailed service tiers, pricing strategy, and implementation roadmap.`,
+      section: 'notes',
+      category: 'Business Planning',
+      tags: ['business-plan', 'pixel-post', 'executive-summary', 'strategy'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 12,
+      isPublished: true,
+      slug: 'pixel-post-executive-summary',
+      priority: 'high',
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'WIKI-008',
+      title: 'Service Catalogue & Pricing Tiers',
+      content: `# Pixel & Post Service Catalogue & Pricing Tiers
+
+*Tiers cover web development scope only. All other services are offered as Add-Ons or subscription packages.*
+
+## Starter — "Brand Essentials" ($325–$780)
+
+**Dev Scope (included):**
+- Single-page WordPress site (responsive)
+- Up to 4 sections (Hero, Services, About, Contact)
+- 1 reusable page template + global header/footer
+- Contact form + basic anti-spam
+- Core technical SEO (titles/meta, sitemap, robots)
+- Performance setup (caching plugin configured)
+- Custom development available at custom-dev rate
+
+## Growth — "Digital + Print" ($1,040–$1,950)
+
+**Dev Scope (included):**
+- Multi-page WordPress site (5–12 pages)
+- 2–3 reusable page templates (e.g., Service detail, Blog index)
+- Blog setup (categories/tags)
+- 1 simple Custom Post Type (CPT) + taxonomy (e.g., Services or Portfolio)
+- Enhanced forms (conditional fields, multi-step if needed)
+- Reservations/appointments with payments (booking calendars, deposits)
+- Core technical SEO & performance setup
+- Custom development available at custom-dev rate
+
+## Pro — "Total Brand Presence" ($2,600–$4,550+)
+
+**Dev Scope (included):**
+- Advanced WordPress build with heavy custom development
+- Reservations/appointments with payments (booking calendars, deposits)
+- User registration & roles (memberships, gated content, customer portals)
+- WooCommerce (store or subscriptions)
+- Multiple CPTs & taxonomies; advanced search/filters
+- Third-party integrations (CRM, accounting, Zapier/Make)
+- Headless/Angular components & custom APIs as needed
+- Performance & security hardening (caching/CDN/backups)
+
+## Pricing Strategy
+- **Anchor:** Internal rate of $50–$60/hr
+- **One-time builds:** 50% deposit; 40% at design approval; 10% at launch
+- **Recurring:** Month-to-month (cancel anytime) or 6-month commitment (-10% price)
+- **Scope guardrails:** One round of revisions included per milestone
+
+## Standard Workflow
+1. **Discover:** Goals, audience, refs, sitemap, KPIs
+2. **Brand:** Logo/refresh, palette, type, patterns, brand guide
+3. **Site:** Wireframes → design → build → QA → launch
+4. **SEO & Content:** On-page, metadata, schema, 1–2 pieces of content
+5. **Launch & Care Plan enrollment**`,
+      section: 'notes',
+      category: 'Business Planning',
+      tags: ['pricing', 'services', 'tiers', 'wordpress', 'development'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 8,
+      isPublished: true,
+      slug: 'service-catalogue-pricing-tiers',
+      priority: 'high',
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'WIKI-009',
+      title: 'Add-Ons & Upsells Portfolio',
+      content: `# Add-Ons & Upsells (Available for Any Tier)
+
+*All non-development services are available as Add-Ons or subscription-based packages at any tier (Starter, Growth, Pro).*
+
+## Digital Growth Services
+
+### Reputation Management
+- **Service:** Reviews monitoring and response
+- **Pricing:** $100–$300/mo
+
+### Local SEO Domination  
+- **Service:** Complete local SEO optimization
+- **Pricing:** $500–$1,200 setup + $300–$600/mo
+
+### Marketing Automation
+- **Service:** CRM, email/SMS workflows
+- **Pricing:** $500+ setup
+
+### Retargeting Ads
+- **Service:** Google + Meta pixels setup and management
+- **Pricing:** $200–$500/mo management
+
+## Creative & Brand Services
+
+### Branded Merchandise
+- **Service:** Shirts, mugs, pens, stickers
+- **Pricing:** Cost + markup
+
+### Landing Pages & Funnels
+- **Service:** Custom conversion-focused pages
+- **Pricing:** $250–$600/page
+
+## Strategy & Consulting
+
+### Analytics Dashboards
+- **Service:** Looker Studio custom dashboards
+- **Pricing:** $200–$500 setup + $100–$300/mo
+
+## Popular Subscription Packages
+
+### Social Media Management
+- 2/4/6 posts per month packages
+- Per-post add-ons: $50 static / $100 animated
+
+### WordPress Care Plans
+- Backups, updates, security monitoring
+- $75–$200/mo depending on site complexity
+
+### Email + SMS Campaigns
+- Automation setup and ongoing management
+- Custom pricing based on list size and complexity
+
+## Process
+1. Get a dev quote for base tier
+2. We provide a menu of add-ons/subscriptions
+3. Client selects desired services
+4. Integrated delivery and care plan enrollment`,
+      section: 'notes',
+      category: 'Business Planning',
+      tags: ['add-ons', 'upsells', 'recurring-revenue', 'services'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 5,
+      isPublished: true,
+      slug: 'add-ons-upsells-portfolio',
+      priority: 'medium',
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'WIKI-010',
+      title: 'Target Market & Customer Personas',
+      content: `# Market & Customer Segments Analysis
+
+## Primary Target Market
+**Local SMBs** requiring fast, credible WordPress sites with simple customer interaction methods:
+- Home services companies
+- Medical/dental clinics  
+- Gyms and fitness centers
+- Restaurants and eateries
+- Professional services
+- Solo founders
+- Community organizations
+
+## Secondary Market
+**Multi-location or mid-size teams** needing:
+- Custom WordPress development
+- Reservations/appointments systems
+- Memberships/roles management
+- WooCommerce integration
+- Customer portals
+- Third-party integrations
+- Site migrations
+- Ongoing reliable updates
+
+## Buyer Pain Points
+- Outdated or DIY websites
+- No online booking or poor booking UX
+- Slow loading/mobile responsiveness issues
+- Plugin bloat and security concerns
+- Confusing navigation structure
+- Thin or outdated content
+- No time for site maintenance
+
+## Customer Personas
+
+### 1. Owner-Operator (Service Professionals)
+**Needs:** Phone calls and online bookings
+**Tech Comfort:** Low - hates dealing with technology
+**Values:** Simplicity, clear pricing, done-for-you updates
+**Decision Factors:** Time savings, professional appearance, lead generation
+
+### 2. Office Manager / Coordinator  
+**Needs:** Repeatable workflows for site updates
+**Tech Comfort:** Medium - can handle basic tasks
+**Values:** Reliable systems, clear processes, responsive support
+**Decision Factors:** Form functionality, notification systems, dependable care plans
+
+### 3. Growing Team (Multi-location/E-commerce/Programs)
+**Needs:** Scalable WordPress with custom features
+**Tech Comfort:** Medium to High - understands business systems
+**Values:** Custom functionality, integrations, operational efficiency  
+**Decision Factors:** Memberships, ecommerce capability, workflow automation
+
+## Value Proposition Alignment
+- **Launch fast:** Clean, SEO-friendly builds with clear CTAs
+- **Look credible:** Cohesive brand kit + on-brand collateral
+- **Be found:** On-page SEO + Google Business Profile setup
+- **Grow smart:** Optional monthly management and analytics
+- **Flex up:** Custom apps with databases and integrations when needed`,
+      section: 'notes',
+      category: 'Market Research',
+      tags: ['target-market', 'personas', 'customer-research', 'smb'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 15,
+      isPublished: true,
+      slug: 'target-market-customer-personas',
+      priority: 'high',
+      difficulty: 'advanced'
+    },
+    {
+      id: 'WIKI-011',
+      title: 'Financial Model & Revenue Projections',
+      content: `# Financial Model & Revenue Projections
+
+## Core Assumptions
+- **Effective hourly rate:** $55/hr mid-range
+- **Monthly capacity:** ~60 production hours (solo operation alongside other commitments)
+- **Close rate:** 25–35% on qualified leads
+- **Pricing anchor:** $50–$60/hr internal rate
+
+## Monthly Targets
+- **Builds per month:** 1 Starter + 1 Growth (+ Pro every 1–2 months)
+- **MRR goal:** $4k–$8k from 10–15 monthly retainers
+- **Total capacity:** 60 production hours/month
+
+## Example Monthly Revenue (@$55/hr)
+\`\`\`
+1 Starter (8 hrs → $440)
++ 1 Growth (24 hrs → $1,320)  
++ 0.5 Pro (30 hrs → $1,650)
+= One-time revenue: ~$3,410
+
+Recurring (10 retainers avg $600): $6,000
+Total monthly: ~$9,410 (before costs)
+\`\`\`
+
+## Hour → Price Mapping (Internal)
+- 6 hrs → ~$360
+- 12 hrs → ~$720
+- 24 hrs → ~$1,440
+- 48 hrs → ~$2,880
+- 60 hrs → ~$3,600
+
+## Operating Costs (Monthly Estimates)
+- **Hosting/SaaS/plugins:** $150–$300/mo
+- **Subcontractors:** $50–$70/hr pass-through + margin (as needed)
+- **Marketing/Ads:** $100–$300/mo
+- **Business expenses:** Insurance, software, equipment
+
+## Non-Development Service Rates
+- **Strategy & consulting:** $75–$100/hr
+- **Design/UI & prototyping:** $55–$70/hr
+- **Content/copywriting/editing:** $45–$65/hr
+- **SEO & analytics/reporting:** $55–$85/hr
+- **Project management & meetings:** $35–$50/hr
+- **QA/testing & cross-browser checks:** $45–$60/hr
+- **Admin/data entry/asset sourcing:** $25–$35/hr
+- **Rush/emergency (nights/weekends):** 1.5×–2× applicable hourly rate
+
+## Payment Structure
+- **One-time builds:** 50% deposit; 40% at design approval; 10% at launch
+- **Recurring services:** Month-to-month (cancel anytime) or 6-month commitment (-10% discount)
+- **Maintenance plans:** $75–$200/mo depending on site size and plugin complexity
+
+## Growth Projections
+**Year 1 Goals:**
+- 6–10 new build projects across all tiers
+- 12+ monthly retainers
+- $48k–$96k annual MRR
+- Template/component reuse reducing build time by 25–40%`,
+      section: 'notes',
+      category: 'Financial Planning',
+      tags: ['financial-model', 'revenue-projections', 'pricing-strategy', 'business-metrics'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 22,
+      isPublished: true,
+      slug: 'financial-model-revenue-projections',
+      priority: 'high',
+      difficulty: 'advanced'
+    },
+    {
+      id: 'WIKI-012',
+      title: '90-Day Implementation Roadmap',
+      content: `# Implementation Roadmap (90 Days)
+
+## Weeks 1–2: Foundation Setup
+### Website & Portfolio
+- [ ] Finalize Pixel & Post website design and content
+- [ ] Publish 2 case studies (adapted from Orica/AA Union for SMB audience)
+- [ ] Create professional portfolio section with before/after examples
+
+### Sales Materials
+- [ ] Create tier one-pagers for client presentations
+- [ ] Develop proposal template with standardized pricing
+- [ ] Build onboarding checklist and asset collection process
+
+## Weeks 3–6: Lead Generation & Templates
+### Marketing Infrastructure  
+- [ ] Launch lead magnet: "Local Visibility Audit" (automated report)
+- [ ] Set up 3-email nurture sequence for captured leads
+- [ ] Create slide deck with 3 case studies and ROI snapshots
+
+### Outreach Campaign
+- [ ] Identify and research 30 local businesses
+- [ ] Execute outreach campaign (email, LinkedIn, local networking)
+- [ ] Target: Book 6 discovery calls
+
+### Development Templates
+- [ ] Build WordPress starter theme with reusable components
+- [ ] Create 2-3 page templates (landing, service detail, blog index)
+- [ ] Set up Elementor/Block template library
+
+## Weeks 7–12: Revenue Generation & Optimization
+### Project Acquisition
+- [ ] Close 3–4 build projects across different tiers
+- [ ] Enroll at least 6 clients in monthly retainer programs
+- [ ] Generate first recurring revenue stream
+
+### Analytics & Reporting
+- [ ] Ship 1 Looker Studio KPI dashboard template
+- [ ] Set up tracking for key business metrics
+- [ ] Implement client reporting workflows
+
+### Social Proof Development
+- [ ] Gather testimonials from completed projects
+- [ ] Document and publish before/after metrics
+- [ ] Create case study templates for future projects
+
+## Success Metrics by End of 90 Days
+- **Projects:** 3-4 completed builds
+- **MRR:** $2,400+ from 6+ retainer clients
+- **Pipeline:** 10+ qualified leads in CRM
+- **Templates:** WordPress starter + 3 reusable templates
+- **Case Studies:** 3 published with measurable results
+
+## Tools & Resources Setup
+### Development Stack
+- [ ] WordPress/Elementor workflow optimization
+- [ ] Azure hosting and deployment pipeline
+- [ ] Version control and backup systems
+
+### Business Operations
+- [ ] CRM setup (contact management and pipeline tracking)
+- [ ] Invoice and payment processing automation
+- [ ] Time tracking and project management tools
+
+## Risk Mitigation
+- **Scope creep:** Implement strict revision limits and change order process
+- **Capacity management:** Establish subcontractor network for overflow
+- **Lead generation:** Maintain weekly outreach cadence regardless of current pipeline`,
+      section: 'walkthroughs',
+      category: 'Business Planning',
+      tags: ['implementation', 'roadmap', '90-day-plan', 'business-launch'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 18,
+      isPublished: true,
+      slug: '90-day-implementation-roadmap',
+      priority: 'high',
+      difficulty: 'advanced'
+    },
+    {
+      id: 'WIKI-013',
+      title: 'Sales & Marketing Strategy Walkthrough',
+      content: `# Sales & Marketing Strategy - Complete Walkthrough
+
+## Acquisition Channels Setup
+
+### 1. Google Business Profile & Local SEO
+\`\`\`
+Step 1: Claim and optimize Google Business Profile
+Step 2: Set up local citations (Yelp, YellowPages, local directories)
+Step 3: Implement local SEO best practices on website
+Step 4: Monitor and respond to reviews regularly
+\`\`\`
+
+### 2. Portfolio Website with Lead Magnets
+- **Homepage:** Clear value proposition and service tiers
+- **Case Studies:** Before/after visuals with specific metrics
+- **Free Resources:** "Local Visibility Audit" lead magnet
+- **Pricing Guide:** PDF download requiring email capture
+
+### 3. Social Proof Development
+- **Visual Portfolio:** Before/after website transformations
+- **Client Testimonials:** Video and written testimonials
+- **Google Reviews:** Strategy for generating positive reviews
+- **Case Study Metrics:** Traffic increases, lead generation results
+
+### 4. Partnership Network
+- **Print Shops:** Cross-referral partnerships
+- **Photographers:** Bundled service offerings  
+- **Co-working Hubs:** Networking and presentation opportunities
+- **Complementary Services:** Marketing agencies, consultants
+
+### 5. Direct Outreach Strategy
+- **Local Chambers:** Membership and networking events
+- **Facebook Groups:** Value-first engagement in local business groups
+- **LinkedIn:** Professional connection and content strategy
+- **Email Campaigns:** Cold/warm outreach with value-first approach
+
+## Sales Funnel Implementation
+
+### Top of Funnel: Lead Capture
+1. **Free "Local Visibility Audit"**
+   - Automated report generation
+   - Email capture requirement
+   - Immediate value delivery
+   - Follow-up email sequence trigger
+
+2. **Content Marketing**
+   - Weekly blog posts on local SEO, web design tips
+   - Social media presence with helpful tips
+   - Local business feature spotlights
+
+### Middle of Funnel: Nurture & Qualify
+1. **15-Minute Discovery Call Process**
+   \`\`\`
+   Pre-call: Send intake form and portfolio examples
+   During call: Understand goals, budget, timeline, decision process
+   Post-call: Proposal delivery within 48 hours
+   Follow-up: Scheduled check-ins until decision
+   \`\`\`
+
+2. **Email Nurture Sequence (3 emails)**
+   - Email 1: Welcome + case study highlight
+   - Email 2: Service tier explanation with examples
+   - Email 3: Call-to-action for discovery call
+
+### Bottom of Funnel: Close & Onboard
+1. **Proposal to Deposit Process**
+   \`\`\`
+   Step 1: Custom proposal sent within 48 hours
+   Step 2: Follow-up call to address questions
+   Step 3: Deposit collection to reserve start date
+   Step 4: Onboarding form + asset upload portal
+   \`\`\`
+
+2. **Onboarding Excellence**
+   - Welcome packet with project timeline
+   - Asset collection checklist
+   - Communication preferences setup
+   - Expectation setting for revision process
+
+## Key Performance Indicators (KPIs)
+
+### Acquisition Metrics
+- Discovery calls booked per week
+- Proposals sent vs. calls held
+- Close rate percentage by tier
+- Average time from lead to close
+
+### Delivery Metrics  
+- Project cycle time by tier
+- Revision rounds per project
+- On-time launch percentage
+- Client satisfaction scores
+
+### Revenue Metrics
+- Monthly recurring revenue (MRR) growth
+- Average revenue per user (ARPU)
+- One-time vs. recurring revenue mix
+- Customer lifetime value (CLV)
+
+## Monthly Execution Checklist
+- [ ] 30 new business contacts per month
+- [ ] 6-8 discovery calls booked
+- [ ] 2-3 proposals sent  
+- [ ] 1-2 projects closed
+- [ ] Follow up with all active prospects
+- [ ] Update portfolio with completed projects
+- [ ] Gather testimonials and reviews
+- [ ] Analyze metrics and adjust strategy`,
+      section: 'walkthroughs',
+      category: 'Marketing & Sales',
+      tags: ['sales-strategy', 'marketing-funnel', 'lead-generation', 'client-acquisition'],
+      createdDate: '2025-09-14',
+      lastModified: '2025-09-14',
+      author: 'Business Owner',
+      views: 25,
+      isPublished: true,
+      slug: 'sales-marketing-strategy-walkthrough',
+      priority: 'high',
+      difficulty: 'advanced'
     }
   ];
 
@@ -376,6 +1101,7 @@ git push origin feature/homepage-design
         id: 'WIKI-' + String(this.pages.length + 1).padStart(3, '0'),
         title: this.newPage.title!,
         content: this.newPage.content!,
+        section: this.newPage.section || 'notes',
         category: this.newPage.category!,
         tags: this.newPage.tags || [],
         createdDate: new Date().toISOString().split('T')[0],
@@ -383,12 +1109,122 @@ git push origin feature/homepage-design
         author: 'Current User',
         views: 0,
         isPublished: this.newPage.isPublished || true,
-        slug: this.generateSlug(this.newPage.title!)
+        slug: this.generateSlug(this.newPage.title!),
+        priority: this.newPage.priority || 'medium',
+        difficulty: this.newPage.difficulty || 'intermediate'
       };
 
       this.pages.push(page);
       this.closeCreateModal();
     }
+  }
+
+  // Section-specific methods for the new wiki structure
+  getNotesCount(): number {
+    return this.pages.filter(page => page.section === 'notes').length;
+  }
+
+  getWalkthroughsCount(): number {
+    return this.pages.filter(page => page.section === 'walkthroughs').length;
+  }
+
+  getTroubleshootingCount(): number {
+    return this.pages.filter(page => page.section === 'troubleshooting').length;
+  }
+
+  getSectionPages(section: string): WikiPage[] {
+    return this.pages.filter(page => page.section === section).sort((a, b) =>
+      new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+    );
+  }
+
+  getRecentPages(limit: number = 5): WikiPage[] {
+    return [...this.pages]
+      .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
+      .slice(0, limit);
+  }
+
+  getPopularTags(limit: number = 10): Array<{ name: string, count: number }> {
+    const tagCounts: { [key: string]: number } = {};
+    this.pages.forEach(page => {
+      page.tags.forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    });
+
+    return Object.entries(tagCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+
+  getSectionIcon(section: string): string {
+    const icons = {
+      'notes': 'fa-sticky-note',
+      'findings': 'fa-lightbulb',
+      'walkthroughs': 'fa-route',
+      'troubleshooting': 'fa-tools'
+    };
+    return icons[section as keyof typeof icons] || 'fa-file';
+  }
+
+  getSectionColor(section: string): string {
+    const colors = {
+      'notes': 'primary',
+      'findings': 'success',
+      'walkthroughs': 'info',
+      'troubleshooting': 'warning'
+    };
+    return colors[section as keyof typeof colors] || 'secondary';
+  }
+
+  // Quick creation methods
+  createQuickNote(): void {
+    this.newPage = {
+      title: '',
+      content: '',
+      section: 'notes',
+      category: 'Quick Notes',
+      tags: ['quick-note'],
+      isPublished: true,
+      priority: 'low',
+      difficulty: 'beginner'
+    };
+    this.currentView = 'create';
+  }
+
+  createFinding(): void {
+    this.newPage = {
+      title: '',
+      content: '# Research Finding\n\n## Problem\n[Describe the problem or question]\n\n## Investigation\n[Detail your research process]\n\n## Findings\n[Key discoveries]\n\n## Conclusion\n[Summary and next steps]',
+      section: 'notes',
+      category: 'Research',
+      tags: ['finding'],
+      isPublished: true,
+      priority: 'medium',
+      difficulty: 'intermediate'
+    };
+    this.currentView = 'create';
+  }
+
+  createWalkthrough(): void {
+    this.newPage = {
+      title: '',
+      content: '# Step-by-Step Walkthrough\n\n## Prerequisites\n[What\'s needed before starting]\n\n## Steps\n\n### Step 1: [Title]\n[Detailed instructions]\n\n### Step 2: [Title]\n[Detailed instructions]\n\n## Verification\n[How to confirm success]\n\n## Troubleshooting\n[Common issues and solutions]',
+      section: 'walkthroughs',
+      category: 'Tutorials',
+      tags: ['walkthrough', 'tutorial'],
+      isPublished: true,
+      priority: 'high',
+      difficulty: 'intermediate'
+    };
+    this.currentView = 'create';
+  }
+
+  filterByTag(tagName: string): void {
+    this.searchTerm = tagName;
+    this.selectedSection = 'overview';
+    this.currentView = 'search';
   }
 
   updatePage(): void {
@@ -419,9 +1255,12 @@ git push origin feature/homepage-design
     this.newPage = {
       title: '',
       content: '',
+      section: 'notes',
       category: '',
       tags: [],
-      isPublished: true
+      isPublished: true,
+      priority: 'medium',
+      difficulty: 'intermediate'
     };
   }
 

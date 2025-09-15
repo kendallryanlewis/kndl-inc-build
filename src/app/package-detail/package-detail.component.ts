@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { recurringAddons, oneTimeAddons, Addon } from '../kndl/addons.data';
+import { filteredSubscriptionPlans, oneTimeAddons, Addon } from '../kndl/addons.data';
 import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
@@ -8,75 +8,60 @@ import { ActivatedRoute, Router } from '@angular/router';
     styleUrls: ['./package-detail.component.scss']
 })
 export class PackageDetailComponent implements OnInit {
-    packageData: any = null;
-    packageIndex: number = 0;
-    selectedAddOns: any[] = [];
-    totalPrice: number = 0;
-    basePrice: number = 0;
+    public packageData: any = null;
+    public packageIndex: number = 0;
+    public selectedAddOns: any[] = [];
+    public totalPrice: number = 0;
+    public basePrice: number = 0;
+    public amountDueToday: number = 0;
+    public monthlyAmount: number = 0;
 
-    // Package data structure with comprehensive details based on kndl-pricing
+    // Pixel & Post Business Plan v2 — Dev-Only Packages, all other services as Add-Ons/Subscriptions
     packages = [
         {
             id: 'starter',
             name: 'Starter',
             tagline: 'Brand Essentials',
-            heroTitle: 'GET STARTED FAST',
-            heroSubtitle: 'For businesses just getting started with a brand presence. Logo refresh, one-page website, and Google Business setup to get you online fast.',
-            description: 'For businesses just getting started with a brand presence.',
-            detailedDescription: 'Perfect for solo entrepreneurs, local service providers, and small businesses who need a professional online presence without the complexity. Get a clean, modern website that showcases your services and makes it easy for customers to find and contact you.',
+            heroTitle: 'SINGLE PAGE',
+            heroSubtitle: 'One-page WordPress build: ~4 sections, contact form, core SEO & performance.',
+            description: 'For solo founders, local service pros, and small businesses who need a credible web presence fast.',
+            detailedDescription: 'Single-page WordPress site (responsive). Up to 4 sections (Hero, Services, About, Contact). 1 reusable page template + global header/footer. Contact form + basic anti-spam. Core technical SEO (titles/meta, sitemap, robots). Performance setup (caching plugin configured).',
             price: '$325 – $780',
-            originalPrice: '$1,200',
-            timeline: '3-5 business days',
-            revisions: '2 rounds included',
-            video: 'assets/Video/foggy.mp4',
+            originalPrice: '',
             icon: 'fa fa-rocket',
             color: '#364074',
             text: '#ffffff',
-            includesTitle: 'Everything You Need to Launch',
+            video: 'assets/Video/foggy.mp4',
+            includesTitle: 'Included in Starter',
             deliverables: [
                 {
-                    icon: 'fa fa-globe',
-                    title: 'One-Page Website',
-                    description: 'Clean, professional single-page website optimized for mobile and search engines',
-                    details: ['Professional template customization', 'Mobile-responsive design', 'Contact form integration', 'Basic SEO setup', 'Fast loading speed']
-                },
-                {
-                    icon: 'fa fa-share-alt',
-                    title: 'Social Media Setup',
-                    description: 'One social profile setup with basic optimization',
-                    details: ['Profile creation & optimization', 'Basic profile setup', 'Bio optimization', 'Contact info setup', 'Account verification']
-                },
-                {
-                    icon: 'fa fa-map-marker-alt',
-                    title: 'Google Business Profile',
-                    description: 'Complete setup and optimization for local search visibility',
-                    details: ['Profile creation and verification', 'Business information optimization', 'Photo uploads', 'Basic local SEO', 'Review setup guidance']
-                },
-                {
-                    icon: 'fa fa-search',
-                    title: 'Basic SEO',
-                    description: 'On-page SEO optimization to help customers find you online',
-                    details: ['Meta tags optimization', 'Title tag setup', 'Basic keyword optimization', 'Site speed optimization', 'Google Analytics setup']
+                    icon: 'fa fa-file',
+                    title: 'One-Page WordPress Site',
+                    description: 'Up to 4 sections, contact form, core SEO, performance setup',
+                    details: [
+                        'Responsive design',
+                        '1 reusable template',
+                        'Global header/footer',
+                        'Contact form + anti-spam',
+                        'Technical SEO',
+                        'Caching plugin setup'
+                    ]
                 }
             ],
             features: [
-                '1 page website',
-                '1 social profile setup',
-                'SEO-friendly website',
-                'Mobile responsive design',
-                'Contact form included',
-                'Google Business setup',
-                'Basic analytics tracking',
-                'Optional ads consultation'
+                'Single-page build',
+                'Contact form',
+                'SEO & performance',
+                'WordPress core setup',
+                'Custom Dev available'
             ],
             process: [
-                { step: 1, title: 'Discovery Call', description: 'Quick consultation to understand your business and goals.', duration: '30 minutes' },
-                { step: 2, title: 'Website Setup', description: 'Create your professional single-page website with contact form.', duration: '1-2 days' },
-                { step: 3, title: 'Social & Google Setup', description: 'Set up your Google Business Profile and one social media account.', duration: '1 day' },
-                { step: 4, title: 'SEO Optimization', description: 'Basic on-page SEO and Google Analytics setup.', duration: '1 day' },
-                { step: 5, title: 'Launch', description: 'Final review, launch, and brief  on managing your new presence.', duration: '1 day' }
+                { step: 1, title: 'Discover', description: 'Goals, audience, sitemap, KPIs.' },
+                { step: 2, title: 'Brand', description: 'Logo/refresh, palette, type, patterns.' },
+                { step: 3, title: 'Site', description: 'Wireframes → design → build → QA → launch.' },
+                { step: 4, title: 'SEO & Content', description: 'On-page, metadata, schema, 1–2 pieces of content.' },
+                { step: 5, title: 'Launch & Care Plan', description: 'Launch & enroll in care plan.' }
             ],
-            // addOns removed; use shared add-ons instead
             portfolio: [
                 { image: '', title: 'Local Plumber Website', category: 'Service Business', description: 'Simple one-page site with contact form and service areas' },
                 { image: '', title: 'Personal Trainer Profile', category: 'Fitness', description: 'Clean website with booking info and testimonials' },
@@ -87,63 +72,47 @@ export class PackageDetailComponent implements OnInit {
             id: 'growth',
             name: 'Growth',
             tagline: 'Digital + Print',
-            heroTitle: 'GROW YOUR REACH',
-            heroSubtitle: 'For small businesses ready to market online and offline. Full brand kit, multi-page website, and print materials to grow your visibility.',
-            description: 'For small businesses ready to market online and offline.',
-            detailedDescription: 'Perfect for businesses that have established their foundation and are ready to expand. Get a comprehensive digital presence with multiple pages, social profiles, and the tools you need to compete and grow in your market.',
+            heroTitle: 'DEV-ONLY MULTI-PAGE',
+            heroSubtitle: '5–12 pages, 2–3 templates, blog setup, 1 simple CPT, enhanced forms, reservations/appointments with payments.',
+            description: 'For growing businesses ready for a multi-page site, blog, and enhanced forms or bookings.',
+            detailedDescription: 'Multi-page WordPress site (5–12 pages). 2–3 reusable templates (e.g., Service detail, Blog index). Blog setup (categories/tags). 1 simple Custom Post Type (CPT) + taxonomy. Enhanced forms (conditional fields, multi-step if needed). Reservations/appointments with payments (booking calendars, deposits). Core technical SEO & performance setup.',
             price: '$1,040 – $1,950',
-            originalPrice: '$2,500',
-            timeline: '5-7 business days',
-            revisions: '3 rounds included',
-            video: 'assets/Video/office.mp4',
+            originalPrice: '',
             icon: 'fa fa-chart-line',
             color: '#197c65ff',
             text: '#ffffff',
-            includesTitle: 'Complete Growth Infrastructure',
+            video: 'assets/Video/office.mp4',
+            includesTitle: 'Included in Growth',
             deliverables: [
                 {
-                    icon: 'fa fa-globe',
-                    title: 'Multi-Page Website',
-                    description: 'Professional 3-5 page website with full navigation and content management',
-                    details: ['Up to 5 custom pages', 'Professional template customization', 'Mobile-responsive design', 'Contact forms on multiple pages', 'Image galleries and content sections']
-                },
-                {
-                    icon: 'fa fa-share-alt',
-                    title: 'Multi-Platform Social Setup',
-                    description: '2-3 social profiles with consistent branding and content',
-                    details: ['2-3 social platform setup', 'Consistent branding across platforms', 'Profile optimization', 'Initial content creation', 'Cross-platform strategy']
-                },
-                {
-                    icon: 'fa fa-search',
-                    title: 'Advanced SEO',
-                    description: 'Comprehensive on-page SEO optimization for better search rankings',
-                    details: ['Keyword research and optimization', 'Meta tags and descriptions', 'Site structure optimization', 'Local SEO setup', 'Search console setup']
-                },
-                {
-                    icon: 'fa fa-map-marker-alt',
-                    title: 'Google Business Optimization',
-                    description: 'Complete Google Business Profile optimization with ongoing strategy',
-                    details: ['Full profile optimization', 'Photo and video uploads', 'Review management setup', 'Local citation building', 'Google Posts strategy']
+                    icon: 'fa fa-files-o',
+                    title: 'Multi-Page WordPress Site',
+                    description: '5–12 pages, 2–3 templates, blog, CPT, enhanced forms, bookings',
+                    details: [
+                        '5–12 pages',
+                        '2–3 reusable templates',
+                        'Blog setup',
+                        '1 simple CPT + taxonomy',
+                        'Enhanced forms',
+                        'Reservations/appointments with payments',
+                        'Technical SEO & performance'
+                    ]
                 }
             ],
             features: [
-                'Multi-page website (5 max)',
-                '2-3 social profiles',
-                'On-page SEO optimization',
-                'Google Business optimization',
-                'Professional contact forms',
-                'Image galleries',
-                'Mobile responsive design',
-                'Analytics and tracking'
+                'Multi-page build',
+                'Blog & CPT',
+                'Enhanced forms',
+                'Bookings/payments',
+                'Custom Dev available'
             ],
             process: [
-                { step: 1, title: 'Strategy Session', description: 'Detailed consultation to plan your multi-platform presence.', duration: '1 hour' },
-                { step: 2, title: 'Website Development', description: 'Build your multi-page website with all content and features.', duration: '3-4 days' },
-                { step: 3, title: 'Social Media Setup', description: 'Create and optimize 2-3 social media profiles with consistent branding.', duration: '1-2 days' },
-                { step: 4, title: 'SEO & Google Optimization', description: 'Advanced SEO setup and Google Business Profile optimization.', duration: '1-2 days' },
-                { step: 5, title: 'Launch', description: 'Complete launch with  on managing your expanded presence.', duration: '1 day' }
+                { step: 1, title: 'Discover', description: 'Goals, audience, sitemap, KPIs.' },
+                { step: 2, title: 'Brand', description: 'Logo/refresh, palette, type, patterns.' },
+                { step: 3, title: 'Site', description: 'Wireframes → design → build → QA → launch.' },
+                { step: 4, title: 'SEO & Content', description: 'On-page, metadata, schema, 1–2 pieces of content.' },
+                { step: 5, title: 'Launch & Care Plan', description: 'Launch & enroll in care plan.' }
             ],
-            // addOns removed; use shared add-ons instead
             portfolio: [
                 { image: '', title: 'Fitness Studio Complete', category: 'Health & Wellness', description: 'Multi-page site with class schedules and online booking' },
                 { image: '', title: 'Restaurant Digital Presence', category: 'Food & Beverage', description: 'Website with menu, social media, and Google optimization' },
@@ -154,74 +123,57 @@ export class PackageDetailComponent implements OnInit {
             id: 'pro',
             name: 'Pro',
             tagline: 'Total Brand Presence',
-            heroTitle: 'DOMINATE YOUR MARKET',
-            heroSubtitle: 'For teams needing a custom site and a cohesive brand push. Custom website, full brand kit, and advanced SEO strategy for growing businesses.',
-            description: 'For teams needing a custom site and a cohesive brand push.',
-            detailedDescription: 'The complete solution for businesses ready to establish market dominance. Custom development, advanced integrations, comprehensive brand strategy, and ongoing support to ensure your business stands out and scales effectively.',
+            heroTitle: 'DEV-ONLY ADVANCED',
+            heroSubtitle: 'Heavy custom dev: bookings, memberships/roles, WooCommerce, integrations, advanced search/filters, headless components.',
+            description: 'For teams needing advanced custom development, integrations, and scalable WordPress solutions.',
+            detailedDescription: 'Advanced WordPress build with heavy custom development. Reservations/appointments with payments. User registration & roles (memberships, gated content, customer portals). WooCommerce (store or subscriptions). Multiple CPTs & taxonomies; advanced search/filters. Third-party integrations (CRM, accounting, Zapier/Make). Headless/Angular components & custom APIs as needed. Performance & security hardening (caching/CDN/backups).',
             price: '$2,600 – $4,550+',
-            originalPrice: '$6,000+',
-            timeline: '14-30 business days',
-            revisions: 'Unlimited during development',
-            video: 'assets/Video/city.mp4',
+            originalPrice: '',
             icon: 'fa fa-crown',
             color: '#d2b48c',
             text: '#000000',
-            includesTitle: 'Premium Business Solutions',
+            video: 'assets/Video/city.mp4',
+            includesTitle: 'Included in Pro',
             deliverables: [
                 {
-                    icon: 'fa fa-code',
-                    title: 'Custom Website Development',
-                    description: 'Fully custom website with advanced functionality and integrations',
-                    details: ['Custom design and development', 'Advanced functionality', 'Database integration', 'Custom forms and workflows', 'Performance optimization', 'Security hardening']
-                },
-                {
-                    icon: 'fa fa-palette',
-                    title: 'Complete Brand Kit',
-                    description: 'Comprehensive brand identity with logos, colors, fonts, and guidelines',
-                    details: ['Logo design and variations', 'Complete color palette', 'Typography system', 'Brand guidelines document', 'Marketing templates', 'Brand application examples']
-                },
-                {
-                    icon: 'fa fa-envelope',
-                    title: 'Email & SMS Automation',
-                    description: 'Advanced marketing automation setup for customer engagement',
-                    details: ['Email marketing platform setup', 'Automated email sequences', 'SMS marketing integration', 'Customer journey mapping', 'Analytics and reporting', 'A/B testing setup']
-                },
-                {
-                    icon: 'fa fa-bullhorn',
-                    title: 'Advanced Marketing Setup',
-                    description: 'Google Ads, Facebook Ads, and comprehensive marketing strategy',
-                    details: ['Google Ads account setup', 'Facebook/Instagram ads setup', 'Conversion tracking', 'Remarketing campaigns', 'Advanced analytics', 'Monthly strategy session']
+                    icon: 'fa fa-cogs',
+                    title: 'Advanced WordPress Build',
+                    description: 'Heavy custom dev, bookings, memberships, WooCommerce, integrations, headless',
+                    details: [
+                        'Heavy custom development',
+                        'Bookings/appointments/payments',
+                        'User registration & roles',
+                        'WooCommerce (store/subscriptions)',
+                        'Multiple CPTs & taxonomies',
+                        'Advanced search/filters',
+                        'Third-party integrations',
+                        'Performance & security hardening'
+                    ]
                 }
             ],
             features: [
-                'Custom website development',
-                'Complete brand kit',
-                'Email + SMS automation setup',
-                'Google Ads + Facebook Ads',
-                'Advanced SEO strategy',
-                'Custom integrations',
-                'Ongoing support included',
-                'Priority development queue'
+                'Custom dev & integrations',
+                'WooCommerce',
+                'Memberships/roles',
+                'Custom Dev available'
             ],
             process: [
-                { step: 1, title: 'Strategic Planning', description: 'Comprehensive business analysis and custom solution planning.', duration: '2-3 days' },
-                { step: 2, title: 'Brand Development', description: 'Complete brand identity creation with multiple concepts and revisions.', duration: '3-4 days' },
-                { step: 3, title: 'Custom Development', description: 'Build your custom website with advanced features and integrations.', duration: '14-30 days' },
-                { step: 4, title: 'Marketing Integration', description: 'Set up all marketing automation, ads, and tracking systems.', duration: '2-3 days' },
-                { step: 5, title: 'Launch & Optimization', description: 'Full launch with performance optimization and team .', duration: '1-2 days' }
+                { step: 1, title: 'Discover', description: 'Goals, audience, sitemap, KPIs.' },
+                { step: 2, title: 'Brand', description: 'Logo/refresh, palette, type, patterns.' },
+                { step: 3, title: 'Site', description: 'Wireframes → design → build → QA → launch.' },
+                { step: 4, title: 'SEO & Content', description: 'On-page, metadata, schema, 1–2 pieces of content.' },
+                { step: 5, title: 'Launch & Care Plan', description: 'Launch & enroll in care plan.' }
             ],
-            // addOns removed; use shared add-ons instead
             portfolio: [
-                { image: '', title: 'Fitness Studio Complete', category: 'Health & Wellness', description: 'Multi-page site with class schedules and online booking' },
-                { image: '', title: 'Restaurant Digital Presence', category: 'Food & Beverage', description: 'Website with menu, social media, and Google optimization' },
-                { image: '', title: 'Consulting Firm Brand', category: 'Professional Services', description: 'Professional multi-page site with service pages and testimonials' }
+                { image: '', title: 'E-Commerce Storefront', category: 'Retail', description: 'WooCommerce store with custom product filters and checkout' },
+                { image: '', title: 'Membership Portal', category: 'Education', description: 'Custom portal with user registration, gated content, and payments' },
+                { image: '', title: 'Integrated CRM Site', category: 'Professional Services', description: 'Advanced WordPress build with CRM and third-party integrations' }
             ]
-            // addOns removed; use shared add-ons instead
-        },
+        }
     ];
 
     // Expose shared add-ons for use in the template
-    publicRecurringAddons = recurringAddons;
+    publicRecurringAddons = filteredSubscriptionPlans;
     publicOneTimeAddons = oneTimeAddons;
 
     constructor(private route: ActivatedRoute, private router: Router) { }
@@ -241,13 +193,67 @@ export class PackageDetailComponent implements OnInit {
     }
 
     calculateTotal(): void {
-        let addonTotal = 0;
+        let addonOneTimeTotal = 0;
+        let addonMonthlyTotal = 0;
+
         this.selectedAddOns.forEach(addon => {
-            // Extract numeric value from price string
-            const price = addon.price.replace(/[^\d]/g, '');
-            addonTotal += parseInt(price) || 0;
+            const pricing = this.parsePrice(addon.price);
+            addonOneTimeTotal += pricing.oneTime;
+            addonMonthlyTotal += pricing.monthly;
         });
-        this.totalPrice = this.basePrice + addonTotal;
+
+        this.amountDueToday = this.basePrice + addonOneTimeTotal;
+        this.monthlyAmount = addonMonthlyTotal;
+        this.totalPrice = this.amountDueToday; // For display compatibility
+    }
+
+    parsePrice(priceString: string): { oneTime: number, monthly: number } {
+        let oneTime = 0;
+        let monthly = 0;
+
+        // Handle different price formats from your business plan
+        if (priceString.includes('setup + ') && priceString.includes('/mo')) {
+            // Format: "$500–$1,200 setup + $300–$600/mo"
+            const setupMatch = priceString.match(/\$(\d+)(?:–\$(\d+))?\s*setup/);
+            const monthlyMatch = priceString.match(/\$(\d+)(?:–\$(\d+))?\s*\/mo/);
+
+            if (setupMatch) {
+                oneTime = parseInt(setupMatch[2] || setupMatch[1]) || 0;
+            }
+            if (monthlyMatch) {
+                monthly = parseInt(monthlyMatch[2] || monthlyMatch[1]) || 0;
+            }
+        } else if (priceString.includes('/mo')) {
+            // Format: "$100–$300/mo" or "$200–$500/mo mgmt"
+            const monthlyMatch = priceString.match(/\$(\d+)(?:–\$(\d+))?\/mo/);
+            if (monthlyMatch) {
+                monthly = parseInt(monthlyMatch[2] || monthlyMatch[1]) || 0;
+            }
+        } else if (priceString.includes('setup')) {
+            // Format: "$500+ setup"
+            const setupMatch = priceString.match(/\$(\d+)\+?\s*setup/);
+            if (setupMatch) {
+                oneTime = parseInt(setupMatch[1]) || 0;
+            }
+        } else if (priceString.includes('/page') || priceString.includes('/post') || priceString.includes('each')) {
+            // Format: "$250–$600/page" or "$50 static / $100 animated per post"
+            const priceMatch = priceString.match(/\$(\d+)(?:–\$(\d+))?/);
+            if (priceMatch) {
+                oneTime = parseInt(priceMatch[2] || priceMatch[1]) || 0;
+            }
+        } else if (priceString.includes('Custom quote') || priceString.includes('Cost + markup')) {
+            // Handle custom quotes - could add a base estimate
+            oneTime = 0;
+            monthly = 0;
+        } else {
+            // Default: try to extract first price range "$100–$300"
+            const priceMatch = priceString.match(/\$(\d+)(?:–\$(\d+))?/);
+            if (priceMatch) {
+                oneTime = parseInt(priceMatch[2] || priceMatch[1]) || 0;
+            }
+        }
+
+        return { oneTime, monthly };
     }
 
     removeAddOn(addon: any): void {
@@ -284,10 +290,17 @@ export class PackageDetailComponent implements OnInit {
                 );
             }
 
-            // Set base price based on package
+            // Set base price based on package - use lower (cheaper) end of range, handle commas
             if (this.packageData) {
-                const priceString = this.packageData.price.replace(/[^\d]/g, '');
-                this.basePrice = parseInt(priceString) || 0;
+                const priceMatch = this.packageData.price.match(/\$([\d,]+)(?:–\s*\$([\d,]+))?/);
+                if (priceMatch) {
+                    // Use the lower price in the range, or the single price if no range
+                    this.basePrice = parseInt(priceMatch[1].replace(/,/g, '')) || 0;
+                } else {
+                    this.basePrice = 0;
+                }
+                this.amountDueToday = this.basePrice;
+                this.monthlyAmount = 0;
                 this.totalPrice = this.basePrice;
             }
 

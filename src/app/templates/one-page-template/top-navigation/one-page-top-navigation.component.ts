@@ -6,5 +6,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./one-page-top-navigation.component.scss']
 })
 export class OnePageTopNavigationComponent {
-
+  isLoggingIn = localStorage.getItem('user') !== null;
 }
