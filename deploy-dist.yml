@@ -28,7 +28,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.DEPLOY_TOKEN }}
-          external_repository: kendallryanlewis/kndl-inc
+          external_repository: kendallryanlewis/kndl-inc.git
           publish_dir: ./dist
           publish_branch: main
           user_name: github-actions
