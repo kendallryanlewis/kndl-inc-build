@@ -22,10 +22,17 @@ jobs:
         run: npm ci
 
       - name: Build project
-        run: npm run build --prod
+        run: |
+          npm run build --prod || npm run build || ng build --prod || ng build
 
       - name: List dist contents (debug)
-        run: ls -R ./dist
+        run: |
+          echo "Contents of ./dist:"
+          ls -la ./dist || echo "No ./dist folder"
+          echo "Contents of ./dist/kndl-inc:"
+          ls -la ./dist/kndl-inc || echo "No ./dist/kndl-inc folder"
+          echo "Find all index.html files:"
+          find . -name "index.html" -type f
 
       - name: Deploy dist to prod repo
         uses: peaceiris/actions-gh-pages@v4
