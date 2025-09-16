@@ -27,7 +27,8 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/CNAME"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
