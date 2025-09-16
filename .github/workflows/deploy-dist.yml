@@ -39,7 +39,7 @@ jobs:
         with:
           personal_token: ${{ secrets.DEPLOY_TOKEN }}
           external_repository: kendallryanlewis/kndl-inc
-          publish_dir: ./dist/kndl-inc
+          publish_dir: ./dist/kndl
           publish_branch: main
           user_name: github-actions
           user_email: github-actions@github.com
