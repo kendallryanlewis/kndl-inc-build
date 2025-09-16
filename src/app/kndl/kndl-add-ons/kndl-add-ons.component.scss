@@ -10,7 +10,7 @@
 
 .addons-header h2 {
     font-size: 2.5rem;
-    color: #111;
+    color: var(--accent-blue);
     margin-bottom: 15px;
 }
 
@@ -42,7 +42,7 @@
 .addon-card h3 {
     font-size: 1.4rem;
     margin-bottom: 12px;
-    color: #222;
+    color: var(--accent-blue);
 }
 
 .addon-card p {
@@ -62,7 +62,7 @@
     margin: 40px auto 0;
     padding: 12px 30px;
     border: none;
-    background-color: tan;
+    background-color: var(--accent-blue);
     color: beige;
     font-size: 1rem;
     border-radius: 25px;
@@ -70,6 +70,6 @@
     transition: background-color 0.3s ease;
 
     &:hover {
-        background-color: rgb(164, 139, 106);
+        background-color: rgb(41, 45, 66);
     }
 }

@@ -29,7 +29,7 @@
     max-width: 340px;
     margin: 0;
     background: #fff;
-    color: #222;
+    color: var(--accent-blue);
     border-radius: 1.2em;
     box-shadow: none;
     border: 1.5px solid #e5e7eb;
@@ -114,7 +114,7 @@
         margin-top: 0;
         margin-bottom: 1em;
         font-size: 1.2em;
-        color: #222;
+        color: var(--accent-blue);
     }
 
     form {

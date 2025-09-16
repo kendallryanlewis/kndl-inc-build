@@ -21,7 +21,7 @@
     }
 
     .switcher-logo {
-        background: #222;
+        background: var(--accent-blue);
         color: #fff;
         border-radius: 10px;
         width: 68px;
@@ -52,14 +52,14 @@
 
     .switcher-btn.active,
     .switcher-btn:focus {
-        background: #222;
+        background: var(--accent-blue);
         color: #fff;
-        border-color: #222;
+        border-color: var(--accent-blue);
     }
 
     .switcher-btn.highlight {
         background: #ededed;
-        color: #222;
+        color: var(--accent-blue);
         border: 2px solid #ededed;
         font-weight: 600;
         margin-left: 0.5rem;
@@ -69,7 +69,7 @@
     .switcher-btn.highlight.active,
     .switcher-btn.highlight:focus {
         background: #fff;
-        color: #222;
+        color: var(--accent-blue);
         border-color: #fff;
     }
 }

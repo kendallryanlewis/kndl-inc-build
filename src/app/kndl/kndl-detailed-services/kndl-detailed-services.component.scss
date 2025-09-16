@@ -10,7 +10,7 @@
 
 .section-header h2 {
     font-size: 2.5rem;
-    color: #111;
+    color: var(--accent-blue);
     margin-bottom: 15px;
 }
 
@@ -45,7 +45,7 @@
 .service-box h3 {
     font-size: 1.6rem;
     margin-bottom: 15px;
-    color: #222;
+    color: var(--accent-blue);
 }
 
 .service-box p {
@@ -73,7 +73,7 @@
 .feature-section h3 {
     font-size: 1.8rem;
     margin-bottom: 20px;
-    color: #222;
+    color: var(--accent-blue);
 }
 
 .feature-section p {
@@ -92,7 +92,7 @@
     font-size: 1rem;
     border: none;
     border-radius: 8px;
-    background: #222;
+    background: var(--accent-blue);
     color: #fff;
     cursor: pointer;
     transition: background 0.2s ease;
@@ -108,7 +108,7 @@
 
 .pricing-header h2 {
     font-size: 2.5rem;
-    color: #111;
+    color: var(--accent-blue);
     margin-bottom: 15px;
 }
 
@@ -138,7 +138,7 @@
 .pricing-card h3 {
     font-size: 1.8rem;
     margin-bottom: 10px;
-    color: #222;
+    color: var(--accent-blue);
 }
 
 .price-range {
@@ -169,8 +169,8 @@
     font-size: 1rem;
     border: none;
     border-radius: 8px;
-    background: #222;
-    color: #fff;
+    background: var(--accent-blue);
+    color: beige;
     cursor: pointer;
     transition: background 0.2s ease;
     text-align: center;

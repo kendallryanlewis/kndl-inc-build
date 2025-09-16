@@ -10,7 +10,7 @@
 .landing-wrapper {
     font-family: 'Inter', sans-serif;
     background: #f8f8f8;
-    color: #111;
+    color: var(--accent-blue);
     padding: 5rem;
     //background: linear-gradient(180deg, #f4f4f4, transparent);
 }
@@ -80,7 +80,7 @@
 
     .switcher-btn.highlight {
         background: #ededed;
-        color: #222;
+        color: var(--accent-blue);
         border: 2px solid #ededed;
         font-weight: 600;
         margin-left: 0.5rem;
@@ -90,7 +90,7 @@
     .switcher-btn.highlight.active,
     .switcher-btn.highlight:focus {
         background: #fff;
-        color: #222;
+        color: var(--accent-blue);
         border-color: #fff;
     }
 
