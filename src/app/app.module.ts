@@ -5,6 +5,7 @@ import { FormsModule } from "@angular/forms";
 import { BrowserModule } from "@angular/platform-browser";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { AppRoutingModule } from "./app-routing.module";
+import { RouterModule } from '@angular/router';
 import { AppComponent } from "./app.component";
 import { DashboardComponent } from "./dashboard/dashboard.component";
 import { DomainsComponent } from "./dashboard/on-boarding/domains/domains.component";
@@ -14,7 +15,6 @@ import { PaymentComponent } from "./dashboard/on-boarding/payment/payment.compon
 import { WelcomeComponent } from "./dashboard/on-boarding/welcome/welcome.component";
 import { AnalyticsComponent } from "./dashboard/overview/analytics/analytics.component";
 import { OverviewComponent } from "./dashboard/overview/overview.component";
-import { InvoicingComponent } from "./dashboard/overview/scheduled/invoicing/invoicing.component";
 import { RemindersComponent } from "./dashboard/overview/scheduled/reminders/reminders.component";
 import { ScheduledComponent } from "./dashboard/overview/scheduled/scheduled.component";
 import { SchedulingCalanderComponent } from "./dashboard/overview/scheduled/scheduling-calander/scheduling-calander.component";
@@ -53,12 +53,24 @@ import { PackageDetailComponent } from './package-detail/package-detail.componen
 import { DashboardSupportComponent } from "./dashboard/dashboard-support/dashboard-support.component";
 import { DashboardDesignsComponent } from './dashboard/dashboard-designs/dashboard-designs.component';
 import { AdminComponent } from './dashboard/admin/admin.component';
-import { AdminBillingComponent } from './dashboard/admin/admin-billing/admin-billing.component';
 import { AdminUsersComponent } from './dashboard/admin/admin-users/admin-users.component';
 import { AdminTaskComponent } from './dashboard/admin/admin-task/admin-task.component';
 import { AdminWikiComponent } from './dashboard/admin/admin-wiki/admin-wiki.component';
 import { RemoveDashesAndCapitalizePipe } from './pipes/remove-dashes-and-capitalize.pipe';
 import { AdminSitesComponent } from './dashboard/admin/admin-sites/admin-sites.component';
+import './firebase-init';
+import { EditableTextComponent } from './dashboard/admin/components/editable-text.component';
+import { AdminLandingEditorComponent } from "./dashboard/admin/admin-landing-editor/admin-landing-editor.component";
+import { LandingEditorComponent } from './dashboard/admin/admin-landing-editor/landing-editor/landing-editor.component';
+import { AddonsEditorComponent } from './dashboard/admin/admin-landing-editor/addons-editor/addons-editor.component';
+import { CallToActionEditorComponent } from './dashboard/admin/admin-landing-editor/call-to-action-editor/call-to-action-editor.component';
+import { SubscriptionEditorComponent } from './dashboard/admin/admin-landing-editor/subscription-editor/subscription-editor.component';
+import { ServicePlansEditorComponent } from './dashboard/admin/admin-landing-editor/service-plans-editor/service-plans-editor.component';
+import { GenericH2TitleComponent } from './reusable/generic-h2-title/generic-h2-title.component';
+import { AdminWikiNewComponent } from './dashboard/admin/admin-wiki/admin-wiki-new/admin-wiki-new.component';
+import { AdminWikiListComponent } from './dashboard/admin/admin-wiki/admin-wiki-list/admin-wiki-list.component';
+import { QuillModule } from 'ngx-quill';
+import { EditorModule } from "@progress/kendo-angular-editor";
 
 @NgModule({
   declarations: [
@@ -109,21 +121,32 @@ import { AdminSitesComponent } from './dashboard/admin/admin-sites/admin-sites.c
     DashboardSupportComponent,
     DashboardDesignsComponent,
     AdminComponent,
-    AdminBillingComponent,
     AdminUsersComponent,
     AdminTaskComponent,
     AdminWikiComponent,
     RemoveDashesAndCapitalizePipe,
-    AdminSitesComponent
+    AdminSitesComponent,
+    EditableTextComponent,
+    AdminLandingEditorComponent,
+    LandingEditorComponent,
+    AddonsEditorComponent,
+    CallToActionEditorComponent,
+    SubscriptionEditorComponent,
+    ServicePlansEditorComponent,
+    GenericH2TitleComponent,
+    AdminWikiNewComponent,
+    AdminWikiListComponent
   ],
   imports: [
+    EditorModule,
     BrowserModule,
     CommonModule,
     AppRoutingModule,
+    RouterModule,
     FontAwesomeModule,
     FormsModule,
     HttpClientModule,
-    InvoicingComponent
+    QuillModule.forRoot()
   ],
   providers: [],
   bootstrap: [AppComponent]

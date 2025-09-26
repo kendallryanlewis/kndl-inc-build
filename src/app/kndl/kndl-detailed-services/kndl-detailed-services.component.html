@@ -1,87 +1,131 @@
-<div class="p-5 pt-0">
-    <div class="section-wrapper bg-white p-0 p-lg-5">
+<div class="section-wrapper" [class.mt-5]="editMode" [class.bg-white]="editMode" *ngIf="!editMode">
+    <!-- Display Mode -->
+    <div>
         <div class="section-header text-start pb-5">
-            <h1 class="">Web Development <span appAnimateOnScroll animationClass="fade" class="text-tan">Packages</span>
-            </h1>
-            <hr class="my-5" style="width:200px;">
-            <p appAnimateOnScroll animationClass="fade">Development-focused packages with clean WordPress builds, fast
-                delivery, and transparent pricing. Add‑ons & subscriptions available for everything else.</p>
+            <h1 class="">{{ content.headerTitle }} <span appAnimateOnScroll animationClass="fade" class="text-tan">{{
+                    content.headerHighlight }}</span></h1>
+            <hr class="my-5" [style.width]="content.styling.hrWidth">
+            <p appAnimateOnScroll animationClass="fade">{{ content.headerDescription }}</p>
         </div>
 
-        <!-- Combined Pricing Cards with Detailed Info -->
+        <!-- Dynamic Pricing Cards from Firebase -->
         <div class="pricing-grid">
-            <!-- Starter Plan -->
-            <div appAnimateOnScroll animationClass="fade-up" class="pricing-card" style="cursor: pointer;"
-                (click)="selectPackage('Starter')">
+            <div *ngFor="let plan of servicePlans; let i = index" appAnimateOnScroll animationClass="fade-up"
+                [style.transition-delay]="(i * 0.2) + 's'" class="pricing-card" [class.popular]="plan.isPopular"
+                style="cursor: pointer;" (click)="selectPackage(plan.name)">
                 <div>
-                    <h3>Starter — "Brand Essentials"</h3>
-                    <div class="price-range">$325 – $780 one-time</div>
-                    <p><strong>Dev Scope:</strong> Single-page WordPress site with clean design and core functionality
-                        to get you online fast.</p>
+                    <h3>{{ plan.name }} <span *ngIf="plan.isPopular" class="popular-badge">Popular</span></h3>
+                    <div class="price-range">
+                        {{ formatCurrency(plan.monthlyPrice) }} monthly / {{ formatCurrency(plan.yearlyPrice) }}
+                        yearly
+                    </div>
+                    <p><strong>Description:</strong> {{ plan.description }}</p>
                     <ul class="features">
-                        <li>Single-page WordPress site (responsive)</li>
-                        <li>Up to 4 sections (Hero, Services, About, Contact)</li>
-                        <li>Contact form + basic anti-spam</li>
-                        <li>Core technical SEO & performance setup</li>
-                        <li><em>Custom development available at custom-dev rate</em></li>
+                        <li *ngFor="let feature of plan.features">{{ feature }}</li>
                     </ul>
                 </div>
-                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage('Starter')">Start with
-                    Starter</button>
-            </div>
-
-            <!-- Growth Plan -->
-            <div appAnimateOnScroll animationClass="fade-up" style="transition-delay: 0.2s; cursor: pointer;"
-                class="pricing-card" (click)="selectPackage('Growth')">
-                <div>
-                    <h3>Growth — "Digital + Print"</h3>
-                    <div class="price-range">$1,040 – $1,950 one-time</div>
-                    <p><strong>Dev Scope:</strong> Multi-page WordPress site with enhanced functionality and booking
-                        capabilities.</p>
-                    <ul class="features">
-                        <li>Multi-page WordPress site (5–12 pages)</li>
-                        <li>2–3 reusable page templates + blog setup</li>
-                        <li>1 simple Custom Post Type (CPT) + taxonomy</li>
-                        <li>Enhanced forms (conditional fields, multi-step)</li>
-                        <li>Reservations/appointments with payments</li>
-                        <li><em>Custom development available at custom-dev rate</em></li>
-                    </ul>
-                </div>
-                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage('Growth')">Grow with
-                    Growth</button>
-            </div>
-
-            <!-- Pro Plan -->
-            <div appAnimateOnScroll animationClass="fade-up" style="transition-delay: 0.4s; cursor: pointer;"
-                class="pricing-card" (click)="selectPackage('Pro')">
-                <div>
-                    <h3>Pro — "Total Brand Presence"</h3>
-                    <div class="price-range">$2,600 – $4,550+ one-time</div>
-                    <p><strong>Dev Scope:</strong> Advanced WordPress build with heavy custom development and enterprise
-                        functionality.</p>
-                    <ul class="features">
-                        <li>Advanced WordPress build with heavy custom development</li>
-                        <li>User registration & roles (memberships, gated content)</li>
-                        <li>WooCommerce (store or subscriptions)</li>
-                        <li>Multiple CPTs & taxonomies; advanced search/filters</li>
-                        <li>Third‑party integrations (CRM, accounting, Zapier/Make)</li>
-                        <li>Headless/Angular components & custom APIs as needed</li>
-                    </ul>
-                </div>
-                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage('Pro')">Level Up with
-                    Pro</button>
+                <button class="cta-btn" (click)="$event.stopPropagation(); selectPackage(plan.name)">
+                    Choose {{ plan.name }}
+                </button>
             </div>
         </div>
+
         <div appAnimateOnScroll animationClass="fade-up" class="feature-section mt-5">
-            <h3>Process: Discover → Build → Launch → Care Plan</h3>
-            <p>We keep things simple: <strong>Discover</strong> your goals, audience, refs, sitemap, KPIs →
-                <strong>Brand & Build</strong> logo/refresh, palette, wireframes → design → build → QA → <strong>Launch
-                    & Care Plan</strong> enrollment with optional ongoing management.
-            </p>
-            <p>You'll work directly with our team—no account managers or middlemen. Projects are delivered with staged
-                payments (50% deposit; 40% at design approval; 10% at launch), upfront pricing, and clear scope
-                guardrails.</p>
-            <p class="m-0">Ready for total brand presence with measurable results? <strong>Get a dev quote</strong> and
-                we'll provide a menu of add‑ons/subscriptions.</p>
+            <h3>{{ content.processTitle }}</h3>
+            <p *ngFor="let paragraph of content.processDescription">{{ paragraph }}</p>
         </div>
     </div>
+</div>
+
+<ng-container *ngIf="editMode">
+    <app-generic-h2-title [title]="'Services Editor'" [icon]="'fa-edit'"
+        [subTitle]="'Edit services header, process, and service plans. Service plans are managed via Firebase.'"></app-generic-h2-title>
+    <!-- Edit Mode -->
+    <div class="edit-mode">
+        <!-- Header Section -->
+        <div class="border p-4 rounded mb-4 bg-white stat-card">
+            <h4 class="text-tan mb-3">Header Section</h4>
+
+            <div class="mb-3">
+                <label for="headerTitle" class="form-label fw-bold">Header Title:</label>
+                <input type="text" id="headerTitle" class="form-control" [(ngModel)]="content.headerTitle"
+                    (ngModelChange)="onContentChange()" placeholder="Enter header title">
+            </div>
+
+            <div class="mb-3">
+                <label for="headerHighlight" class="form-label fw-bold">Header Highlight (colored text):</label>
+                <input type="text" id="headerHighlight" class="form-control" [(ngModel)]="content.headerHighlight"
+                    (ngModelChange)="onContentChange()" placeholder="Enter highlighted text">
+            </div>
+
+            <div class="mb-3">
+                <label for="headerDescription" class="form-label fw-bold">Header Description:</label>
+                <textarea id="headerDescription" class="form-control" rows="3" [(ngModel)]="content.headerDescription"
+                    (ngModelChange)="onContentChange()" placeholder="Enter header description"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="hrWidth" class="form-label fw-bold">HR Line Width:</label>
+                <input type="text" id="hrWidth" class="form-control" [(ngModel)]="content.styling.hrWidth"
+                    (ngModelChange)="onContentChange()" placeholder="e.g., 200px">
+            </div>
+        </div>
+
+        <!-- Process Section -->
+        <div class="mt-5 mb-4">
+            <h4 class="text-tan mb-3">Process Section</h4>
+
+            <div class="mb-3">
+                <label for="processTitle" class="form-label fw-bold">Process Title:</label>
+                <input type="text" id="processTitle" class="form-control" [(ngModel)]="content.processTitle"
+                    (ngModelChange)="onContentChange()" placeholder="Enter process title">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Process Description Paragraphs:</label>
+                <div *ngFor="let paragraph of content.processDescription; let i = index" class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-night-tan">Paragraph {{ i + 1 }}</span>
+                        <button type="button" class="btn text-danger" (click)="removeProcessDescription(i)">
+                            Remove
+                        </button>
+                    </div>
+                    <textarea class="form-control" rows="4" [(ngModel)]="content.processDescription[i]"
+                        (ngModelChange)="onContentChange()" placeholder="Process description paragraph"></textarea>
+                </div>
+                <button type="button" class="btn btn-primary text-white" (click)="addProcessDescription()">
+                    Add Paragraph
+                </button>
+            </div>
+
+            <div class="mb-3">
+                <label for="ctaText" class="form-label fw-bold">CTA Button Text:</label>
+                <input type="text" id="ctaText" class="form-control" [(ngModel)]="content.ctaText"
+                    (ngModelChange)="onContentChange()" placeholder="Enter CTA button text">
+            </div>
+        </div>
+
+        <!-- Service Plans Display (Read-only in edit mode) -->
+        <div class="border p-4 rounded mb-4 bg-white stat-card">
+            <h4 class="text-tan mb-3">Service Plans (Managed via Firebase)</h4>
+            <p class="text-muted">Service plans are loaded from Firebase and displayed dynamically. Use the admin
+                panel to manage service plans.</p>
+            <div class="pricing-grid">
+                <div *ngFor="let plan of servicePlans; let i = index" class="pricing-card"
+                    [class.popular]="plan.isPopular">
+                    <div>
+                        <h3>{{ plan.name }} <span *ngIf="plan.isPopular" class="popular-badge">Popular</span></h3>
+                        <div class="price-range">
+                            {{ formatCurrency(plan.monthlyPrice) }} monthly / {{ formatCurrency(plan.yearlyPrice) }}
+                            yearly
+                        </div>
+                        <p><strong>Description:</strong> {{ plan.description }}</p>
+                        <ul class="features">
+                            <li *ngFor="let feature of plan.features">{{ feature }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-container>

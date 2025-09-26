@@ -1,7 +1,11 @@
-<app-kndl-top-navigation></app-kndl-top-navigation>
+<app-kndl-top-navigation *ngIf="!editMode"></app-kndl-top-navigation>
 <section appAnimateOnScroll animationClass="fade" style="transition-delay: 0.4s; transition-duration: 4s;"
-    class="hero pt-4 pt-lg-5">
+    class="hero pt-4 pt-lg-5" *ngIf="!editMode">
     <div class="fw-lighter text-center">
-        <h1 class="fw-bold mb-3 text-blue">Brand + Web Studio. Real Results.</h1>
+        <h1 class="fw-bold mb-3 text-blue">{{ headerText }}</h1>
     </div>
 </section>
+<ng-container *ngIf="editMode">
+    <input type="text" id="headerText" class="form-control text-start fw-bold text-blue" [(ngModel)]="headerText"
+        (ngModelChange)="onHeaderTextChange()" placeholder="Enter header text">
+</ng-container>

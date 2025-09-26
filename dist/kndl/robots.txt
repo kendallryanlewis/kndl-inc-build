@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://kndl-inc.com/sitemap.xml
+
+# Disallow admin areas
+Disallow: /dashboard/
+Disallow: /login/
+
+# Crawl-delay
+Crawl-delay: 1

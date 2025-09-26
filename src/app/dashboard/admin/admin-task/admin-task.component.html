@@ -1,13 +1,11 @@
-<div id="task-management" class="container-fluid task-management py-4">
+<div id="task-management" class="task-management">
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="mb-1"><i class="fa fa-tasks me-2"></i>Task Management</h2>
-                    <p class="text-muted mb-0">Organize and track your tasks with our Kanban board</p>
-                </div>
-                <button class="btn btn-outline-secondary" (click)="openNewTaskModal()"><i
+                <app-generic-h2-title [title]="'Task Management'" [icon]="'fa-tasks'"
+                    [subTitle]="'Organize and track your tasks with our Kanban board.'"></app-generic-h2-title>
+                <button class="admin-tab bg-blue my-auto" (click)="openNewTaskModal()"><i
                         class="fa fa-plus me-2"></i>Add New Task</button>
             </div>
         </div>
@@ -15,7 +13,7 @@
     <!-- Task Statistics -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-sm-3">
-            <div class="card bg-info bg-opacity-10 border-0">
+            <div class="card stat-card  bg-info bg-opacity-10 border-0">
                 <div class="card-body text-center">
                     <i class="fa fa-clipboard fa-2x text-info mb-2"></i>
                     <div class="h4 mb-0">{{ getTasksByStatus('To Do').length }}</div>
@@ -24,7 +22,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-3">
-            <div class="card bg-warning bg-opacity-10 border-0">
+            <div class="card stat-card  bg-warning bg-opacity-10 border-0">
                 <div class="card-body text-center">
                     <i class="fa fa-play-circle fa-2x text-warning mb-2"></i>
                     <div class="h4 mb-0">{{ getTasksByStatus('In Progress').length }}</div>
@@ -33,7 +31,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-3">
-            <div class="card bg-secondary bg-opacity-10 border-0">
+            <div class="card stat-card  bg-secondary bg-opacity-10 border-0">
                 <div class="card-body text-center">
                     <i class="fa fa-eye fa-2x text-secondary mb-2"></i>
                     <div class="h4 mb-0">{{ getTasksByStatus('Review').length }}</div>
@@ -42,7 +40,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-3">
-            <div class="card bg-success bg-opacity-10 border-0">
+            <div class="card stat-card  bg-success bg-opacity-10 border-0">
                 <div class="card-body text-center">
                     <i class="fa fa-check-circle fa-2x text-success mb-2"></i>
                     <div class="h4 mb-0">{{ getTasksByStatus('Done').length }}</div>
@@ -67,7 +65,7 @@
                         (drop)="onDrop($event, column)">
                         <div *ngFor="let task of getTasksByStatus(column)" class="task-card mb-3" draggable="true"
                             (dragstart)="onDragStart($event, task)" (dragend)="onDragEnd($event)">
-                            <div class="card shadow-sm h-100">
+                            <div class="card stat-card shadow-sm h-100">
                                 <div class="card-body">
                                     <!-- Priority and Category -->
                                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -120,22 +118,30 @@
                                 <!-- Task Actions -->
                                 <div class="card-footer bg-transparent border-0">
                                     <div class="d-flex justify-content-between">
-                                        <!-- Move Task Dropdown -->
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                                type="button" (click)="toggleDropdown(task.id)"
-                                                [attr.aria-expanded]="dropdownOpen === task.id">
-                                                <i class="fa fa-arrows-alt me-1"></i>Move
+                                        <div class="d-flex gap-2">
+                                            <!-- Move Task Dropdown -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                    type="button" (click)="toggleDropdown(task.id)"
+                                                    [attr.aria-expanded]="dropdownOpen === task.id">
+                                                    <i class="fa fa-arrows-alt me-1"></i>Move
+                                                </button>
+                                                <ul class="dropdown-menu" [class.show]="dropdownOpen === task.id">
+                                                    <li *ngFor="let col of columns">
+                                                        <a class="dropdown-item"
+                                                            (click)="moveTask(task.id, col); closeDropdown(); $event.preventDefault()"
+                                                            [class.disabled]="col === task.status">
+                                                            {{ col }}
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+
+                                            <!-- Edit Task -->
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                (click)="openEditTaskModal(task)">
+                                                <i class="fa fa-edit"></i>
                                             </button>
-                                            <ul class="dropdown-menu" [class.show]="dropdownOpen === task.id">
-                                                <li *ngFor="let col of columns">
-                                                    <a class="dropdown-item"
-                                                        (click)="moveTask(task.id, col); closeDropdown(); $event.preventDefault()"
-                                                        [class.disabled]="col === task.status">
-                                                        {{ col }}
-                                                    </a>
-                                                </li>
-                                            </ul>
                                         </div>
 
                                         <!-- Delete Task -->
@@ -239,3 +245,78 @@
 
 <!-- Modal Backdrop -->
 <div class="modal-backdrop fade show" *ngIf="showNewTaskModal"></div>
+
+<!-- Edit Task Modal -->
+<div class="modal fade" [class.show]="showEditTaskModal" [style.display]="showEditTaskModal ? 'block' : 'none'"
+    tabindex="-1" *ngIf="showEditTaskModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-edit me-2"></i>Edit Task</h5>
+                <button type="button" class="btn-close" (click)="closeEditTaskModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Title *</label>
+                            <input type="text" class="form-control" [(ngModel)]="editTask.title" name="title"
+                                placeholder="Enter task title">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" [(ngModel)]="editTask.priority" name="priority">
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-control" rows="3" [(ngModel)]="editTask.description" name="description"
+                            placeholder="Enter task description"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" [(ngModel)]="editTask.dueDate" name="dueDate">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Assignee</label>
+                            <input type="text" class="form-control" [(ngModel)]="editTask.assignee" name="assignee"
+                                placeholder="Enter assignee name">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Category</label>
+                            <input type="text" class="form-control" [(ngModel)]="editTask.category" name="category"
+                                placeholder="Enter category">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" [(ngModel)]="editTask.status" name="status">
+                                <option value="To Do">To Do</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Review">Review</option>
+                                <option value="Done">Done</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeEditTaskModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" (click)="saveEditTask()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal Backdrop -->
+<div class="modal-backdrop fade show" *ngIf="showEditTaskModal"></div>

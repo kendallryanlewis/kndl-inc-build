@@ -1,4 +1,5 @@
-import { Component, EventEmitter, HostListener, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export interface Task {
   id: string;
@@ -18,13 +19,19 @@ export interface Task {
   styleUrls: ['./admin-task.component.scss']
 })
 export class AdminTaskComponent {
-  @Output() sectionIds = new EventEmitter<string[]>();
+  @Input() subTab: string = 'Tasks';
+  @Output() childTabs = new EventEmitter<string[]>();
+  sectionIds: string[] = ['Tasks'];
+  private previousSubTab: string = '';
 
   // Kanban columns
   columns = ['To Do', 'In Progress', 'Review', 'Done'];
 
   // Show new task modal
   showNewTaskModal = false;
+
+  // Show edit task modal
+  showEditTaskModal = false;
 
   // Dropdown state
   dropdownOpen: string | null = null;
@@ -44,83 +51,100 @@ export class AdminTaskComponent {
     status: 'To Do'
   };
 
+  // Edit task form
+  editTask: Task = {
+    id: '',
+    title: '',
+    description: '',
+    priority: 'Medium',
+    dueDate: '',
+    assignee: '',
+    category: '',
+    status: 'To Do',
+    createdDate: ''
+  };
+
   // Sample tasks data
-  tasks: Task[] = [
-    {
-      id: 'TASK-001',
-      title: 'Website Redesign Project',
-      description: 'Complete redesign of company website with modern UI/UX',
-      priority: 'High',
-      dueDate: '2025-09-15',
-      assignee: 'Sarah Johnson',
-      status: 'In Progress',
-      category: 'Design',
-      createdDate: '2025-08-20'
-    },
-    {
-      id: 'TASK-002',
-      title: 'Update Client Contracts',
-      description: 'Review and update all client contracts for Q4',
-      priority: 'Critical',
-      dueDate: '2025-09-10',
-      assignee: 'Mike Wilson',
-      status: 'To Do',
-      category: 'Legal',
-      createdDate: '2025-08-25'
-    },
-    {
-      id: 'TASK-003',
-      title: 'Marketing Campaign Launch',
-      description: 'Launch new marketing campaign for fall products',
-      priority: 'Medium',
-      dueDate: '2025-09-20',
-      assignee: 'Lisa Chen',
-      status: 'Review',
-      category: 'Marketing',
-      createdDate: '2025-08-15'
-    },
-    {
-      id: 'TASK-004',
-      title: 'Database Migration',
-      description: 'Migrate legacy database to new cloud infrastructure',
-      priority: 'High',
-      dueDate: '2025-09-12',
-      assignee: 'John Smith',
-      status: 'In Progress',
-      category: 'Development',
-      createdDate: '2025-08-18'
-    },
-    {
-      id: 'TASK-005',
-      title: 'Employee Training Sessions',
-      description: 'Conduct quarterly training sessions for all departments',
-      priority: 'Medium',
-      dueDate: '2025-09-25',
-      assignee: 'Emily Davis',
-      status: 'Done',
-      category: 'HR',
-      createdDate: '2025-08-10'
-    },
-    {
-      id: 'TASK-006',
-      title: 'Security Audit',
-      description: 'Perform comprehensive security audit of all systems',
-      priority: 'Critical',
-      dueDate: '2025-09-08',
-      assignee: 'Alex Brown',
-      status: 'To Do',
-      category: 'Security',
-      createdDate: '2025-08-30'
-    }
-  ];
+  tasks: Task[] = [];
+
+  private tasksCollection = 'tasks';
 
   ngAfterViewInit() {
-    // Collect all section IDs in the rendered view
-    const ids = Array.from(document.querySelectorAll('section[id],div[id]')).map(
-      (el: Element) => el.id
-    );
-    this.sectionIds.emit(ids);
   }
+
+  async ngOnInit(): Promise<void> {
+    // Ensure subTab defaults to 'Home' if not provided
+    if (!this.subTab || this.subTab.trim() === '') {
+      this.subTab = 'Home';
+    }
+    // Load data asynchronously and emit child tabs
+    await Promise.all([
+      this.emitChildTabs()
+    ]);
+    this.loadTasksFromDb();
+  }
+
+  ngOnChanges(): void {
+    if (this.subTab !== this.previousSubTab) {
+      // DON'T reset changed fields when switching tabs - preserve changes across views
+      // Only update the cached properties to reflect current state
+      this.previousSubTab = this.subTab;
+    }
+  }
+  private async emitChildTabs(): Promise<void> {
+    // Emit available section IDs to parent components
+    this.childTabs.emit(this.sectionIds);
+  }
+
+
+  async loadTasksFromDb() {
+    const db = getFirestore();
+    const querySnapshot = await getDocs(collection(db, this.tasksCollection));
+    this.tasks = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        title: data['title'] || '',
+        description: data['description'] || '',
+        priority: data['priority'] || 'Low',
+        assignee: data['assignee'] || '',
+        status: data['status'] || 'To Do',
+        category: data['category'] || '',
+        dueDate: data['dueDate'] ? String(data['dueDate']) : '',
+        createdDate: data['createdDate'] || '',
+      };
+    }) as Task[];
+  }
+
+  async addTaskToDb(task: Task) {
+    const db = getFirestore();
+    const taskData = {
+      ...task,
+      dueDate: (task.dueDate && typeof task.dueDate !== 'string') ? (task.dueDate as Date).toISOString() : task.dueDate,
+      createdDate: task.createdDate,
+    };
+    await addDoc(collection(db, this.tasksCollection), taskData);
+    await this.loadTasksFromDb();
+  }
+
+  async updateTaskInDb(task: Task) {
+    const db = getFirestore();
+    const ref = doc(db, this.tasksCollection, String(task.id));
+    const taskData = {
+      ...task,
+      dueDate: (task.dueDate && typeof task.dueDate !== 'string') ? (task.dueDate as Date).toISOString() : task.dueDate,
+      createdDate: task.createdDate,
+    };
+    await setDoc(ref, taskData, { merge: true });
+    await this.loadTasksFromDb();
+  }
+
+  async deleteTaskFromDb(taskId: string) {
+    const db = getFirestore();
+    await deleteDoc(doc(db, this.tasksCollection, taskId));
+    await this.loadTasksFromDb();
+  }
+
 
   // Get tasks by status for Kanban columns
   getTasksByStatus(status: string): Task[] {
@@ -205,7 +229,48 @@ export class AdminTaskComponent {
       };
 
       this.tasks.push(task);
+      this.updateTaskInDb(task); // Sync new task to Firestore
       this.closeNewTaskModal();
+    }
+  }
+
+  // Open edit task modal
+  openEditTaskModal(task: Task): void {
+    this.editTask = { ...task }; // Copy task data to edit form
+    this.showEditTaskModal = true;
+  }
+
+  // Close edit task modal
+  closeEditTaskModal(): void {
+    this.showEditTaskModal = false;
+    this.resetEditTask();
+  }
+
+  // Reset edit task form
+  resetEditTask(): void {
+    this.editTask = {
+      id: '',
+      title: '',
+      description: '',
+      priority: 'Medium',
+      dueDate: '',
+      assignee: '',
+      category: '',
+      status: 'To Do',
+      createdDate: ''
+    };
+  }
+
+  // Save edited task
+  saveEditTask(): void {
+    if (this.editTask.title && this.editTask.description) {
+      // Find and update the task in the tasks array
+      const taskIndex = this.tasks.findIndex(t => t.id === this.editTask.id);
+      if (taskIndex !== -1) {
+        this.tasks[taskIndex] = { ...this.editTask };
+        this.updateTaskInDb(this.editTask); // Sync edited task to Firestore
+      }
+      this.closeEditTaskModal();
     }
   }
 
@@ -214,12 +279,14 @@ export class AdminTaskComponent {
     const task = this.tasks.find(t => t.id === taskId);
     if (task) {
       task.status = newStatus as 'To Do' | 'In Progress' | 'Review' | 'Done';
+      this.updateTaskInDb(task); // Sync moved task to Firestore
     }
   }
 
   // Delete task
   deleteTask(taskId: string): void {
     this.tasks = this.tasks.filter(task => task.id !== taskId);
+    this.deleteTaskFromDb(taskId); // Sync deletion to Firestore
   }
 
   // Toggle dropdown for task
@@ -302,6 +369,8 @@ export class AdminTaskComponent {
       const taskIndex = this.tasks.findIndex(t => t.id === this.draggedTask!.id);
       if (taskIndex !== -1) {
         this.tasks[taskIndex] = { ...this.draggedTask };
+        // Sync drag-and-drop changes to Firestore
+        this.updateTaskInDb(this.draggedTask);
       }
     }
 

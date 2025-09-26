@@ -52,6 +52,7 @@ $breakpoints: (
     --c-text-primary: tan;
     /* Main text color */
     --c-text-secondary: #5a83b5;
+    --faint-gold: #706658;
     /* Subtle text */
     --c-text-tertiary: var(--c-gray-500);
     /* Muted text */
@@ -90,7 +91,8 @@ a {
     -webkit-backdrop-filter: blur(8px);
 }
 
-.text-tan {
+.text-tan,
+.bg-faint-gold {
     color: var(--c-text-primary);
 }
 
@@ -120,6 +122,10 @@ a {
 
 .bg-blue {
     background-color: var(--accent-blue) !important
+}
+
+.text-night-tan {
+    color: black;
 }
 
 .section-wrapper {
@@ -152,6 +158,288 @@ a {
 }
 
 @media screen {}
+
+/*************************************************************************/
+/************************** Buttons / cards ******************************/
+/*************************************************************************/
+// Button Enhancements
+.dashboard .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+
+    &.btn-primary {
+        background: var(--c-tan-500);
+        color: var(--c-gray-900);
+
+        &:hover {
+            background: #c4945b;
+            transform: translateY(-1px);
+        }
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+}
+
+.sub-button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.897);
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    color: var(--c-gray-400);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.admin-tab {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    color: var(--c-gray-400);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #767676;
+
+    &:hover {
+        color: #242424;
+    }
+
+    &.bg-blue {
+        background-color: rgb(239, 239, 239) !important;
+    }
+}
+
+.addon-info {
+    h4 {
+        color: #2c3e50;
+        margin: 0 0 0.5rem 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .addon-category {
+        background: #3498db;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+}
+
+/***************************************************************************/
+/****************************** Dark Mode **********************************/
+/***************************************************************************/
+
+.darkMode {
+
+    p,
+    .text-muted,
+    .company-title,
+    footer h1 {
+        color: rgb(174, 174, 174) !important;
+    }
+
+    h4,
+    .activity-timeline h3,
+    .page-header .page-title {
+        color: white !important;
+    }
+
+    .wiki-page-view {
+        h1 {
+            color: var(--c-text-primary) !important;
+        }
+
+        hr {
+            color: var(--c-text-primary) !important;
+        }
+
+        .content-display,
+        .edit-label {
+            color: white !important;
+        }
+
+        .page-tags {
+            .tag {
+                background: rgba(255, 255, 255, 0.15) !important;
+                color: #f3f3fa !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            }
+        }
+
+        // Also handle tags in other locations within wiki pages
+        .tag {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: #f3f3fa !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.25) !important;
+                border-color: var(--c-tan-500) !important;
+            }
+        }
+
+        // Handle article tags specifically
+        .article-tags .tag,
+        .page-tags .tag {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: #e2e8f0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.2) !important;
+                color: #ffffff !important;
+                border-color: var(--c-tan-500) !important;
+            }
+        }
+
+        #editor {
+            background: rgb(44 61 80 / 15%);
+            box-shadow: none;
+            border: 1px solid #ffffff36;
+
+            &:focus {
+                border-color: #5e5e5e;
+                background-color: rgb(44 61 80 / 15%);
+            }
+        }
+    }
+
+    .text-night-tan {
+        color: var(--c-text-primary) !important;
+    }
+
+    .status-item span,
+    .toolbar,
+    .stat-item .stat-value,
+    .form-check-label {
+        color: white !important;
+    }
+
+    .logout-button {
+        background-color: tan !important;
+        color: white !important;
+    }
+
+    .toolbar {
+        background-color: #525e69;
+    }
+
+    .admin-tab {
+        &.bg-blue {
+            background-color: var(--accent-blue) !important;
+        }
+    }
+
+    .bg-faint-gold {
+        background-color: var(--faint-gold);
+    }
+
+    .admin-tab {
+        color: #d2d2d2;
+
+        &:hover {
+            color: var(--c-white);
+        }
+    }
+
+    .form-check-input:checked[type=checkbox] {
+        --bs-form-check-bg-image: url(data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e);
+    }
+
+    .dashboard {
+        background-color: #242424 !important;
+        transition: 1s all ease;
+
+        .card-title,
+        h6,
+        .feature-text {
+            color: white !important;
+        }
+
+        .stat-card,
+        textarea,
+        input,
+        .form-check,
+        select {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: rgb(227, 227, 227) !important;
+
+            h3 {
+                color: var(--c-text-primary) !important;
+            }
+        }
+
+        .addon-info {
+
+            h4,
+            .stat-value {
+                color: white !important;
+            }
+
+            .addon-category {
+                background: var(--c-text-primary) !important;
+                color: white !important;
+            }
+        }
+
+    }
+
+    .dashboard-container,
+    .section-wrapper {
+        background-color: #353535 !important;
+        transition: 1s all ease;
+    }
+
+    .edit-mode {
+        label {
+            color: white;
+        }
+    }
+
+    .admin-title {
+        color: var(--c-text-primary) !important;
+    }
+
+    .generic-h2 {
+        i {
+            color: var(--c-text-primary);
+        }
+    }
+
+    .sub-button {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        color: var(--c-gray-400);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
 
 /****************************************************************************/
 /****************************** Animations **********************************/
@@ -625,6 +913,12 @@ h3 {
     .company-card {
         transition: all 0.2s ease;
         cursor: pointer;
+
+        .col-4 {
+            &:hover {
+                box-shadow: none;
+            }
+        }
 
         &:hover {
             transform: translateY(-2px);

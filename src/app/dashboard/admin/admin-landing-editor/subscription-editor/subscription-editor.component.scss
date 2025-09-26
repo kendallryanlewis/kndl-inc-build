@@ -1,0 +1,645 @@
+.subscription-plans-editor {
+    .admin-title {
+        color: #333;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    // Ensure equal height cards in the grid
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+
+        .col-lg-4,
+        .col-md-6 {
+            display: flex;
+            margin-bottom: 1.5rem;
+        }
+    }
+
+    .subscription-plan-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 400px; // Minimum height for consistency
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        &.inactive {
+            opacity: 0.6;
+            border-color: #6c757d;
+        }
+
+        .card-header {
+            padding: 20px 20px 0;
+            background: transparent;
+            border: none;
+
+            .card-title {
+                color: #333;
+                font-weight: 600;
+                font-size: 1.25rem;
+            }
+
+            .badge {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+
+                &.bg-warning {
+                    background-color: #ffc107 !important;
+                    color: #000;
+                }
+
+                &.bg-secondary {
+                    background-color: #6c757d !important;
+                    color: #fff;
+                }
+            }
+
+            .action-buttons {
+                .btn {
+                    width: 40px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    padding: 0;
+                    border-width: 1px;
+
+                    i {
+                        font-size: 0.8rem;
+                    }
+
+                    &:focus {
+                        box-shadow: none;
+                    }
+
+                    &.btn-outline-primary:hover {
+                        background-color: #007bff;
+                        border-color: #007bff;
+                    }
+
+                    &.btn-outline-danger:hover {
+                        background-color: #dc3545;
+                        border-color: #dc3545;
+                    }
+                }
+            }
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1; // This makes the body expand to fill available space
+            display: flex;
+            flex-direction: column;
+
+            .pricing {
+                text-align: left;
+                margin-bottom: 20px;
+
+                .monthly-price {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: var(--c-text-primary);
+                }
+
+                .yearly-price {
+                    font-size: 0.9rem;
+                    color: var(--c-text-secondary);
+                }
+            }
+
+            .description {
+                font-size: 0.95rem;
+                line-height: 1.5;
+                color: #6c757d;
+            }
+
+            .plan-details {
+                .detail-item {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 8px;
+                    font-size: 0.85rem;
+                    color: #495057;
+
+                    i {
+                        width: 16px;
+                        color: #007bff;
+                        font-size: 0.75rem;
+                    }
+                }
+            }
+
+            .features {
+                h6 {
+                    font-weight: 600;
+                    margin-bottom: 10px;
+                    color: #495057;
+                    font-size: 0.9rem;
+                }
+
+                ul {
+                    li {
+                        font-size: 0.85rem;
+                        color: #6c757d;
+                        margin-bottom: 6px;
+
+                        .bi-check-circle-fill {
+                            font-size: 0.75rem;
+                            color: #28a745;
+                        }
+
+                        &.text-muted {
+                            font-style: italic;
+                            color: #adb5bd !important;
+                        }
+                    }
+                }
+            }
+
+            .stats {
+                margin-top: 15px;
+
+                .stat-item {
+                    text-align: center;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+
+                    .stat-number {
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    .stat-label {
+                        font-size: 0.75rem;
+                        color: #6c757d;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-top: 4px;
+                    }
+                }
+            }
+        }
+
+        .card-stats {
+            padding: 0 20px 15px;
+            margin-top: auto; // Push stats towards bottom
+
+            .stats {
+                .stat-item {
+                    text-align: center;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+
+                    .stat-number {
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    .stat-label {
+                        font-size: 0.75rem;
+                        color: #6c757d;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-top: 4px;
+                    }
+                }
+            }
+        }
+
+        .card-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            margin-top: auto; // This pushes the footer to the bottom
+
+            .badge {
+
+                &.badge-active,
+                &.bg-success {
+                    background-color: #28a745 !important;
+                    color: white;
+                }
+
+                &.badge-inactive,
+                &.bg-secondary {
+                    background-color: #6c757d !important;
+                    color: white;
+                }
+
+                &.badge-deprecated,
+                &.bg-danger {
+                    background-color: #dc3545 !important;
+                    color: white;
+                }
+            }
+
+            small {
+                font-size: 0.75rem;
+                color: #adb5bd;
+            }
+        }
+    }
+
+    .empty-state {
+        padding: 4rem 0;
+        text-align: center;
+
+        i {
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        h3 {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            color: #adb5bd;
+            max-width: 400px;
+            margin: 0 auto 2rem;
+            line-height: 1.6;
+        }
+    }
+}
+
+// Category Badge Styles - matching service plans
+.badge {
+    &.Starter {
+        background-color: #28a745 !important;
+        color: white;
+    }
+
+    &.Business {
+        background-color: #007bff !important;
+        color: white;
+    }
+
+    &.Enterprise {
+        background-color: #6f42c1 !important;
+        color: white;
+    }
+}
+
+// Modal Styles - matching service plans
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+
+    .modal-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        padding: 20px;
+
+        .modal-title {
+            color: #333;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .btn-close {
+            margin: 0;
+        }
+    }
+
+    .modal-body {
+        padding: 30px;
+
+        .form-label {
+            color: #495057;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+
+            &:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.1);
+            }
+        }
+
+        .features-list {
+            .input-group {
+                margin-bottom: 10px;
+
+                .form-control {
+                    border-right: 0;
+                    border-top-right-radius: 0;
+                    border-bottom-right-radius: 0;
+                }
+
+                .btn {
+                    border-left: 0;
+                    border-top-left-radius: 0;
+                    border-bottom-left-radius: 0;
+                    border-color: #ced4da;
+                    background: #f8f9fa;
+
+                    &:hover {
+                        background: #e9ecef;
+                    }
+                }
+            }
+        }
+
+        .form-check {
+            .form-check-input:checked {
+                background-color: #007bff;
+                border-color: #007bff;
+            }
+
+            .form-check-label {
+                font-size: 0.9rem;
+                color: #495057;
+            }
+        }
+    }
+
+    .modal-footer {
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 20px;
+
+        .btn {
+            border-radius: 6px;
+            padding: 8px 20px;
+            font-weight: 500;
+
+            &.btn-primary {
+                background: #007bff;
+                border-color: #007bff;
+
+                &:hover {
+                    background: #0056b3;
+                    border-color: #0056b3;
+                }
+            }
+
+            &.btn-secondary {
+                background: #6c757d;
+                border-color: #6c757d;
+
+                &:hover {
+                    background: #545b62;
+                    border-color: #545b62;
+                }
+            }
+        }
+    }
+}
+
+// Button Styles
+.btn-primary {
+    background: #007bff;
+    border-color: #007bff;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: #0056b3;
+        border-color: #0056b3;
+        transform: translateY(-1px);
+    }
+
+    &:focus {
+        box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.25);
+    }
+}
+
+// Addons Grid Styles
+.addons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.addon-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+
+    &:hover {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    &.inactive {
+        opacity: 0.6;
+        border-color: #e74c3c;
+    }
+
+    .addon-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+
+        .addon-status {
+            .status-badge {
+                padding: 0.375rem 0.75rem;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 500;
+
+                &.status-active {
+                    background: #d1fae5;
+                    color: #065f46;
+                }
+
+                &.status-cancelled {
+                    background: #fee2e2;
+                    color: #991b1b;
+                }
+
+                &.status-paused {
+                    background: #f3f4f6;
+                    color: #374151;
+                }
+
+                &.status-trial {
+                    background: #ede9fe;
+                    color: #6b21a8;
+                }
+
+                &.status-default {
+                    background: #f9fafb;
+                    color: #6b7280;
+                    border: 1px solid #e5e7eb;
+                }
+            }
+        }
+    }
+
+    .addon-description {
+        margin-bottom: 1.5rem;
+
+        p {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+    }
+
+    .addon-pricing {
+        margin-bottom: 1.5rem;
+
+        .pricing-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+
+            .price-option {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 0.75rem;
+                background: #f8f9fa;
+                border-radius: 8px;
+                min-width: 80px;
+
+                .price-type {
+                    font-size: 0.75rem;
+                    color: #6b7280;
+                    margin-bottom: 0.25rem;
+                }
+
+                .price-amount {
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 0.875rem;
+                }
+            }
+        }
+    }
+
+    .addon-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+
+        .stat-item {
+            text-align: center;
+
+            .stat-value {
+                display: block;
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 1rem;
+            }
+
+            .stat-label {
+                font-size: 0.75rem;
+                color: #6b7280;
+                margin-top: 0.25rem;
+            }
+        }
+    }
+
+    .addon-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+
+        button {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &.btn-edit {
+                background: #3498db;
+                color: white;
+
+                &:hover {
+                    background: #2980b9;
+                }
+            }
+
+            &.btn-toggle {
+                background: #f39c12;
+                color: white;
+
+                &:hover {
+                    background: #e67e22;
+                }
+            }
+
+            &.btn-delete {
+                background: #e74c3c;
+                color: white;
+
+                &:hover {
+                    background: #c0392b;
+                }
+            }
+
+            i {
+                font-size: 0.875rem;
+            }
+        }
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .addons-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .addon-card {
+        .addon-pricing .pricing-options {
+            justify-content: center;
+        }
+
+        .addon-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+}

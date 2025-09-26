@@ -1,13 +1,12 @@
-<div class="">
+<div class="" *ngIf="!isLoading">
     <div class="p-2 p-md-5 kndl">
         <div class="landing-wrapper d-flex flex-column h-100 rounded p-8">
-            <app-kndl-about></app-kndl-about>
+            <app-kndl-about [content]="aboutData"></app-kndl-about>
             <div class="flex-grow-1 d-none d-lg-flex flex-column">
                 <app-kndl-service class="h-100 w-100"></app-kndl-service>
                 <p appAnimateOnScroll animationClass="fade" style="transition-delay: 0.4s; transition-duration: 4s;"
                     class="lead my-5 pt-lg-5 col-lg-8 m-auto text-center">
-                    We help local businesses and solo founders launch fast, look credible, be found, and grow smart with
-                    complete brand kits, high-converting websites, and ongoing digital marketing support.
+                    {{ headerSubText }}
                 </p>
                 <button class="btn btn-dark p-2 px-4 rounded d-block d-lg-none" [routerLink]="'/login'">
                     Login
@@ -17,17 +16,35 @@
     </div>
     <div class="p-2 p-md-5 px-0 py-md-0">
         <!-- Main body -->
-        <app-kndl-about-us></app-kndl-about-us>
-        <app-kndl-detailed-services></app-kndl-detailed-services>
-        <app-kndl-add-ons></app-kndl-add-ons>
-        <app-kndl-call-to-action></app-kndl-call-to-action>
+        <app-kndl-about-us [inputContent]="aboutUsData" *ngIf="aboutUsData"></app-kndl-about-us>
+        <app-kndl-about-us *ngIf="!aboutUsData"></app-kndl-about-us>
+
+        <app-kndl-detailed-services [content]="detailedServicesData"
+            *ngIf="detailedServicesData"></app-kndl-detailed-services>
+        <app-kndl-detailed-services *ngIf="!detailedServicesData"></app-kndl-detailed-services>
+
+        <app-kndl-add-ons [content]="addOnsData" *ngIf="addOnsData"></app-kndl-add-ons>
+        <app-kndl-add-ons *ngIf="!addOnsData"></app-kndl-add-ons>
+
+        <app-kndl-call-to-action [content]="callToActionData" *ngIf="callToActionData"></app-kndl-call-to-action>
+        <app-kndl-call-to-action *ngIf="!callToActionData"></app-kndl-call-to-action>
     </div>
-    <app-kndl-footer></app-kndl-footer>
+    <app-kndl-footer [content]="footerData"></app-kndl-footer>
+</div>
+
+<!-- Loading State -->
+<div class="d-flex justify-content-center align-items-center min-vh-100" *ngIf="isLoading">
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted">Loading site content...</p>
+    </div>
 </div>
 <script>
     // Add this script to handle scrollspy functionality
     window.addEventListener('scroll', () => {
-        const sections = document.querySelectorAll('app-kndl-about-us, app-kndl-detailed-services, app-kndl-pricing, app-kndl-add-ons');
+        const sections = document.querySelectorAll('app-kndl-about-us, app-kndl-detailed-services, app-kndl-pricing, #addons, #subscription-addons');
         let currentSection = '';
 
         sections.forEach(section => {

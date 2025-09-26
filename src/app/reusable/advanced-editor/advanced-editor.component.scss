@@ -1,0 +1,239 @@
+// Advanced Editor Component Styles
+
+.advanced-editor {
+    position: relative;
+
+    .editor-toolbar {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            margin-right: 12px;
+
+            &:last-child {
+                margin-right: 0;
+            }
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 20px;
+            background-color: #dee2e6;
+            margin: 0 8px;
+        }
+
+        button {
+            padding: 4px 8px;
+            margin: 0 2px;
+            border: 1px solid transparent;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+
+            &:hover {
+                background-color: #e9ecef;
+                border-color: #dee2e6;
+            }
+
+            &.active {
+                background-color: #007bff;
+                color: white;
+                border-color: #007bff;
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        select {
+            padding: 4px 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            background-color: white;
+            font-size: 14px;
+            margin: 0 2px;
+
+            &:focus {
+                outline: none;
+                border-color: #007bff;
+                box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            }
+        }
+
+        input[type="color"] {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0 2px;
+        }
+    }
+
+    .editor-content {
+        min-height: 200px;
+        padding: 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 0 0 4px 4px;
+        background-color: white;
+
+        &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        // Text formatting styles
+        p {
+            margin: 0 0 8px 0;
+            line-height: 1.5;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 16px 0 8px 0;
+            font-weight: bold;
+
+            &:first-child {
+                margin-top: 0;
+            }
+        }
+
+        ul,
+        ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        blockquote {
+            margin: 8px 0;
+            padding: 8px 16px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #dee2e6;
+            font-style: italic;
+        }
+
+        pre,
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        pre {
+            padding: 12px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+
+            th,
+            td {
+                border: 1px solid #dee2e6;
+                padding: 8px;
+                text-align: left;
+            }
+
+            th {
+                background-color: #f8f9fa;
+                font-weight: bold;
+            }
+        }
+    }
+
+    .editor-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        font-size: 12px;
+        color: #6c757d;
+
+        .format-info {
+            font-style: italic;
+        }
+    }
+
+    // Disabled state
+    &.disabled {
+        .editor-toolbar {
+            background-color: #e9ecef;
+
+            button,
+            select,
+            input {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        .editor-content {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+    }
+
+    // Error state
+    &.error {
+        .editor-content {
+            border-color: #dc3545;
+        }
+    }
+
+    // Success state
+    &.success {
+        .editor-content {
+            border-color: #28a745;
+        }
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .advanced-editor {
+        .editor-toolbar {
+            flex-wrap: wrap;
+
+            .toolbar-group {
+                margin-bottom: 4px;
+            }
+        }
+    }
+}

@@ -7,18 +7,12 @@ import { Component, Input, Output, EventEmitter, AfterViewInit, OnChanges, Simpl
 export class TabViewerComponent implements AfterViewInit, OnChanges {
   @Input() selectedTab: string = '';
   @Input() subTab: string = '';
-  @Output() sectionIds = new EventEmitter<string[]>();
+  @Output() childTabs = new EventEmitter<string[]>();
   @Output() selectedTabChange = new EventEmitter<any>();
+  @Output() subTabChange = new EventEmitter<string>();
+
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['selectedTab']) {
-      setTimeout(() => {
-        const ids = Array.from(document.querySelectorAll('section[id],div[id]')).map(
-          (el: Element) => el.id
-        );
-        this.sectionIds.emit(ids);
-      }, 100); // Small delay to ensure DOM is updated
-    }
     if (changes['selectedTabChange']) {
       this.selectedTabChange.emit(this.subTab);
       console.log('selectedTabChange emitted:', this.subTab);
@@ -28,21 +22,18 @@ export class TabViewerComponent implements AfterViewInit, OnChanges {
   onSetSubTab(id: string) {
     this.subTab = id;
     this.selectedTabChange.emit(this.subTab);
+    this.subTabChange.emit(this.subTab);
+  }
+
+  setChildTabs(list: string[]) {
+    // Emit empty array if no child tabs are passed
+    this.childTabs.emit(list || []);
   }
 
   ngOnInit() {
   }
 
   ngAfterViewInit() {
-    this.retrieveSectionIds();
   }
 
-  retrieveSectionIds() {
-    setTimeout(() => {
-      const ids = Array.from(document.querySelectorAll('section[id],div[id]')).map(
-        (el: Element) => el.id
-      );
-      this.sectionIds.emit(ids);
-    }, 100);
-  }
 }

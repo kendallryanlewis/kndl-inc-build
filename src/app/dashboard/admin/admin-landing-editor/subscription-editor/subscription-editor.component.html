@@ -1,0 +1,280 @@
+<div class="subscription-plans-editor">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <app-generic-h2-title [title]="'Subscription Plans Manager'" [icon]="'fa fa-cogs'"
+            [subTitle]="'Manage your subscription plans effectively'"></app-generic-h2-title>
+        <button type="button" class="admin-tab bg-blue my-auto" (click)="openPlanModal()">
+            <i class="fa fa-plus-circle me-1"></i>
+            Add Subscription Plan
+        </button>
+    </div>
+
+    <!-- Plans Grid -->
+    <div class="row" *ngIf="subscriptionPlans.length > 0">
+        <div class="col-lg-4 col-md-6 mb-4" *ngFor="let plan of subscriptionPlans">
+            <div class="subscription-plan-card h-100 stat-card" [ngClass]="{'inactive': plan.status === 'Inactive'}">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <div>
+                        <h4 class="card-title mb-1">{{ plan.name }}</h4>
+                        <span class="badge" [class]="getCategoryClass(plan.category)">{{ plan.category }}</span>
+                        <span class="badge ms-1" [class]="plan.isPopular ? 'bg-warning text-dark' : 'bg-secondary'"
+                            *ngIf="plan.isPopular || !plan.isPopular">
+                            {{ plan.isPopular ? 'Popular' : 'Standard' }}
+                        </span>
+                    </div>
+                    <div class="action-buttons d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" (click)="openPlanModal(plan)" title="Edit Plan">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm" [class]="plan.status === 'Active' ? 'btn-warning' : 'btn-success'"
+                            (click)="togglePlanStatus(plan)"
+                            [title]="plan.status === 'Active' ? 'Pause Plan' : 'Activate Plan'">
+                            <i class="fa" [ngClass]="plan.status === 'Active' ? 'fa-pause' : 'fa-play'"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" (click)="openDeleteModal(plan)" [disabled]="isDeleting">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="pricing mb-3">
+                        <div class="monthly-price">
+                            <strong>{{ formatCurrency(plan.monthlyPrice) }}</strong>/month
+                        </div>
+                    </div>
+
+                    <p class="description text-muted mb-3">{{ plan.description }}</p>
+
+                    <div class="plan-details mb-3">
+                        <p class="" *ngIf="plan.maxUsers">
+                            <i class="fa fa-people me-2"></i>
+                            Up to {{ plan.maxUsers }} users
+                        </p>
+                        <p class="" *ngIf="plan.storageLimit">
+                            <i class="fa fa-hdd me-2"></i>
+                            {{ plan.storageLimit }} storage
+                        </p>
+                        <p class="">
+                            <i [class]="getSupportLevelIcon(plan.supportLevel)" class="me-2"></i>
+                            {{ plan.supportLevel }} support
+                        </p>
+                        <p class="" *ngIf="plan.trialDays">
+                            <i class="fa fa-calendar-check me-2"></i>
+                            {{ plan.trialDays }}-day trial
+                        </p>
+                    </div>
+
+                    <div class="features mb-3" *ngIf="plan.features.length > 0 && plan.features[0]">
+                        <h6 class="feature-text">Features:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-1" *ngFor="let feature of plan.features.slice(0, 3)">
+                                <span *ngIf="feature">
+                                    <i class="fa fa-check-circle-fill text-success me-2"></i>
+                                    {{ feature }}
+                                </span>
+                            </li>
+                            <li *ngIf="plan.features.length > 3" class="text-muted">
+                                +{{ plan.features.length - 3 }} more features
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card-stats" *ngIf="plan.maxUsers || plan.storageLimit">
+                    <div class="stats row text-center">
+                        <div class="col-6" *ngIf="plan.maxUsers">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ plan.maxUsers }}</div>
+                                <div class="stat-label">Max Users</div>
+                            </div>
+                        </div>
+                        <div class="col-6" *ngIf="plan.storageLimit">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ plan.storageLimit }}</div>
+                                <div class="stat-label">Storage</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge" [class]="getStatusBadgeClass(plan.status)">{{ plan.status }}</span>
+                        <small class="text-muted">Updated: {{ formatDate(plan.lastModified) }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Empty State -->
+    <div class="empty-state text-center py-5" *ngIf="subscriptionPlans.length === 0">
+        <i class="fa fa-credit-card display-1 text-muted mb-3"></i>
+        <h3 class="text-muted mb-3">No Subscription Plans Yet</h3>
+        <p class="text-muted mb-4">Create your first subscription plan to start offering services to customers.</p>
+        <button type="button" class="btn btn-primary" (click)="openPlanModal()">
+            <i class="fa fa-plus-circle m-auto"></i>
+            Create First Plan
+        </button>
+    </div>
+</div>
+
+<!-- Plan Modal -->
+<div class="modal fade" [class.show]="showPlanModal" [style.display]="showPlanModal ? 'block' : 'none'" tabindex="-1"
+    *ngIf="showPlanModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {{ selectedPlan?.id ? 'Edit Subscription Plan' : 'Create New Subscription Plan' }}
+                </h5>
+                <button type="button" class="btn-close" (click)="closePlanModal()"></button>
+            </div>
+
+            <div class="modal-body" *ngIf="selectedPlan">
+                <form (ngSubmit)="savePlan()">
+                    <!-- Hidden field to preserve the ID -->
+                    <input type="hidden" [(ngModel)]="selectedPlan.id" name="id">
+
+                    <div class="row g-3">
+                        <!-- Basic Information -->
+                        <div class="col-md-8">
+                            <label for="planName" class="form-label">Plan Name</label>
+                            <input type="text" id="planName" class="form-control" [(ngModel)]="selectedPlan.name"
+                                name="name" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="planCategory" class="form-label">Category</label>
+                            <select id="planCategory" class="form-select" [(ngModel)]="selectedPlan.category"
+                                name="category">
+                                <option value="Starter">Starter</option>
+                                <option value="Business">Business</option>
+                                <option value="Enterprise">Enterprise</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="planDescription" class="form-label">Description</label>
+                            <textarea id="planDescription" class="form-control" rows="3"
+                                [(ngModel)]="selectedPlan.description" name="description" required>
+                            </textarea>
+                        </div>
+
+                        <!-- Pricing -->
+                        <div class="col-md-6">
+                            <label for="monthlyPrice" class="form-label">Monthly Price ($)</label>
+                            <input type="number" id="monthlyPrice" class="form-control" step="0.01" min="0"
+                                [(ngModel)]="selectedPlan.monthlyPrice" name="monthlyPrice" required>
+                        </div>
+
+                        <!-- Plan Details -->
+                        <div class="col-md-4">
+                            <label for="maxUsers" class="form-label">Max Users (optional)</label>
+                            <input type="number" id="maxUsers" class="form-control" min="1"
+                                [(ngModel)]="selectedPlan.maxUsers" name="maxUsers">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="storageLimit" class="form-label">Storage Limit</label>
+                            <input type="text" id="storageLimit" class="form-control"
+                                [(ngModel)]="selectedPlan.storageLimit" name="storageLimit"
+                                placeholder="e.g. 10GB, 1TB">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="trialDays" class="form-label">Trial Days (optional)</label>
+                            <input type="number" id="trialDays" class="form-control" min="0"
+                                [(ngModel)]="selectedPlan.trialDays" name="trialDays">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="supportLevel" class="form-label">Support Level</label>
+                            <select id="supportLevel" class="form-select" [(ngModel)]="selectedPlan.supportLevel"
+                                name="supportLevel">
+                                <option value="Basic">Basic</option>
+                                <option value="Priority">Priority</option>
+                                <option value="Premium">Premium</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="planStatus" class="form-label">Status</label>
+                            <select id="planStatus" class="form-select" [(ngModel)]="selectedPlan.status" name="status">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Deprecated">Deprecated</option>
+                            </select>
+                        </div>
+
+                        <!-- Features -->
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="form-label mb-0">Features</label>
+                                <button type="button" class="btn btn-sm btn-outline-primary" (click)="addFeature()">
+                                    <i class="fa fa-plus"></i> Add Feature
+                                </button>
+                            </div>
+
+                            <div class="features-list">
+                                <div class="input-group mb-2"
+                                    *ngFor="let feature of selectedPlan.features; let i = index; trackBy: trackFeature">
+                                    <input type="text" class="form-control" [(ngModel)]="selectedPlan.features[i]"
+                                        [name]="'feature' + i" placeholder="Enter feature description">
+                                    <button type="button" class="btn btn-outline-danger" (click)="removeFeature(i)"
+                                        [disabled]="selectedPlan.features.length <= 1">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Options -->
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isPopular"
+                                    [(ngModel)]="selectedPlan.isPopular" name="isPopular">
+                                <label class="form-check-label" for="isPopular">
+                                    Mark as Popular Plan
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closePlanModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" (click)="savePlan()">
+                    {{ selectedPlan?.id ? 'Update' : 'Create' }} Plan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'"
+    tabindex="-1" *ngIf="showDeleteModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the subscription plan <strong>"{{ deletingPlan?.name }}"</strong>?
+                </p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" (click)="deletePlan()">Delete Plan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Backdrops -->
+<div class="modal-backdrop fade" [class.show]="showPlanModal" *ngIf="showPlanModal" (click)="closePlanModal()"></div>
+<div class="modal-backdrop fade" [class.show]="showDeleteModal" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+</div>

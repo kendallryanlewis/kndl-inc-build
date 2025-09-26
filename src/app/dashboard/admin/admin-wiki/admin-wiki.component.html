@@ -1,2049 +1,335 @@
-<div class="container-fluid wiki-system py-4">
-    <!-- Main Navigation -->
-    <div id="overview" style="pointer-events: none;"></div>
-    <div class="row mb-4">
-        <div class="col-12">
+<ng-switch [ngSwitch]="subTab">
+    <app-admin-wiki-new *ngSwitchCase="'+ New Page'" (onBackToList)="backToMainView()"
+        (onPageCreated)="onPageCreated($event)"></app-admin-wiki-new>
+    <app-admin-wiki-list *ngSwitchCase="'Pages'" [wikiPages]="wikiPages" [filteredPages]="filteredPages"
+        [selectedPage]="selectedPage" [searchTerm]="searchTerm" [selectedCategory]="selectedCategory"
+        [selectedCategoryName]="selectedCategoryName" [viewMode]="viewMode" [isAdminMode]="isAdminMode"
+        [isViewingPage]="isViewingPage" (onViewPage)="viewPage($event)" (onEditPage)="editPage($event)"
+        (onDeletePage)="confirmDeletePage($event)" (onSavePage)="savePageFromList($event)"
+        (onCreateNewPage)="createNewPage()" (onBackToList)="backToList()" (onViewModeChange)="viewMode = $event"
+        (onSearchChange)="searchTerm = $event; filterPages()" (onFilterByCategory)="filterByCategory($event)"
+        (onClearCategoryFilter)="clearCategoryFilter()"></app-admin-wiki-list>
+    <div *ngSwitchDefault>
+        <!-- Wiki Page View (when viewing a specific page) -->
+        <div class="wiki-page-view" *ngIf="isViewingPage && selectedPage">
+            <div class="page-view-header">
+                <div class="back-button-container">
+                    <button class="back-btn" (click)="backToList()">
+                        <i class="fa fa-arrow-left"></i>
+                        Back to Wiki Pages
+                    </button>
+                </div>
+                <div class="page-actions">
+                    <button class="action-btn edit-btn" (click)="editPage(selectedPage)">
+                        <i class="fa fa-edit"></i> Edit
+                    </button>
+                    <button class="action-btn delete-btn" (click)="confirmDeletePage(selectedPage)">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="page-view-content">
+                <div class="page-header">
+                    <h1 class="page-title">{{ selectedPage.title }}</h1>
+                    <div class="page-meta">
+                        <span class="category-badge" [class]="'bg-' + getCategoryColor(selectedPage.category)">
+                            <i class="fa" [class]="getCategoryIcon(selectedPage.category)"></i>
+                            {{ selectedPage.category }}
+                        </span>
+                        <span class="status-badge" [class.published]="selectedPage.isPublished"
+                            [class.draft]="!selectedPage.isPublished">
+                            <i class="fa" [class.fa-eye]="selectedPage.isPublished"
+                                [class.fa-eye-slash]="!selectedPage.isPublished"></i>
+                            {{ selectedPage.isPublished ? 'Published' : 'Draft' }}
+                        </span>
+                        <span class="meta-item">
+                            <i class="fa fa-calendar"></i>
+                            {{ formatDate(selectedPage.lastModified) }}
+                        </span>
+                        <span class="meta-item" *ngIf="selectedPage.author">
+                            <i class="fa fa-user"></i>
+                            {{ selectedPage.author }}
+                        </span>
+                        <span class="meta-item">
+                            <i class="fa fa-eye"></i>
+                            {{ selectedPage.views }} views
+                        </span>
+                    </div>
+                    <div class="page-tags" *ngIf="selectedPage.tags && selectedPage.tags.length > 0">
+                        <span class="tag" *ngFor="let tag of selectedPage.tags">{{ tag }}</span>
+                    </div>
+                    <div class="page-summary" *ngIf="selectedPage.summary">
+                        <p>{{ selectedPage.summary }}</p>
+                    </div>
+                </div>
+
+                <div class="page-content-container">
+                    <div class="page-content" [innerHTML]="selectedPage.content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Wiki Management Interface (when not viewing a specific page) -->
+        <div class="wiki-main-interface" *ngIf="!isViewingPage">
+            <!-- Knowledge Base Header -->
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="mb-1"><i class="fa fa-book me-2"></i>Knowledge Base Wiki</h2>
-                    <p class="text-muted mb-0">Centralized hub for notes, findings, and walkthroughs</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" (click)="currentView = 'search'">
-                        <i class="fa fa-search me-2"></i>Search Wiki
-                    </button>
-                    <button class="btn btn-primary" (click)="currentView = 'create'">
-                        <i class="fa fa-plus me-2"></i>New Entry
-                    </button>
-                </div>
+                <app-generic-h2-title [title]="'Knowledge Base Management'" [icon]="'fa-book'"
+                    [subTitle]="'Manage and organize your knowledge base articles and categories.'"></app-generic-h2-title>
             </div>
-        </div>
-    </div>
-    <!-- Overview Dashboard -->
-    <div>
-        <!-- Recent Activity -->
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fa fa-clock me-2"></i>Recent Activity</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="activity-list">
-                            <div class="activity-item d-flex align-items-center mb-3"
-                                *ngFor="let page of getRecentPages()">
-                                <div class="activity-icon me-3">
-                                    <i
-                                        class="fa {{getSectionIcon(page.section)}} text-{{getSectionColor(page.section)}}"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{page.title}}</h6>
-                                    <small class="text-muted">{{page.section}} • {{page.lastModified}} • by
-                                        {{page.author}}</small>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary" (click)="viewPage(page)">View</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fa fa-tags me-2"></i>Popular Tags</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="tag-cloud">
-                            <span *ngFor="let tag of getPopularTags()"
-                                class="badge bg-light text-dark me-1 mb-1 tag-item" (click)="filterByTag(tag.name)">
-                                {{tag.name}} ({{tag.count}})
-                            </span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Quick Actions -->
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fa fa-bolt me-2"></i>Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary btn-sm" (click)="createQuickNote()">
-                                <i class="fa fa-plus me-2"></i>Quick Note
-                            </button>
-                            <button class="btn btn-outline-success btn-sm" (click)="createFinding()">
-                                <i class="fa fa-lightbulb me-2"></i>New Finding
-                            </button>
-                            <button class="btn btn-outline-info btn-sm" (click)="createWalkthrough()">
-                                <i class="fa fa-route me-2"></i>New Walkthrough
-                            </button>
+            <!-- Admin Overview Stats -->
+            <div class="admin-overview">
+                <div class="stats-grid">
+                    <div class="stat-card bg-white">
+                        <div class="stat-icon">
+                            <i class="fa fa-file-text"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="text-night-tan">{{ wikiPages.length || 0 }}</h3>
+                            <p>Total Articles</p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section-Specific Views -->
-    <div>
-        <div id="notes" style="pointer-events: none;"></div>
-        <!-- Notes Section -->
-        <div *ngIf="selectedSection === 'notes'">
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <h3><i class="fa fa-sticky-note me-2 text-primary"></i>Notes & Findings</h3>
-                    <p class="text-muted">Quick notes, observations, research findings, and documentation</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <button class="btn btn-primary" (click)="createQuickNote()">
-                        <i class="fa fa-plus me-2"></i>Add Note
-                    </button>
+                    <div class="stat-card bg-white">
+                        <div class="stat-icon published">
+                            <i class="fa fa-eye"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="text-night-tan">{{ getPublishedPagesCount() }}</h3>
+                            <p>Published</p>
+                        </div>
+                    </div>
+                    <div class="stat-card bg-white">
+                        <div class="stat-icon drafts">
+                            <i class="fa fa-edit"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="text-night-tan">{{ getDraftPagesCount() }}</h3>
+                            <p>Drafts</p>
+                        </div>
+                    </div>
+                    <div class="stat-card bg-white">
+                        <div class="stat-icon views">
+                            <i class="fa fa-chart-bar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="text-night-tan">{{ getTotalViews() }}</h3>
+                            <p>Total Views</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="row g-3">
-                <div class="col-lg-4 col-md-6" *ngFor="let page of getSectionPages('notes')">
-                    <div class="card h-100 note-card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <span class="badge bg-{{getSectionColor(page.section)}}">{{page.priority}}</span>
-                            <small class="text-muted">{{page.lastModified}}</small>
+            <!-- Knowledge Base Categories -->
+            <div class="kb-categories">
+                <div class="categories-grid">
+                    <!-- Help and Documentation -->
+                    <div class="category-card stat-card" (click)="filterByCategory('Documentation')">
+                        <div class="category-icon documentation">
+                            <i class="fa fa-file-text"></i>
                         </div>
-                        <div class="card-body">
-                            <h6 class="card-title">{{page.title}}</h6>
-                            <p class="card-text text-truncate">{{page.content.substring(0, 100)}}...</p>
-                            <div class="tags mb-2">
-                                <span *ngFor="let tag of page.tags.slice(0, 3)"
-                                    class="badge bg-light text-dark me-1">{{tag}}</span>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <div class="d-flex justify-content-between">
-                                <small class="text-muted">by {{page.author}}</small>
-                                <div>
-                                    <button class="btn btn-sm btn-outline-primary me-1" (click)="viewPage(page)">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" (click)="editPage(page)">
-                                        <i class="fa fa-edit"></i>
-                                    </button>
-                                </div>
-                            </div>
+                        <h3 class="category-title">Help and Documentation</h3>
+                        <p class="category-description">Learn about our frameworks which try to cover everything. It has
+                            been
+                            built specifically for
+                            WordPress and blog websites.</p>
+                        <div class="category-meta">
+                            <span class="page-count">{{ getCategoryCount('Documentation') }} articles</span>
+                            <i class="fa fa-arrow-right category-arrow"></i>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div id="walkthroughs" style="pointer-events: none;"></div>
-        <!-- Walkthroughs Section -->
-        <div *ngIf="selectedSection === 'walkthroughs'">
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <h3><i class="fa fa-route me-2 text-info"></i>Walkthroughs</h3>
-                    <p class="text-muted">Step-by-step guides and detailed procedures</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <button class="btn btn-info" (click)="createWalkthrough()">
-                        <i class="fa fa-plus me-2"></i>New Walkthrough
-                    </button>
+
+                    <!-- Community and Support -->
+                    <div class="category-card stat-card" (click)="filterByCategory('FAQ')">
+                        <div class="category-icon community">
+                            <i class="fa fa-comments"></i>
+                        </div>
+                        <h3 class="category-title">Process and Starts</h3>
+                        <p class="category-description">Start your journey with our comprehensive guides and resources.
+                            Here are the beginings to the process </p>
+                        <div class="category-meta">
+                            <span class="page-count">{{ getCategoryCount('FAQ') }} articles</span>
+                            <i class="fa fa-arrow-right category-arrow"></i>
+                        </div>
+                    </div>
+
+                    <!-- Developer and Resources -->
+                    <div class="category-card stat-card" (click)="filterByCategory('API')">
+                        <div class="category-icon developer">
+                            <i class="fa fa-code"></i>
+                        </div>
+                        <h3 class="category-title">Developer and Resources</h3>
+                        <p class="category-description">Unlike other frameworks which try to cover everything. It has
+                            been
+                            built
+                            specifically for WordPress
+                            and blog websites.</p>
+                        <div class="category-meta">
+                            <span class="page-count">{{ getCategoryCount('API') }} articles</span>
+                            <i class="fa fa-arrow-right category-arrow"></i>
+                        </div>
+                    </div>
+
+                    <!-- Tutorials -->
+                    <div class="category-card stat-card" (click)="filterByCategory('Tutorials')">
+                        <div class="category-icon tutorials">
+                            <i class="fa fa-play-circle"></i>
+                        </div>
+                        <h3 class="category-title">Tutorials</h3>
+                        <p class="category-description">Step-by-step guides and tutorials to help you get started and
+                            master
+                            our
+                            platform.</p>
+                        <div class="category-meta">
+                            <span class="page-count">{{ getCategoryCount('Tutorials') }} articles</span>
+                            <i class="fa fa-arrow-right category-arrow"></i>
+                        </div>
+                    </div>
+
+                    <!-- Troubleshooting -->
+                    <div class="category-card stat-card" (click)="filterByCategory('Troubleshooting')">
+                        <div class="category-icon troubleshooting">
+                            <i class="fa fa-wrench"></i>
+                        </div>
+                        <h3 class="category-title">Troubleshooting</h3>
+                        <p class="category-description">Find solutions to common problems and technical issues you might
+                            encounter.</p>
+                        <div class="category-meta">
+                            <span class="page-count">{{ getCategoryCount('Troubleshooting') }} articles</span>
+                            <i class="fa fa-arrow-right category-arrow"></i>
+                        </div>
+                    </div>
+
+                    <!-- Best Practices -->
+                    <div class="category-card stat-card" (click)="filterByCategory('Best Practices')">
+                        <div class="category-icon best-practices">
+                            <i class="fa fa-star"></i>
+                        </div>
+                        <h3 class="category-title">Best Practices</h3>
+                        <p class="category-description">Learn industry best practices and optimization tips for better
+                            results.
+                        </p>
+                        <div class="category-meta">
+                            <span class="page-count">{{ getCategoryCount('Best Practices') }} articles</span>
+                            <i class="fa fa-arrow-right category-arrow"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="walkthroughs-grid">
-                <div class="row g-4">
-                    <div class="col-xl-4 col-lg-6" *ngFor="let page of getSectionPages('walkthroughs')">
-                        <div class="card h-100 walkthrough-card">
-                            <div class="card-header bg-info bg-opacity-10">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-info">{{page.difficulty}}</span>
-                                    <i class="fa fa-route text-info"></i>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <h5 class="card-title">{{page.title}}</h5>
-                                <p class="card-text">{{page.content.substring(0, 150)}}...</p>
-                                <div class="meta-info">
-                                    <small class="text-muted">
-                                        <i class="fa fa-eye me-1"></i>{{page.views}} views •
-                                        <i class="fa fa-clock me-1"></i>{{page.lastModified}}
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="d-flex justify-content-between">
-                                    <div class="tags">
-                                        <span *ngFor="let tag of page.tags.slice(0, 2)"
-                                            class="badge bg-light text-dark me-1">{{tag}}</span>
-                                    </div>
-                                    <div>
-                                        <button class="btn btn-sm btn-info" (click)="viewPage(page)">Start</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Troubleshooting Section -->
-        <div id="troubleshooting" style="pointer-events: none;"></div>
-        <div *ngIf="selectedSection === 'troubleshooting'">
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <h3><i class="fa fa-tools me-2 text-warning"></i>Troubleshooting</h3>
-                    <p class="text-muted">Problem resolution guides and debugging information</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <button class="btn btn-warning"
-                        (click)="newPage.section = 'troubleshooting'; currentView = 'create'">
-                        <i class="fa fa-plus me-2"></i>Add Issue
+
+
+            <!-- Public Article List (when not in admin mode) -->
+            <div class="public-articles" *ngIf="!isAdminMode && filteredPages.length > 0">
+                <div class="articles-header">
+                    <h2>{{ selectedCategoryName }} Articles</h2>
+                    <button class="btn btn-outline" (click)="clearCategoryFilter()">
+                        <i class="fa fa-arrow-left"></i> Back to Categories
                     </button>
                 </div>
-            </div>
-
-            <div class="troubleshooting-list">
-                <div class="row g-3">
-                    <div class="col-md-6" *ngFor="let page of getSectionPages('troubleshooting')">
-                        <div class="card troubleshooting-card border-start border-warning border-4">
-                            <div class="card-header">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">{{page.title}}</h6>
-                                    <span class="badge bg-warning text-dark">{{page.priority}}</span>
-                                </div>
+                <div class="articles-list">
+                    <div class="article-item" *ngFor="let page of filteredPages" (click)="viewPage(page)">
+                        <div class="article-icon">
+                            <i class="fa" [class]="getCategoryIcon(page.category)"></i>
+                        </div>
+                        <div class="article-content">
+                            <h3>{{ page.title }}</h3>
+                            <p>{{ page.summary }}</p>
+                            <div class="article-meta">
+                                <span class="meta-item">{{ formatDate(page.lastModified) }}</span>
+                                <span class="meta-item">{{ page.views }} views</span>
                             </div>
-                            <div class="card-body">
-                                <p class="card-text small">{{page.content.substring(0, 120)}}...</p>
-                                <div class="problem-meta">
-                                    <div class="tags mb-2">
-                                        <span *ngFor="let tag of page.tags"
-                                            class="badge bg-light text-dark me-1">{{tag}}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">{{page.lastModified}}</small>
-                                        <div>
-                                            <button class="btn btn-sm btn-outline-warning me-1"
-                                                (click)="viewPage(page)">View Solution</button>
-                                            <button class="btn btn-sm btn-outline-secondary"
-                                                (click)="editPage(page)">Edit</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                        <div class="article-arrow">
+                            <i class="fa fa-chevron-right"></i>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </div> <!-- End wiki-main-interface -->
+    </div> <!-- End ngSwitchDefault -->
+</ng-switch>
 
-    <!-- Search View -->
-    <div *ngIf="currentView === 'search'">
-        <div class="row mb-4">
-            <div class="col-12">
-                <h3><i class="fa fa-search me-2"></i>Search Wiki</h3>
-                <div class="search-interface mt-3">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa fa-search"></i></span>
-                                <input type="text" class="form-control" placeholder="Search titles, content, tags..."
-                                    [(ngModel)]="searchTerm" name="search">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" [(ngModel)]="selectedSection" name="section">
-                                <option value="overview">All Sections</option>
-                                <option value="notes">Notes</option>
-                                <option value="findings">Findings</option>
-                                <option value="walkthroughs">Walkthroughs</option>
-                                <option value="troubleshooting">Troubleshooting</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-primary w-100"
-                                (click)="currentView = 'list'; selectedSection = 'overview'">
-                                <i class="fa fa-list me-2"></i>View Results
-                            </button>
-                        </div>
-                    </div>
-                </div>
+<!-- Edit Page Modal -->
+<div class="modal fade" [class.show]="showEditModal" [style.display]="showEditModal ? 'block' : 'none'"
+    *ngIf="showEditModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Wiki Page</h5>
+                <button type="button" class="btn-close" (click)="closeModals()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
-        </div>
-
-        <!-- Search Results -->
-        <div class="search-results" *ngIf="searchTerm">
-            <h5>Search Results for "{{searchTerm}}"</h5>
-            <div class="results-list">
-                <div class="card mb-2" *ngFor="let page of filteredPages">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">
-                                    <i
-                                        class="fa {{getSectionIcon(page.section)}} me-2 text-{{getSectionColor(page.section)}}"></i>
-                                    {{page.title}}
-                                </h6>
-                                <p class="mb-1 small text-muted">{{page.content.substring(0, 100)}}...</p>
-                                <small class="text-muted">
-                                    {{page.section}} • {{page.category}} • {{page.lastModified}}
-                                </small>
-                            </div>
-                            <div class="actions ms-3">
-                                <button class="btn btn-sm btn-outline-primary" (click)="viewPage(page)">View</button>
-                            </div>
-                        </div>
+            <div class="modal-body" *ngIf="editingPage">
+                <form (ngSubmit)="savePage()">
+                    <div class="form-group mb-3">
+                        <label for="editTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="editTitle" [(ngModel)]="editingPage.title"
+                            name="title" required>
                     </div>
-                </div>
+
+                    <div class="form-group mb-3">
+                        <label for="editCategory" class="form-label">Category</label>
+                        <select class="form-select" id="editCategory" [(ngModel)]="editingPage.category" name="category"
+                            required>
+                            <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="editSummary" class="form-label">Summary</label>
+                        <textarea class="form-control" id="editSummary" rows="2" [(ngModel)]="editingPage.summary"
+                            name="summary" required></textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="editContent" class="form-label">Content</label>
+                        <textarea class="form-control" id="editContent" rows="10" [(ngModel)]="editingPage.content"
+                            name="content" required></textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="editTags" class="form-label">Tags (comma separated)</label>
+                        <input type="text" class="form-control" id="editTags" [value]="editingPage.tags.join(', ')"
+                            (input)="updatePageTags($event)" name="tags">
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="editPublished"
+                            [(ngModel)]="editingPage.isPublished" name="published">
+                        <label class="form-check-label" for="editPublished">Published</label>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
-    <!-- Section-Specific Views -->
-
-    <!-- Page View -->
-    <div *ngIf="currentView === 'page' && selectedPage">
-        <div class="row">
-            <div class="col-12">
-                <!-- Page Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <button class="btn btn-outline-secondary" (click)="backToList()">
-                        <i class="fa fa-arrow-left me-2"></i>Back to Pages
-                    </button>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" (click)="editPage(selectedPage)">
-                            <i class="fa fa-edit me-2"></i>Edit Page
-                        </button>
-                        <button class="btn btn-outline-danger" (click)="openDeleteModal(selectedPage)">
-                            <i class="fa fa-trash me-2"></i>Delete
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Page Content -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <h3 class="mb-1">{{selectedPage.title}}</h3>
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="badge"
-                                        [style.background-color]="getCategoryColor(selectedPage.category)"
-                                        style="color: white;">
-                                        <i class="fa {{getCategoryIcon(selectedPage.category)}} me-1"></i>
-                                        {{selectedPage.category}}
-                                    </span>
-                                    <span class="text-muted">
-                                        <i class="fa fa-eye me-1"></i>{{selectedPage.views}} views
-                                    </span>
-                                    <span class="badge"
-                                        [class]="selectedPage.isPublished ? 'bg-success' : 'bg-warning'">
-                                        {{selectedPage.isPublished ? 'Published' : 'Draft'}}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <small class="text-muted">
-                                    By {{selectedPage.author}}<br>
-                                    Updated: {{selectedPage.lastModified}}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Tags -->
-                        <div class="mb-4" *ngIf="selectedPage.tags.length > 0">
-                            <h6>Tags:</h6>
-                            <span *ngFor="let tag of selectedPage.tags" class="badge bg-light text-dark me-1">
-                                {{tag}}
-                            </span>
-                        </div>
-
-                        <!-- Rendered Content -->
-                        <div class="wiki-content" [innerHTML]="parseMarkdown(selectedPage.content)">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create/Edit Page -->
-    <div *ngIf="currentView === 'create' || currentView === 'edit'">
-        <div class="row">
-            <div class="col-12">
-                <!-- Editor Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h3 class="mb-1">
-                            <i class="fa fa-edit me-2"></i>
-                            {{currentView === 'create' ? 'Create New Page' : 'Edit Page'}}
-                        </h3>
-                        <p class="text-muted mb-0">Use Markdown syntax for formatting</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-secondary" (click)="backToList()">
-                            <i class="fa fa-times me-2"></i>Cancel
-                        </button>
-                        <button class="btn btn-primary"
-                            (click)="currentView === 'create' ? createPage() : updatePage()">
-                            <i class="fa fa-save me-2"></i>
-                            {{currentView === 'create' ? 'Create Page' : 'Save Changes'}}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Editor Interface -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="row g-3">
-                            <!-- Basic Info -->
-                            <div class="col-md-4">
-                                <label class="form-label">Page Title *</label>
-                                <input type="text" class="form-control" [(ngModel)]="newPage.title" name="title"
-                                    placeholder="Enter page title" required>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Section *</label>
-                                <select class="form-select" [(ngModel)]="newPage.section" name="section" required>
-                                    <option value="notes">Notes</option>
-                                    <option value="findings">Findings</option>
-                                    <option value="walkthroughs">Walkthroughs</option>
-                                    <option value="troubleshooting">Troubleshooting</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Category *</label>
-                                <select class="form-select" [(ngModel)]="newPage.category" name="category" required>
-                                    <option value="">Select Category</option>
-                                    <option *ngFor="let cat of categories" [value]="cat.name">{{cat.name}}</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Status</label>
-                                <select class="form-select" [(ngModel)]="newPage.isPublished" name="status">
-                                    <option [value]="true">Published</option>
-                                    <option [value]="false">Draft</option>
-                                </select>
-                            </div>
-
-                            <!-- Advanced Options -->
-                            <div class="col-md-4">
-                                <label class="form-label">Tags (comma separated)</label>
-                                <input type="text" class="form-control" [value]="newPage.tags?.join(', ')"
-                                    (input)="updateTags($event)" name="tags" placeholder="tag1, tag2, tag3">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Priority</label>
-                                <select class="form-select" [(ngModel)]="newPage.priority" name="priority">
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Difficulty</label>
-                                <select class="form-select" [(ngModel)]="newPage.difficulty" name="difficulty">
-                                    <option value="beginner">Beginner</option>
-                                    <option value="intermediate">Intermediate</option>
-                                    <option value="advanced">Advanced</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" [(ngModel)]="newPage.isPublished"
-                                        name="isPublishedCheck" id="publishedCheck">
-                                    <label class="form-check-label" for="publishedCheck">
-                                        Publish immediately
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card-body p-0">
-                        <!-- Toolbar -->
-                        <div class="editor-toolbar p-3 border-bottom">
-                            <div class="btn-toolbar" role="toolbar">
-                                <div class="btn-group me-2" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('bold')" title="Bold">
-                                        <i class="fa fa-bold"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('italic')" title="Italic">
-                                        <i class="fa fa-italic"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('code')" title="Inline Code">
-                                        <i class="fa fa-code"></i>
-                                    </button>
-                                </div>
-
-                                <div class="btn-group me-2" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('heading1')" title="Heading 1">
-                                        H1
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('heading2')" title="Heading 2">
-                                        H2
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('heading3')" title="Heading 3">
-                                        H3
-                                    </button>
-                                </div>
-
-                                <div class="btn-group me-2" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('list')" title="Bullet List">
-                                        <i class="fa fa-list-ul"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('numberlist')" title="Numbered List">
-                                        <i class="fa fa-list-ol"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('quote')" title="Quote">
-                                        <i class="fa fa-quote-left"></i>
-                                    </button>
-                                </div>
-
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('link')" title="Link">
-                                        <i class="fa fa-link"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="insertMarkdown('codeblock')" title="Code Block">
-                                        <i class="fa fa-file-code-o"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Markdown Syntax Help -->
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <strong>Markdown Quick Reference:</strong>
-                                    **bold** | *italic* | `code` | # Heading | - List | [link](url) | > Quote
-                                </small>
-                            </div>
-                        </div>
-
-                        <!-- Split View: Editor and Preview -->
-                        <div class="row g-0">
-                            <!-- Editor -->
-                            <div class="col-md-6">
-                                <div class="editor-pane">
-                                    <div class="editor-header bg-light px-3 py-2 border-end">
-                                        <small class="text-muted"><i class="fa fa-edit me-1"></i>Editor</small>
-                                    </div>
-                                    <textarea class="form-control content-editor border-0 rounded-0"
-                                        [(ngModel)]="newPage.content" name="content" rows="25" placeholder="Write your content here using Markdown syntax...
-
-# Example Heading
-
-This is a paragraph with **bold text** and *italic text*.
-
-## Subheading
-
-- Bullet point 1
-- Bullet point 2
-
-### Code Example
-
-```bash
-npm install package-name
-```
-
-> This is a quote or important note.
-
-[Link text](https://example.com)"></textarea>
-                                </div>
-                            </div>
-
-                            <!-- Preview -->
-                            <div class="col-md-6">
-                                <div class="preview-pane">
-                                    <div class="preview-header bg-light px-3 py-2">
-                                        <small class="text-muted"><i class="fa fa-eye me-1"></i>Preview</small>
-                                    </div>
-                                    <div class="preview-content p-3" style="min-height: 600px;">
-                                        <div class="wiki-content" [innerHTML]="parseMarkdown(newPage.content || '')">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'"
-        *ngIf="showDeleteModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title text-danger">
-                        <i class="fa fa-exclamation-triangle me-2"></i>Confirm Delete
-                    </h5>
-                    <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the page "<strong>{{selectedPage?.title}}</strong>"?</p>
-                    <p class="text-muted">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
-                    <button type="button" class="btn btn-danger" (click)="deletePage()">Delete Page</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="services" style="pointer-events: none;"></div>
-    <!-- Quick Services Reference Guide -->
-    <div *ngIf="currentView === 'services'">
-        <section class="quick-services container-fluid my-5">
-            <header class="mb-5">
-                <h1 class="fw-bold mb-2"><i class="fa fa-lightning me-3"></i>Quick Services Directory</h1>
-                <div class="text-muted mb-3">Instant access to common customer requests with links, prices, and steps
-                </div>
-            </header>
-
-            <!-- Quick Navigation -->
-            <nav class="mb-5">
-                <h5 class="fw-semibold">Service Categories</h5>
-                <div class="row g-2">
-                    <div class="col-md-3">
-                        <a href="#print-materials" class="btn btn-outline-primary w-100">Print Materials</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#apparel" class="btn btn-outline-success w-100">Apparel & Merchandise</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#signage" class="btn btn-outline-warning w-100">Signs & Displays</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#promotional" class="btn btn-outline-info w-100">Promotional Items</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#digital" class="btn btn-outline-danger w-100">Digital Services</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#specialty" class="btn btn-outline-secondary w-100">Specialty Items</a>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Print Materials -->
-            <section id="print-materials" class="mb-5">
-                <h2 class="fw-bold text-primary">Print Materials</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fa fa-id-card me-2"></i>Business Cards</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Standard Business Cards</h6>
-                                <p><strong>Vendor:</strong> VistaPrint, Canva Print, or Local Print Shop</p>
-                                <p><strong>Typical Turnaround:</strong> 3-5 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Get client's logo, contact info, and preferred design style</li>
-                                    <li>Create design in Canva or Adobe (include QR code if requested)</li>
-                                    <li>Get client approval on design mockup</li>
-                                    <li>Upload to print vendor with specifications</li>
-                                    <li>Order and arrange delivery/pickup</li>
-                                </ol>
-                                <p><strong>Quick Links:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><a href="https://www.vistaprint.com/business-cards" target="_blank"
-                                            class="text-primary">VistaPrint Business Cards</a></li>
-                                    <li><a href="https://www.canva.com/print/business-cards/" target="_blank"
-                                            class="text-primary">Canva Print Business Cards</a></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $75-150<br>
-                                    Print (500): $25-75<br>
-                                    <strong>Total: $100-225</strong><br>
-                                    <span class="badge bg-success">Quick Turnaround</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fa fa-file-alt me-2"></i>Flyers & Brochures</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Marketing Flyers</h6>
-                                <p><strong>Vendor:</strong> VistaPrint, FedEx Print, Staples Print</p>
-                                <p><strong>Typical Turnaround:</strong> 2-3 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Gather event/promotion details, images, and contact info</li>
-                                    <li>Design in Canva or Adobe (8.5"x11" or 8.5"x14")</li>
-                                    <li>Get client approval</li>
-                                    <li>Order with quantity and paper type specifications</li>
-                                    <li>Coordinate delivery or pickup</li>
-                                </ol>
-                                <p><strong>Quick Links:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><a href="https://www.vistaprint.com/marketing-materials/flyers" target="_blank"
-                                            class="text-primary">VistaPrint Flyers</a></li>
-                                    <li><a href="https://www.fedex.com/en-us/printing.html" target="_blank"
-                                            class="text-primary">FedEx Print Services</a></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $100-200<br>
-                                    Print (250): $50-150<br>
-                                    <strong>Total: $150-350</strong><br>
-                                    <span class="badge bg-info">Popular Choice</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Apparel & Merchandise -->
-            <section id="apparel" class="mb-5">
-                <h2 class="fw-bold text-success">Apparel & Merchandise</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fa fa-tshirt me-2"></i>Custom T-Shirts</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Screen Printed & Embroidered Shirts</h6>
-                                <p><strong>Vendor:</strong> CustomInk, 4imprint, Local Screen Printer</p>
-                                <p><strong>Typical Turnaround:</strong> 7-14 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Get logo files (vector preferred), shirt styles, sizes, and quantities</li>
-                                    <li>Create mockup showing logo placement and size</li>
-                                    <li>Get client approval on design and shirt selections</li>
-                                    <li>Place order with vendor including shipping details</li>
-                                    <li>Coordinate delivery and check quality upon arrival</li>
-                                </ol>
-                                <p><strong>Quick Links:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><a href="https://www.customink.com/products/categories/t-shirts" target="_blank"
-                                            class="text-success">CustomInk T-Shirts</a></li>
-                                    <li><a href="https://www.4imprint.com/apparel/t-shirts" target="_blank"
-                                            class="text-success">4imprint Apparel</a></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $50-100<br>
-                                    Shirts (24): $240-480<br>
-                                    Setup: $25-75<br>
-                                    <strong>Total: $315-655</strong><br>
-                                    <span class="badge bg-primary">High Margin</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fa fa-coffee me-2"></i>Promotional Drinkware</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Custom Mugs, Tumblers & Water Bottles</h6>
-                                <p><strong>Vendor:</strong> 4imprint, Promotional Products Inc, Vistaprint</p>
-                                <p><strong>Typical Turnaround:</strong> 10-15 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Determine drinkware type, color, and imprint method</li>
-                                    <li>Create logo artwork sized for product specifications</li>
-                                    <li>Get digital proof approval from client</li>
-                                    <li>Place order with exact quantities and delivery date</li>
-                                    <li>Quality check sample if available before full production</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $75<br>
-                                    Mugs (48): $200-400<br>
-                                    <strong>Total: $275-475</strong><br>
-                                    <span class="badge bg-warning">Popular Item</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Signs & Displays -->
-            <section id="signage" class="mb-5">
-                <h2 class="fw-bold text-warning">Signs & Displays</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fa fa-id-badge me-2"></i>Name Plates & Door Signs</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Engraved Name Plates & Office Signs</h6>
-                                <p><strong>Vendor:</strong> Trophy Shop Plus, FastSigns, Local Engraver</p>
-                                <p><strong>Typical Turnaround:</strong> 3-5 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Get exact name/title spellings and preferred font style</li>
-                                    <li>Choose material (metal, acrylic, wood) and mounting method</li>
-                                    <li>Create digital mockup with measurements</li>
-                                    <li>Get client approval and place order</li>
-                                    <li>Coordinate installation if needed</li>
-                                </ol>
-                                <p><strong>Quick Links:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><a href="https://www.trophyshopplus.com/nameplates" target="_blank"
-                                            class="text-warning">Trophy Shop Plus</a></li>
-                                    <li><a href="https://www.fastsigns.com/products/signs/office-signs" target="_blank"
-                                            class="text-warning">FastSigns Office Signs</a></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $25-50<br>
-                                    Name Plate: $25-75<br>
-                                    Installation: $25-50<br>
-                                    <strong>Total: $75-175</strong><br>
-                                    <span class="badge bg-success">Quick & Easy</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fa fa-rectangle-wide me-2"></i>Banners & Yard Signs</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Vinyl Banners & Corrugated Signs</h6>
-                                <p><strong>Vendor:</strong> BannersOnTheCheap, VistaPrint, Local Print Shop</p>
-                                <p><strong>Typical Turnaround:</strong> 2-4 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Determine size requirements and viewing distance</li>
-                                    <li>Design with high-contrast colors and readable fonts</li>
-                                    <li>Choose material (vinyl for outdoor, fabric for indoor)</li>
-                                    <li>Add grommets or pole pockets as needed</li>
-                                    <li>Place order with shipping/pickup details</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $75-125<br>
-                                    Banner (3'x6'): $50-150<br>
-                                    <strong>Total: $125-275</strong><br>
-                                    <span class="badge bg-info">High Visibility</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Promotional Items -->
-            <section id="promotional" class="mb-5">
-                <h2 class="fw-bold text-info">Promotional Items</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fa fa-pen me-2"></i>Branded Pens & Stationery</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Custom Pens, Notepads & Office Items</h6>
-                                <p><strong>Vendor:</strong> 4imprint, Promotional Products Inc, Staples Promotional</p>
-                                <p><strong>Typical Turnaround:</strong> 7-10 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Select promotional items within client's budget</li>
-                                    <li>Create logo artwork sized for each item</li>
-                                    <li>Request digital proofs for all items</li>
-                                    <li>Get client approval and place bulk order</li>
-                                    <li>Arrange delivery to client or event location</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $50<br>
-                                    Pens (250): $125-300<br>
-                                    <strong>Total: $175-350</strong><br>
-                                    <span class="badge bg-success">Budget Friendly</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fa fa-gift me-2"></i>Trade Show Giveaways</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Keychains, Stickers, Magnets</h6>
-                                <p><strong>Vendor:</strong> StickerMule, 4imprint, PromoShop</p>
-                                <p><strong>Typical Turnaround:</strong> 5-7 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Plan giveaway strategy and quantity needed</li>
-                                    <li>Design items with strong brand visibility</li>
-                                    <li>Order samples if time allows</li>
-                                    <li>Place final order with event delivery date</li>
-                                    <li>Include setup/packaging if needed for event</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $75<br>
-                                    Mixed items (500): $200-500<br>
-                                    <strong>Total: $275-575</strong><br>
-                                    <span class="badge bg-primary">Event Ready</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Digital Services -->
-            <section id="digital" class="mb-5">
-                <h2 class="fw-bold text-danger">Digital Services</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0"><i class="fa fa-qrcode me-2"></i>QR Code Generation</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Custom QR Codes for Menus, Websites, Contact Info</h6>
-                                <p><strong>Tools:</strong> QR Code Generator, Adobe, Canva</p>
-                                <p><strong>Typical Turnaround:</strong> Same day</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Get target URL, contact info, or content</li>
-                                    <li>Generate QR code with branding if desired</li>
-                                    <li>Test QR code on multiple devices</li>
-                                    <li>Provide high-resolution files for print/digital use</li>
-                                    <li>Include usage instructions for client</li>
-                                </ol>
-                                <p><strong>Quick Links:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><a href="https://www.qr-code-generator.com/" target="_blank"
-                                            class="text-danger">QR Code Generator</a></li>
-                                    <li><a href="https://qr.io/" target="_blank" class="text-danger">QR.io Custom QR
-                                            Codes</a></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Basic QR Code: $25<br>
-                                    Branded Design: $50-75<br>
-                                    <strong>Total: $25-75</strong><br>
-                                    <span class="badge bg-warning">Quick Delivery</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0"><i class="fa fa-envelope me-2"></i>Email Signatures</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Professional HTML Email Signatures</h6>
-                                <p><strong>Tools:</strong> HubSpot, Newoldstamp, Custom HTML</p>
-                                <p><strong>Typical Turnaround:</strong> 1-2 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Gather all contact information and social media links</li>
-                                    <li>Get company logo and brand colors</li>
-                                    <li>Design signature with consistent branding</li>
-                                    <li>Test in multiple email clients</li>
-                                    <li>Provide installation instructions for different email platforms</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Single signature: $50-100<br>
-                                    Team package (5+): $200-350<br>
-                                    <strong>Per signature: $40-70</strong><br>
-                                    <span class="badge bg-success">Professional Touch</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Specialty Items -->
-            <section id="specialty" class="mb-5">
-                <h2 class="fw-bold text-secondary">Specialty Items</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fa fa-award me-2"></i>Awards & Plaques</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Engraved Awards, Plaques & Trophies</h6>
-                                <p><strong>Vendor:</strong> Trophy Shop, Awards.com, Local Trophy Shop</p>
-                                <p><strong>Typical Turnaround:</strong> 5-7 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Determine award type, material, and size requirements</li>
-                                    <li>Get exact text for engraving (double-check spellings)</li>
-                                    <li>Create mockup showing layout and font choices</li>
-                                    <li>Get client approval and place order</li>
-                                    <li>Arrange pickup or delivery for presentation</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $25-50<br>
-                                    Plaque/Award: $75-300<br>
-                                    <strong>Total: $100-350</strong><br>
-                                    <span class="badge bg-primary">Special Occasions</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fa fa-stamp me-2"></i>Custom Stamps & Seals</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Rubber Stamps, Embossers, Notary Seals</h6>
-                                <p><strong>Vendor:</strong> Stamps.com, Simply Stamps, Local Office Supply</p>
-                                <p><strong>Typical Turnaround:</strong> 3-5 business days</p>
-                                <p><strong>Steps to Complete:</strong></p>
-                                <ol>
-                                    <li>Design stamp layout with required information</li>
-                                    <li>Choose stamp size and ink color</li>
-                                    <li>Verify all text accuracy (especially legal requirements)</li>
-                                    <li>Place order with expedited shipping if needed</li>
-                                    <li>Test stamp quality upon delivery</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Design: $25<br>
-                                    Custom stamp: $30-100<br>
-                                    <strong>Total: $55-125</strong><br>
-                                    <span class="badge bg-info">Professional Use</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Emergency/Rush Services -->
-            <section class="rush-services mb-5">
-                <h2 class="fw-bold text-center mb-4 text-danger">Rush Service Options</h2>
-                <div class="alert alert-warning">
-                    <h5><i class="fa fa-clock me-2"></i>Same-Day & Next-Day Services</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Same-Day Available:</h6>
-                            <ul>
-                                <li>Digital designs & QR codes</li>
-                                <li>Email signatures</li>
-                                <li>Simple business cards (digital delivery)</li>
-                                <li>Basic flyer designs</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Next-Day Physical Items:</h6>
-                            <ul>
-                                <li>Business cards (premium rush fee)</li>
-                                <li>Simple banners</li>
-                                <li>Basic name plates</li>
-                                <li>Rush promotional items (limited selection)</li>
-                            </ul>
-                            <p class="mb-0"><strong>Rush Fee:</strong> +50-100% of base price</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Vendor Quick Contact List -->
-            <section class="vendor-contacts mb-5">
-                <h2 class="fw-bold text-center mb-4">Vendor Quick Contacts</h2>
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0">Print Services</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled mb-0">
-                                    <li><strong>VistaPrint:</strong> 1-800-614-8002</li>
-                                    <li><strong>FedEx Print:</strong> 1-800-463-3339</li>
-                                    <li><strong>Staples Print:</strong> 1-800-378-2753</li>
-                                    <li><strong>Local Print Shop:</strong> [Add local contact]</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header bg-success text-white">
-                                <h6 class="mb-0">Promotional Products</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled mb-0">
-                                    <li><strong>4imprint:</strong> 1-877-446-7746</li>
-                                    <li><strong>CustomInk:</strong> 1-800-293-4232</li>
-                                    <li><strong>Promotional Products:</strong> 1-800-748-6150</li>
-                                    <li><strong>StickerMule:</strong> Online only</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header bg-warning text-dark">
-                                <h6 class="mb-0">Specialty Services</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled mb-0">
-                                    <li><strong>FastSigns:</strong> 1-800-827-7446</li>
-                                    <li><strong>Trophy Shop Plus:</strong> [Local number]</li>
-                                    <li><strong>Awards.com:</strong> 1-800-429-2737</li>
-                                    <li><strong>Simply Stamps:</strong> 1-800-203-7324</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </section>
-    </div>
-
-    <div id="wordpress" style="pointer-events: none;"></div>
-    <!-- WordPress Plugins Reference Guide -->
-    <div *ngIf="currentView === 'wordpress'">
-        <section class="wordpress-plugins container-fluid my-5">
-            <header class="mb-5">
-                <h1 class="fw-bold mb-2">WordPress Plugins Reference Guide</h1>
-                <div class="text-muted mb-3">Essential plugins by business type with setup steps and pricing</div>
-            </header>
-
-            <!-- Quick Navigation -->
-            <nav class="mb-5">
-                <h5 class="fw-semibold">Plugin Categories</h5>
-                <div class="row g-2">
-                    <div class="col-md-3">
-                        <a href="#reservations" class="btn btn-outline-primary w-100">Reservations & Bookings</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#ecommerce" class="btn btn-outline-primary w-100">E-commerce & Payments</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#reviews" class="btn btn-outline-primary w-100">Reviews & Testimonials</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#forms" class="btn btn-outline-primary w-100">Forms & Lead Gen</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#seo" class="btn btn-outline-primary w-100">SEO & Analytics</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#security" class="btn btn-outline-primary w-100">Security & Backup</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#performance" class="btn btn-outline-primary w-100">Performance & Speed</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="#social" class="btn btn-outline-primary w-100">Social & Marketing</a>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Reservations & Bookings -->
-            <section id="reservations" class="mb-5">
-                <h2 class="fw-bold text-primary">Reservations & Bookings</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fa fa-calendar me-2"></i>Restaurant Reservations</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">OpenTable Widget</h6>
-                                <p><strong>Best for:</strong> Restaurants, cafes, bars</p>
-                                <p><strong>Features:</strong> Real-time availability, table management, customer
-                                    database</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Sign up at OpenTable.com</li>
-                                    <li>Complete restaurant profile & menu</li>
-                                    <li>Install reservation widget via embed code</li>
-                                    <li>Configure table layouts and availability</li>
-                                    <li>Test booking flow and notifications</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    $29-199/month<br>
-                                    <small class="text-muted">+ $1.50 per cover</small><br>
-                                    <span class="badge bg-success">Free Trial</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fa fa-clock me-2"></i>Service Appointments</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Bookly</h6>
-                                <p><strong>Best for:</strong> Salons, spas, clinics, consultants</p>
-                                <p><strong>Features:</strong> Staff scheduling, service packages, payment integration,
-                                    SMS/email reminders</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Bookly plugin from WordPress repository</li>
-                                    <li>Configure services, staff, and working hours</li>
-                                    <li>Set up payment methods (Stripe, PayPal, Square)</li>
-                                    <li>Customize booking form appearance</li>
-                                    <li>Enable SMS/email notifications</li>
-                                    <li>Add booking shortcode to pages</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (basic)<br>
-                                    $89-399 (pro features)<br>
-                                    <small class="text-muted">One-time purchase</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fa fa-home me-2"></i>Property Rentals</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">WP Rental</h6>
-                                <p><strong>Best for:</strong> Vacation rentals, event venues, equipment rental</p>
-                                <p><strong>Features:</strong> Calendar availability, pricing rules, guest management,
-                                    damage deposits</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Purchase and install WP Rental theme/plugin</li>
-                                    <li>Add property listings with photos and descriptions</li>
-                                    <li>Configure pricing and availability calendars</li>
-                                    <li>Set up payment gateways and booking fees</li>
-                                    <li>Create rental agreement templates</li>
-                                    <li>Enable review and rating system</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    $59-199<br>
-                                    <small class="text-muted">One-time + annual updates</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- E-commerce & Payments -->
-            <section id="ecommerce" class="mb-5">
-                <h2 class="fw-bold text-success">E-commerce & Payments</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fa fa-shopping-cart me-2"></i>Online Store</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">WooCommerce</h6>
-                                <p><strong>Best for:</strong> Any business selling products online</p>
-                                <p><strong>Features:</strong> Product management, inventory, shipping, tax calculation,
-                                    reports</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install WooCommerce plugin (free)</li>
-                                    <li>Run setup wizard for store basics</li>
-                                    <li>Add products with photos, descriptions, pricing</li>
-                                    <li>Configure shipping zones and rates</li>
-                                    <li>Set up payment gateways (Stripe, PayPal, Square)</li>
-                                    <li>Configure tax settings by location</li>
-                                    <li>Install SSL certificate for secure checkout</li>
-                                    <li>Test complete purchase flow</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Plugin:</strong> Free<br>
-                                    <strong>Payment Processing:</strong><br>
-                                    2.9% + 30¢ per transaction<br>
-                                    <span class="badge bg-info">Most Popular</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fa fa-credit-card me-2"></i>Simple Payments</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Stripe Payment Links</h6>
-                                <p><strong>Best for:</strong> Services, donations, simple product sales</p>
-                                <p><strong>Features:</strong> One-click payment buttons, subscription billing,
-                                    mobile-optimized</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Create Stripe account at stripe.com</li>
-                                    <li>Verify business information</li>
-                                    <li>Create payment links in Stripe dashboard</li>
-                                    <li>Customize payment page branding</li>
-                                    <li>Embed payment buttons on WordPress pages</li>
-                                    <li>Set up webhook notifications for confirmations</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    2.9% + 30¢ per transaction<br>
-                                    <small class="text-muted">No monthly fees</small><br>
-                                    <span class="badge bg-warning">Quick Setup</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fa fa-repeat me-2"></i>Membership & Subscriptions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">MemberPress</h6>
-                                <p><strong>Best for:</strong> Gyms, courses, premium content, recurring services</p>
-                                <p><strong>Features:</strong> Content restriction, membership tiers, automated billing,
-                                    access control</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Purchase and install MemberPress</li>
-                                    <li>Configure membership levels and pricing</li>
-                                    <li>Set up payment gateways for recurring billing</li>
-                                    <li>Create protected content and member-only pages</li>
-                                    <li>Design registration and login flows</li>
-                                    <li>Configure email notifications and welcome sequences</li>
-                                    <li>Set up member directory (optional)</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    $179-399/year<br>
-                                    <small class="text-muted">1-5 sites</small><br>
-                                    <span class="badge bg-primary">Popular Choice</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Reviews & Testimonials -->
-            <section id="reviews" class="mb-5">
-                <h2 class="fw-bold text-warning">Reviews & Testimonials</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fa fa-star me-2"></i>Customer Reviews</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Trustpilot Reviews</h6>
-                                <p><strong>Best for:</strong> E-commerce, services, building trust</p>
-                                <p><strong>Features:</strong> Verified reviews, automatic invitations, widgets, SEO
-                                    benefits</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Create Trustpilot business account</li>
-                                    <li>Verify business information</li>
-                                    <li>Install Trustpilot WordPress plugin</li>
-                                    <li>Configure automatic review invitations</li>
-                                    <li>Add review widgets to key pages</li>
-                                    <li>Set up review monitoring and responses</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (basic)<br>
-                                    $299-999/month (premium)<br>
-                                    <span class="badge bg-info">Free Plan Available</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fa fa-google me-2"></i>Google Reviews Display</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Google Reviews Widget</h6>
-                                <p><strong>Best for:</strong> Local businesses, restaurants, service providers</p>
-                                <p><strong>Features:</strong> Display Google Business reviews, customizable styling,
-                                    automatic updates</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install "Google Reviews Widget" plugin</li>
-                                    <li>Connect Google Business Profile</li>
-                                    <li>Configure widget appearance and filters</li>
-                                    <li>Add review widgets via shortcode or blocks</li>
-                                    <li>Enable review moderation if needed</li>
-                                    <li>Set up review request campaigns</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (limited)<br>
-                                    $39-159 (premium)<br>
-                                    <small class="text-muted">One-time</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fa fa-quote-left me-2"></i>Testimonial Collections</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Strong Testimonials</h6>
-                                <p><strong>Best for:</strong> Service businesses, agencies, consultants</p>
-                                <p><strong>Features:</strong> Testimonial forms, photo/video support, multiple display
-                                    options</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Strong Testimonials plugin (free)</li>
-                                    <li>Create testimonial submission form</li>
-                                    <li>Design testimonial display templates</li>
-                                    <li>Add testimonials manually or via form</li>
-                                    <li>Configure approval workflow</li>
-                                    <li>Display testimonials on key pages</li>
-                                    <li>Enable schema markup for SEO</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (core)<br>
-                                    $49-99 (extensions)<br>
-                                    <span class="badge bg-success">Free Core Plugin</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Forms & Lead Generation -->
-            <section id="forms" class="mb-5">
-                <h2 class="fw-bold text-info">Forms & Lead Generation</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fa fa-wpforms me-2"></i>Contact & Lead Forms</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">WPForms</h6>
-                                <p><strong>Best for:</strong> Any business needing contact forms, surveys, registrations
-                                </p>
-                                <p><strong>Features:</strong> Drag-drop builder, payment integration, conditional logic,
-                                    spam protection</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install WPForms plugin (free/pro)</li>
-                                    <li>Create forms using drag-drop builder</li>
-                                    <li>Configure form fields and validation</li>
-                                    <li>Set up email notifications and confirmations</li>
-                                    <li>Enable spam protection (reCAPTCHA)</li>
-                                    <li>Add forms to pages via blocks or shortcode</li>
-                                    <li>Connect to CRM or email marketing tools</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (basic)<br>
-                                    $49-299/year<br>
-                                    <span class="badge bg-primary">Most Popular</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fa fa-envelope me-2"></i>Email Marketing</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Mailchimp for WordPress</h6>
-                                <p><strong>Best for:</strong> Newsletters, email campaigns, lead nurturing</p>
-                                <p><strong>Features:</strong> Signup forms, list segmentation, automated campaigns,
-                                    analytics</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Create Mailchimp account</li>
-                                    <li>Install MC4WP plugin</li>
-                                    <li>Connect WordPress to Mailchimp via API</li>
-                                    <li>Create signup forms and opt-ins</li>
-                                    <li>Configure double opt-in settings</li>
-                                    <li>Set up welcome email sequences</li>
-                                    <li>Design email templates and campaigns</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Plugin:</strong> Free<br>
-                                    <strong>Mailchimp:</strong><br>
-                                    Free (2,000 contacts)<br>
-                                    $10-300+/month
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fa fa-popup me-2"></i>Lead Capture Popups</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">OptinMonster</h6>
-                                <p><strong>Best for:</strong> High-converting popups, exit-intent, lead magnets</p>
-                                <p><strong>Features:</strong> A/B testing, targeting rules, exit-intent, mobile
-                                    optimization</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Sign up for OptinMonster account</li>
-                                    <li>Install OptinMonster WordPress plugin</li>
-                                    <li>Create campaigns using campaign builder</li>
-                                    <li>Set up targeting and display rules</li>
-                                    <li>Connect to email marketing service</li>
-                                    <li>Enable A/B testing for optimization</li>
-                                    <li>Monitor performance and adjust</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    $9-49/month<br>
-                                    <small class="text-muted">Plus setup fee</small><br>
-                                    <span class="badge bg-warning">High ROI</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SEO & Analytics -->
-            <section id="seo" class="mb-5">
-                <h2 class="fw-bold text-danger">SEO & Analytics</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0"><i class="fa fa-search me-2"></i>Search Engine Optimization</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Yoast SEO</h6>
-                                <p><strong>Best for:</strong> All websites needing better search rankings</p>
-                                <p><strong>Features:</strong> Meta tags, XML sitemaps, content analysis, schema markup
-                                </p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Yoast SEO plugin (free)</li>
-                                    <li>Run configuration wizard</li>
-                                    <li>Connect Google Search Console</li>
-                                    <li>Configure general SEO settings</li>
-                                    <li>Set up XML sitemaps</li>
-                                    <li>Optimize existing content with SEO analysis</li>
-                                    <li>Configure social media meta tags</li>
-                                    <li>Enable schema markup</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (comprehensive)<br>
-                                    $99/year (premium)<br>
-                                    <span class="badge bg-success">Essential Plugin</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0"><i class="fa fa-analytics me-2"></i>Website Analytics</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">MonsterInsights</h6>
-                                <p><strong>Best for:</strong> Google Analytics integration and reporting</p>
-                                <p><strong>Features:</strong> Easy GA4 setup, dashboard reports, ecommerce tracking,
-                                    form analytics</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install MonsterInsights plugin</li>
-                                    <li>Connect to Google Analytics account</li>
-                                    <li>Configure tracking settings</li>
-                                    <li>Enable enhanced ecommerce (if applicable)</li>
-                                    <li>Set up conversion tracking</li>
-                                    <li>Configure form and file download tracking</li>
-                                    <li>Review dashboard reports regularly</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (basic)<br>
-                                    $99-399/year<br>
-                                    <span class="badge bg-info">Google Partner</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Security & Backup -->
-            <section id="security" class="mb-5">
-                <h2 class="fw-bold text-dark">Security & Backup</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="fa fa-shield me-2"></i>Website Security</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Wordfence Security</h6>
-                                <p><strong>Best for:</strong> Malware protection, firewall, login security</p>
-                                <p><strong>Features:</strong> Firewall, malware scanning, login protection, real-time
-                                    monitoring</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Wordfence Security plugin</li>
-                                    <li>Run initial security scan</li>
-                                    <li>Configure firewall settings</li>
-                                    <li>Enable login security features</li>
-                                    <li>Set up email notifications</li>
-                                    <li>Configure automatic scans</li>
-                                    <li>Review security reports regularly</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (comprehensive)<br>
-                                    $8.25-25/month (premium)<br>
-                                    <span class="badge bg-success">Free Version Excellent</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="fa fa-backup me-2"></i>Website Backup</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">UpdraftPlus</h6>
-                                <p><strong>Best for:</strong> Automated backups, easy restoration, cloud storage</p>
-                                <p><strong>Features:</strong> Scheduled backups, cloud storage integration, easy
-                                    restoration, migration</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install UpdraftPlus plugin</li>
-                                    <li>Configure backup schedule (daily/weekly)</li>
-                                    <li>Connect cloud storage (Google Drive, Dropbox)</li>
-                                    <li>Run initial backup test</li>
-                                    <li>Set up email notifications</li>
-                                    <li>Test restoration process</li>
-                                    <li>Configure file retention settings</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (basic)<br>
-                                    $70-195/year<br>
-                                    <span class="badge bg-warning">Backup Essential</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Performance & Speed -->
-            <section id="performance" class="mb-5">
-                <h2 class="fw-bold text-secondary">Performance & Speed</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fa fa-rocket me-2"></i>Caching & Speed</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">WP Rocket</h6>
-                                <p><strong>Best for:</strong> Page caching, performance optimization</p>
-                                <p><strong>Features:</strong> Page caching, CSS/JS minification, image optimization,
-                                    lazy loading</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Purchase and install WP Rocket</li>
-                                    <li>Enable page caching</li>
-                                    <li>Configure cache preloading</li>
-                                    <li>Enable CSS/JS minification</li>
-                                    <li>Set up image optimization and lazy loading</li>
-                                    <li>Configure database optimization</li>
-                                    <li>Test site speed with tools like GTmetrix</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    $49-249/year<br>
-                                    <small class="text-muted">1-unlimited sites</small><br>
-                                    <span class="badge bg-primary">Performance Leader</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fa fa-image me-2"></i>Image Optimization</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Smush</h6>
-                                <p><strong>Best for:</strong> Automatic image compression and optimization</p>
-                                <p><strong>Features:</strong> Lossless compression, bulk optimization, WebP conversion,
-                                    lazy loading</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Smush plugin (free)</li>
-                                    <li>Run bulk optimization on existing images</li>
-                                    <li>Enable automatic optimization for new uploads</li>
-                                    <li>Configure compression settings</li>
-                                    <li>Enable WebP conversion (pro)</li>
-                                    <li>Set up lazy loading for images</li>
-                                    <li>Monitor compression savings</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (limited)<br>
-                                    $5-25/month<br>
-                                    <span class="badge bg-success">Free Version Good</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Social & Marketing -->
-            <section id="social" class="mb-5">
-                <h2 class="fw-bold" style="color: #E91E63;">Social & Marketing</h2>
-
-                <div class="card mb-4">
-                    <div class="card-header text-white" style="background-color: #E91E63;">
-                        <h5 class="mb-0"><i class="fa fa-share me-2"></i>Social Media Integration</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Social Warfare</h6>
-                                <p><strong>Best for:</strong> Social sharing buttons, social proof</p>
-                                <p><strong>Features:</strong> Customizable share buttons, social counts, click tracking
-                                </p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Social Warfare plugin</li>
-                                    <li>Configure button appearance and placement</li>
-                                    <li>Select social networks to include</li>
-                                    <li>Enable social counts (if desired)</li>
-                                    <li>Set up click tracking</li>
-                                    <li>Configure mobile responsiveness</li>
-                                    <li>Test sharing functionality</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (basic)<br>
-                                    $29-99/year<br>
-                                    <span class="badge bg-info">Social Essential</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header text-white" style="background-color: #E91E63;">
-                        <h5 class="mb-0"><i class="fa fa-calendar-alt me-2"></i>Social Media Management</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="fw-semibold">Blog2Social</h6>
-                                <p><strong>Best for:</strong> Auto-posting blog content to social media</p>
-                                <p><strong>Features:</strong> Automated posting, multiple networks, customizable
-                                    templates</p>
-                                <p><strong>Setup Steps:</strong></p>
-                                <ol>
-                                    <li>Install Blog2Social plugin</li>
-                                    <li>Connect social media accounts</li>
-                                    <li>Configure posting schedules</li>
-                                    <li>Customize post templates for each network</li>
-                                    <li>Set up automatic posting triggers</li>
-                                    <li>Enable cross-posting for blog posts</li>
-                                    <li>Monitor posting analytics</li>
-                                </ol>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="pricing-box border p-3 rounded">
-                                    <strong>Pricing:</strong><br>
-                                    Free (limited)<br>
-                                    $2-17/month<br>
-                                    <span class="badge bg-warning">Time Saver</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Quick Setup Pricing Summary -->
-            <section class="pricing-summary mb-5">
-                <h2 class="fw-bold text-center mb-4">Plugin Budget Planning</h2>
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="card h-100 border-success">
-                            <div class="card-header bg-success text-white text-center">
-                                <h5 class="mb-0">Starter Business ($150-300/year)</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled">
-                                    <li><i class="fa fa-check text-success me-2"></i>Yoast SEO (Free)</li>
-                                    <li><i class="fa fa-check text-success me-2"></i>WPForms (Free/Basic)</li>
-                                    <li><i class="fa fa-check text-success me-2"></i>Wordfence (Free)</li>
-                                    <li><i class="fa fa-check text-success me-2"></i>UpdraftPlus ($70/yr)</li>
-                                    <li><i class="fa fa-check text-success me-2"></i>MonsterInsights ($99/yr)</li>
-                                    <li><i class="fa fa-check text-success me-2"></i>Smush (Free)</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card h-100 border-warning">
-                            <div class="card-header bg-warning text-dark text-center">
-                                <h5 class="mb-0">Growing Business ($500-800/year)</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled">
-                                    <li><i class="fa fa-check text-warning me-2"></i>WP Rocket ($49-99/yr)</li>
-                                    <li><i class="fa fa-check text-warning me-2"></i>WPForms Pro ($99/yr)</li>
-                                    <li><i class="fa fa-check text-warning me-2"></i>MemberPress ($179/yr)</li>
-                                    <li><i class="fa fa-check text-warning me-2"></i>Strong Testimonials Pro ($49/yr)
-                                    </li>
-                                    <li><i class="fa fa-check text-warning me-2"></i>Bookly Pro ($89 one-time)</li>
-                                    <li><i class="fa fa-check text-warning me-2"></i>OptinMonster ($108/yr)</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card h-100 border-primary">
-                            <div class="card-header bg-primary text-white text-center">
-                                <h5 class="mb-0">Enterprise ($1000+/year)</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled">
-                                    <li><i class="fa fa-check text-primary me-2"></i>All Growing Business plugins</li>
-                                    <li><i class="fa fa-check text-primary me-2"></i>Wordfence Premium ($300/yr)</li>
-                                    <li><i class="fa fa-check text-primary me-2"></i>WP Rental ($199 one-time)</li>
-                                    <li><i class="fa fa-check text-primary me-2"></i>Advanced custom development</li>
-                                    <li><i class="fa fa-check text-primary me-2"></i>Priority support</li>
-                                    <li><i class="fa fa-check text-primary me-2"></i>Custom integrations</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Setup Services Pricing -->
-            <section class="setup-services mb-5">
-                <h2 class="fw-bold text-center mb-4">KNDL Inc Setup Services</h2>
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0"><i class="fa fa-tools me-2"></i>Plugin Setup & Configuration</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul>
-                                    <li><strong>Basic Setup:</strong> $150-250 per plugin</li>
-                                    <li><strong>Advanced Configuration:</strong> $300-500 per plugin</li>
-                                    <li><strong>Custom Integration:</strong> $500-1000+</li>
-                                    <li><strong>Training Session:</strong> $100-200/hour</li>
-                                    <li><strong>Ongoing Management:</strong> $200-500/month</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0"><i class="fa fa-package me-2"></i>Plugin Packages</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul>
-                                    <li><strong>"Essential Setup":</strong> $750 (5 core plugins)</li>
-                                    <li><strong>"Business Setup":</strong> $1,500 (10+ plugins)</li>
-                                    <li><strong>"E-commerce Setup":</strong> $2,000 (WooCommerce + ecosystem)</li>
-                                    <li><strong>"Membership Setup":</strong> $1,800 (MemberPress + integrations)</li>
-                                </ul>
-                                <div class="mt-3">
-                                    <small class="text-muted">
-                                        <strong>Includes:</strong> Plugin selection, installation, configuration,
-                                        testing, documentation, and 30 days of support.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </section>
-    </div>
-
-    <!-- Modal Backdrop -->
-    <div class="modal-backdrop fade show" *ngIf="showDeleteModal"></div>
-
 </div>
 
-
-
-<!--
-
-Things to add:
-Section to find quick request links:
-If the customers need buiness card: have the link and the prices ready
-If the customer needs shirts: have the link and the prices ready
-if the customer needs a name plates..... etc-->
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'"
+    *ngIf="showDeleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" (click)="closeModals()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" *ngIf="selectedPage">
+                <p>Are you sure you want to delete the wiki page <strong>"{{ selectedPage.title }}"</strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+                <button type="button" class="btn btn-danger" (click)="deletePage()">Delete Page</button>
+            </div>
+        </div>
+    </div>
+</div>

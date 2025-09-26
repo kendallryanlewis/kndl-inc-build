@@ -1,0 +1,406 @@
+.service-plans-editor {
+    .admin-title {
+        color: #333;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    // Ensure equal height cards in the grid
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+
+        .col-lg-4,
+        .col-md-6 {
+            display: flex;
+            margin-bottom: 1.5rem;
+        }
+    }
+
+    .service-plan-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 400px; // Minimum height for consistency
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        &.inactive {
+            opacity: 0.3;
+            border-color: var(--c-text-primary);
+        }
+
+        .card-header {
+            padding: 20px 20px 0;
+            background: transparent;
+            border: none;
+
+            .card-title {
+                color: #333;
+                font-weight: 600;
+                font-size: 1.25rem;
+            }
+
+            .badge {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+
+                &.bg-warning {
+                    background-color: #ffc107 !important;
+                    color: #000;
+                }
+
+                &.bg-secondary {
+                    background-color: #6c757d !important;
+                    color: #fff;
+                }
+            }
+
+            .action-buttons {
+                .btn {
+                    width: 40px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    padding: 0;
+                    border-width: 1px;
+
+                    i {
+                        font-size: 0.8rem;
+                    }
+
+                    &:focus {
+                        box-shadow: none;
+                    }
+
+                    &.btn-outline-primary:hover {
+                        background-color: #007bff;
+                        border-color: #007bff;
+                    }
+
+                    &.btn-outline-danger:hover {
+                        background-color: #dc3545;
+                        border-color: #dc3545;
+                    }
+                }
+            }
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1; // This makes the body expand to fill available space
+            display: flex;
+            flex-direction: column;
+
+            .pricing {
+                .monthly-price {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: var(--c-text-primary);
+                }
+
+                .yearly-price {
+                    font-size: 0.9rem;
+                }
+            }
+
+            .description {
+                font-size: 0.95rem;
+                line-height: 1.5;
+            }
+
+            .features {
+                h6 {
+                    font-weight: 600;
+                    margin-bottom: 10px;
+                    color: #495057;
+                }
+
+                ul {
+                    li {
+                        font-size: 0.9rem;
+                        color: #6c757d;
+
+                        .bi-check-circle-fill {
+                            font-size: 0.8rem;
+                        }
+                    }
+                }
+            }
+
+            .stats {
+                .stat-item {
+                    text-align: center;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+
+                    .stat-value {
+                        font-size: 1.2rem;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    .stat-label {
+                        font-size: 0.8rem;
+                        color: #6c757d;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                }
+            }
+        }
+
+        .card-stats {
+            padding: 0 20px 15px;
+            margin-top: auto; // Push stats towards bottom
+
+            .stats {
+                .stat-item {
+                    text-align: center;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+
+                    .stat-value {
+                        font-size: 1.2rem;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    .stat-label {
+                        font-size: 0.8rem;
+                        color: #6c757d;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                }
+            }
+        }
+
+        .card-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            border-radius: 0 0 12px 12px;
+            margin-top: auto; // This pushes the footer to the bottom
+
+            .status {
+                font-weight: 500;
+                font-size: 0.85rem;
+
+                &.text-success {
+                    color: var(--c-text-primary) !important;
+                }
+
+                &.text-warning {
+                    color: #ffc107 !important;
+                }
+
+                &.text-danger {
+                    color: #dc3545 !important;
+                }
+
+                i {
+                    margin-right: 4px;
+                }
+            }
+        }
+    }
+
+    .empty-state {
+        .bi-journals {
+            color: #dee2e6;
+        }
+
+        h3 {
+            font-weight: 500;
+        }
+
+        p {
+            font-size: 1.1rem;
+        }
+    }
+
+    // Modal styles
+    .modal {
+        .modal-dialog {
+            .modal-content {
+                border-radius: 12px;
+                border: none;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+
+                .modal-header {
+                    border-bottom: 1px solid #e9ecef;
+                    padding: 20px 24px;
+
+                    .modal-title {
+                        font-weight: 600;
+                        color: #333;
+                    }
+                }
+
+                .modal-body {
+                    padding: 24px;
+
+                    .form-label {
+                        font-weight: 500;
+                        color: #495057;
+                        margin-bottom: 6px;
+                    }
+
+                    .form-control,
+                    .form-select {
+                        border-radius: 6px;
+                        border: 1px solid #ced4da;
+                        padding: 8px 12px;
+
+                        &:focus {
+                            border-color: #80bdff;
+                            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+                        }
+                    }
+
+                    .features-list {
+                        .input-group {
+                            .form-control {
+                                border-radius: 6px 0 0 6px;
+                            }
+
+                            .btn {
+                                border-radius: 0 6px 6px 0;
+                                border-left: none;
+                                padding: 8px 12px;
+                            }
+                        }
+                    }
+
+                    .form-check {
+                        padding: 12px;
+                        background: #f8f9fa;
+                        border-radius: 6px;
+
+                        .form-check-label {
+                            font-weight: 500;
+                            margin-left: 8px;
+                        }
+                    }
+                }
+
+                .modal-footer {
+                    border-top: 1px solid #e9ecef;
+                    padding: 16px 24px;
+                    gap: 8px;
+
+                    .btn {
+                        padding: 8px 16px;
+                        font-weight: 500;
+                        border-radius: 6px;
+                    }
+                }
+            }
+        }
+
+        &.show {
+            display: block !important;
+        }
+    }
+
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+
+        &.show {
+            opacity: 1;
+        }
+    }
+
+    // Responsive design
+    @media (max-width: 768px) {
+        padding: 15px;
+
+        .service-plan-card {
+            .card-header {
+                padding: 15px 15px 0;
+
+                .card-title {
+                    font-size: 1.1rem;
+                }
+            }
+
+            .card-body {
+                padding: 15px;
+
+                .pricing .monthly-price {
+                    font-size: 1.3rem;
+                }
+
+                .stats .stat-item {
+                    padding: 8px;
+
+                    .stat-value {
+                        font-size: 1rem;
+                    }
+                }
+            }
+        }
+
+        .modal-dialog {
+            margin: 10px;
+
+            .modal-content {
+                .modal-body {
+                    padding: 20px;
+                }
+            }
+        }
+    }
+}
+
+// Global button styles
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    font-weight: 500;
+
+    &:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    &:focus {
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+}
+
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+
+    &:hover {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+}
+
+.btn-outline-secondary {
+    &:focus {
+        box-shadow: none;
+    }
+}
+
+.btn-outline-danger {
+    &:focus {
+        box-shadow: none;
+    }
+}

@@ -141,7 +141,6 @@
         border-radius: 12px;
         padding: 25px;
         display: flex;
-        align-items: center;
         gap: 20px;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
 
@@ -208,6 +207,308 @@
 
         &.overdue .metric-icon {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+    }
+
+    // Subscription-style metric cards
+    .subscription-style-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 200px;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            padding: 20px 20px 0;
+            background: transparent;
+            border: none;
+
+            .card-title {
+                color: #333;
+                font-weight: 600;
+                font-size: 1rem;
+                margin-top: 10px;
+            }
+
+            .metric-icon-wrapper {
+                margin-bottom: 10px;
+            }
+
+            .metric-icon {
+                width: 50px;
+                height: 50px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+                color: white;
+
+                &.bg-tan {
+                    background: linear-gradient(135deg, #d4a574, #c49460);
+                }
+            }
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+
+            .pricing {
+                text-align: left;
+                margin-bottom: 15px;
+
+                .metric-value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: #333;
+                }
+            }
+
+            .description {
+                font-size: 0.9rem;
+                line-height: 1.4;
+                color: #6c757d;
+                margin: 0;
+            }
+        }
+
+        // Color variations for different card types
+        &.revenue .card-header .metric-icon {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        &.taxes .card-header .metric-icon {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        &.quarterly .card-header .metric-icon {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        &.overdue .card-header .metric-icon {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+    }
+
+    // Service plan style cards (matching exact structure)
+    .service-plan-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 400px;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        &.inactive {
+            opacity: 0.6;
+            border-color: #6c757d;
+        }
+
+        .card-header {
+            padding: 20px 20px 0;
+            background: transparent;
+            border: none;
+
+            .card-title {
+                color: #333;
+                font-weight: 600;
+                font-size: 1.25rem;
+            }
+
+            .badge {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+
+                &.bg-secondary {
+                    background-color: #6c757d !important;
+                    color: #fff;
+                }
+            }
+
+            .action-buttons {
+                .btn {
+                    width: 40px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    padding: 0;
+                    border-width: 1px;
+
+                    i {
+                        font-size: 0.8rem;
+                    }
+
+                    &:focus {
+                        box-shadow: none;
+                    }
+
+                    &.btn-primary:hover {
+                        background-color: #0056b3;
+                        border-color: #0056b3;
+                    }
+
+                    &.btn-info:hover {
+                        background-color: #138496;
+                        border-color: #117a8b;
+                    }
+
+                    &.btn-secondary:hover {
+                        background-color: #545b62;
+                        border-color: #4e555b;
+                    }
+                }
+            }
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+
+            .pricing {
+                text-align: left;
+                margin-bottom: 20px;
+
+                .monthly-price {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: var(--c-text-primary, #333);
+                }
+            }
+
+            .description {
+                font-size: 0.95rem;
+                line-height: 1.5;
+                color: #6c757d;
+            }
+
+            .features {
+                h6 {
+                    font-weight: 600;
+                    margin-bottom: 10px;
+                    color: #495057;
+                    font-size: 0.9rem;
+                }
+
+                ul {
+                    li {
+                        color: #495057;
+                        font-size: 0.85rem;
+
+                        .fa-check-circle-fill {
+                            color: #28a745;
+                            width: 14px;
+                        }
+                    }
+                }
+            }
+        }
+
+        .card-stats {
+            padding: 0 20px 15px;
+            margin-top: auto;
+
+            .stats {
+                .stat-item {
+                    text-align: center;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+
+                    .stat-value {
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    .stat-label {
+                        font-size: 0.75rem;
+                        color: #6c757d;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-top: 4px;
+                    }
+                }
+            }
+        }
+
+        .card-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            margin-top: auto;
+
+            .status {
+                font-weight: 500;
+                font-size: 0.85rem;
+
+                &.text-success {
+                    color: #28a745 !important;
+                }
+
+                i {
+                    margin-right: 5px;
+                }
+            }
+
+            small {
+                font-size: 0.75rem;
+            }
+        }
+
+        // Color variations for different card types
+        &.revenue {
+            .card-stats .stats .stat-item {
+                background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(46, 204, 113, 0.1));
+                border: 1px solid rgba(39, 174, 96, 0.2);
+            }
+        }
+
+        &.taxes {
+            .card-stats .stats .stat-item {
+                background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1));
+                border: 1px solid rgba(231, 76, 60, 0.2);
+            }
+        }
+
+        &.quarterly {
+            .card-stats .stats .stat-item {
+                background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.1));
+                border: 1px solid rgba(243, 156, 18, 0.2);
+            }
+        }
+
+        &.overdue {
+            .card-stats .stats .stat-item {
+                background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1));
+                border: 1px solid rgba(231, 76, 60, 0.2);
+            }
         }
     }
 
@@ -578,7 +879,7 @@
     .dashboard-graphs {
         .revenue-bar-chart {
             display: flex;
-            align-items: end;
+            align-items: flex-end;
             gap: 8px;
             height: 120px;
             padding: 10px;
@@ -637,6 +938,66 @@
                     color: #495057;
                     font-weight: 500;
                 }
+            }
+        }
+    }
+
+    // Billing summary cards
+    .billing-summary-card {
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 1.25rem;
+            background: #f8f9fa;
+
+            h5 {
+                font-weight: 600;
+                color: #333;
+                margin: 0;
+            }
+        }
+
+        .card-body {
+            padding: 1.25rem;
+
+            h3 {
+                font-size: 2rem;
+                font-weight: 700;
+                margin-bottom: 0.25rem;
+            }
+
+            h4 {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 0.25rem;
+            }
+
+            .progress {
+                border-radius: 4px;
+                overflow: hidden;
+                background-color: #e9ecef;
+            }
+
+            .progress-bar {
+                transition: width 0.6s ease;
+            }
+
+            p.text-muted {
+                font-size: 0.85rem;
+                margin-bottom: 0;
+            }
+
+            small {
+                font-size: 0.75rem;
+                font-weight: 500;
             }
         }
     }

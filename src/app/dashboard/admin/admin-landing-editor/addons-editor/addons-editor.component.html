@@ -1,0 +1,145 @@
+<div class="content-header justify-content-between d-flex">
+    <div>
+        <app-generic-h2-title [title]="'Add-ons Management'" [icon]="'fa-puzzle-piece'"
+            [subTitle]="'Manage available add-ons and extras'"></app-generic-h2-title>
+    </div>
+    <div class="d-flex gap-2 h-100 my-auto">
+        <button class="admin-tab bg-blue my-auto" (click)="createNewAddon()">
+            <i class="fa fa-plus-circle"></i> Add New
+        </button>
+    </div>
+</div>
+
+<!-- Add-ons Grid -->
+<div class="addons-grid">
+    <div class="addon-card stat-card" *ngFor="let addon of addons"
+        [ngClass]="{'inactive': addon.status === 'Inactive'}">
+        <div class="addon-header">
+            <div class="addon-info">
+                <h4>{{ addon.name }}</h4>
+                <span class="addon-category">{{ addon.category }}</span>
+            </div>
+            <div class="addon-status">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(addon.status)">{{ addon.status }}</span>
+            </div>
+        </div>
+
+        <div class="addon-description">
+            <p>{{ addon.description }}</p>
+        </div>
+
+        <div class="addon-pricing">
+            <div class="pricing-options">
+                <div class="price-option" *ngIf="addon.oneTimePrice > 0">
+                    <span class="price-type">One-time</span>
+                    <span class="price-amount">{{ formatCurrency(addon.oneTimePrice) }}</span>
+                </div>
+                <div class="price-option" *ngIf="addon.monthlyPrice > 0">
+                    <span class="price-type">Monthly</span>
+                    <span class="price-amount">{{ formatCurrency(addon.monthlyPrice) }}/mo</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="addon-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ addon.totalSubscriptions || 0 }}</span>
+                <span class="stat-label">Active Subscriptions</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ formatCurrency(addon.monthlyRevenue || 0) }}</span>
+                <span class="stat-label">Monthly Revenue</span>
+            </div>
+        </div>
+
+        <div class="addon-actions">
+            <button class="btn-edit" (click)="editAddon(addon)" title="Edit Add-on">
+                <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn-toggle" (click)="toggleAddonStatus(addon)"
+                [title]="addon.status === 'Active' ? 'Deactivate' : 'Activate'">
+                <i class="fa" [ngClass]="addon.status === 'Active' ? 'fa-pause' : 'fa-play'"></i>
+            </button>
+            <button class="btn-delete" (click)="deleteAddon(addon)" title="Delete Add-on">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add-on Modal -->
+<div class="modal-overlay" *ngIf="showAddonModal" (click)="closeAddonModal()">
+    <div class="modal-content addon-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>{{ selectedAddon?.id ? 'Edit Add-on' : 'Create New Add-on' }}</h3>
+            <button class="modal-close" (click)="closeAddonModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <div class="addon-form" *ngIf="selectedAddon">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="addonName">Add-on Name</label>
+                    <input type="text" id="addonName" [(ngModel)]="selectedAddon.name" placeholder="Enter add-on name"
+                        class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addonCategory">Category</label>
+                    <select id="addonCategory" [(ngModel)]="selectedAddon.category" class="form-control">
+                        <option value="SEO">SEO Tools</option>
+                        <option value="Analytics">Analytics</option>
+                        <option value="Security">Security</option>
+                        <option value="Performance">Performance</option>
+                        <option value="Content">Content Management</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Support">Support</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="addonDescription">Description</label>
+                <textarea id="addonDescription" [(ngModel)]="selectedAddon.description"
+                    placeholder="Describe what this add-on provides" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="oneTimePrice">One-time Price ($)</label>
+                    <input type="number" id="oneTimePrice" [(ngModel)]="selectedAddon.oneTimePrice" placeholder="0.00"
+                        class="form-control" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="monthlyPrice">Monthly Price ($)</label>
+                    <input type="number" id="monthlyPrice" [(ngModel)]="selectedAddon.monthlyPrice" placeholder="0.00"
+                        class="form-control" min="0" step="0.01">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="addonStatus">Status</label>
+                    <select id="addonStatus" [(ngModel)]="selectedAddon.status" class="form-control">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" [(ngModel)]="selectedAddon.featured">
+                    Featured add-on (show prominently)
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" (click)="closeAddonModal()">Cancel</button>
+                <button class="btn-primary" (click)="saveAddon()">
+                    {{ selectedAddon.id ? 'Save Changes' : 'Create Add-on' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

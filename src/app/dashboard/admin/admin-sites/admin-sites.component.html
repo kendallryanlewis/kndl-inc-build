@@ -1,28 +1,25 @@
 <!-- Flat Admin Sites -->
 <section id="Sites" class="admin-sites h-100 d-flex flex-column">
-    <div class="container-fluid h-100 d-flex flex-column p-3">
+    <div class="h-100 d-flex flex-column">
         <!-- Header -->
         <div class="header-section d-flex justify-content-between align-items-center mb-3">
-            <div class="admin-header">
-                <h2 class="mb-1 fw-medium fs-4">Company Sites</h2>
-                <p class="text-muted mb-0 small">Manage site details and billing</p>
-            </div>
-            <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" (click)="showAddCompanyModal = true">
-                <i class="fa fa-plus"></i>
+            <app-generic-h2-title [title]="'Admin Sites'" [icon]="'fa-building'"
+                [subTitle]="'Manage company sites, billing, and subscriptions.'"></app-generic-h2-title>
+            <button class="admin-tab bg-blue" (click)="showAddCompanyModal = true">
+                <i class="fa fa-plus me-2"></i>
                 Add Company
             </button>
         </div>
 
         <div class="row w-100 h-100 g-2">
             <!-- Companies List -->
-            <div class="companies-container bg-white border h-100 p-0 rounded p-3"
-                [ngClass]="selectedCompany ? 'col-4 shadow' : 'col-12'">
+            <div class="companies-container h-100" [ngClass]="selectedCompany ? 'col-4 shadow' : 'col-12'">
                 <div class="companies-grid h-100 d-flex flex-column">
 
                     <!-- Search -->
-                    <div class="search-header p-2 border-bottom">
+                    <div class="search-header rounded-top rounded-0">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm ps-4"
+                            <input type="search" class="form-control form-control-sm ps-4 rounded-top"
                                 placeholder="Search companies..." [(ngModel)]="searchQuery"
                                 (ngModelChange)="onSearchChange()" name="companySearch" />
                             <i
@@ -30,10 +27,14 @@
                         </div>
                     </div>
 
+                    <p class="m-0 mb-3 p-2 small bg-blue text-white rounded-bottom">
+                        {{ filteredCompanies.length }} companies found
+                    </p>
+
                     <!-- Company Cards -->
-                    <div class="companies-list flex-grow-1 overflow-auto p-2">
+                    <div class="companies-list flex-grow-1 overflow-auto">
                         <div *ngFor="let company of filteredCompanies"
-                            class="company-card d-flex align-items-center p-2 mb-2 border cursor-pointer rounded"
+                            class="company-card d-flex align-items-center p-2 mb-3 bg-white border cursor-pointer rounded stat-card"
                             [class.bg-primary]="selectedCompany?.id === company.id"
                             [class.text-white]="selectedCompany?.id === company.id" (click)="selectCompany(company)">
 
@@ -68,11 +69,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Add Button -->
-                        <button class="btn btn-outline-primary w-100 py-2 mt-2" (click)="showAddCompanyModal = true">
-                            + Add Company
-                        </button>
                     </div>
                 </div>
             </div>
@@ -81,7 +77,7 @@
             <div *ngIf="selectedCompany" class="company-details-panel h-100 col-8">
                 <div class="details-container h-100 d-flex flex-column ms-5">
                     <!-- Header -->
-                    <div class="details-header p-3 border-bottom">
+                    <div class="details-header pb-4">
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
                                 <div class="company-avatar me-3">
@@ -103,25 +99,25 @@
                         <!-- Stats -->
                         <div class="stats-row mt-3 row g-2">
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border">
+                                <div class="text-center p-2 bg-light border stat-card">
                                     <div class="fw-bold">${{ selectedCompany.monthlyAmount }}</div>
                                     <div class="text-muted small">Monthly</div>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border">
+                                <div class="text-center p-2 bg-light border stat-card">
                                     <div class="fw-bold">{{ selectedCompany.userCount }}</div>
                                     <div class="text-muted small">Users</div>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border">
+                                <div class="text-center p-2 bg-light border stat-card">
                                     <div class="fw-bold">{{ selectedCompany.subscriptionPlan }}</div>
                                     <div class="text-muted small">Plan</div>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border">
+                                <div class="text-center p-2 bg-light border stat-card">
                                     <div class="fw-bold" [ngClass]="{
                                         'text-success': selectedCompany.status === 'active',
                                         'text-warning': selectedCompany.status === 'pending',
@@ -135,39 +131,42 @@
                     </div>
 
                     <!-- Tabs Navigation -->
-                    <div class="tabs-nav px-3 py-2 border-bottom">
+                    <!-- Tabs Navigation -->
+                    <div class="tabs-nav px-3 py-2 border-bottom stat-card bg-blue text-tan">
                         <nav class="d-flex gap-1">
-                            <button class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium"
-                                [class.bg-primary]="activeTab === 'overview'"
-                                [class.text-white]="activeTab === 'overview'"
-                                [class.text-muted]="activeTab !== 'overview'" (click)="activeTab = 'overview'">
-                                Overview
-                            </button>
-                            <button class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium"
-                                [class.bg-primary]="activeTab === 'billing'"
-                                [class.text-white]="activeTab === 'billing'"
-                                [class.text-muted]="activeTab !== 'billing'" (click)="activeTab = 'billing'">
-                                Billing
-                            </button>
-                            <button class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium"
-                                [class.bg-primary]="activeTab === 'subscription'"
-                                [class.text-white]="activeTab === 'subscription'"
-                                [class.text-muted]="activeTab !== 'subscription'" (click)="activeTab = 'subscription'">
-                                Subscription
-                            </button>
-                            <button class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium"
-                                [class.bg-primary]="activeTab === 'settings'"
-                                [class.text-white]="activeTab === 'settings'"
-                                [class.text-muted]="activeTab !== 'settings'" (click)="activeTab = 'settings'">
-                                Settings
+                            <button *ngFor="let tab of availableTabs"
+                                class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium d-flex align-items-center gap-2"
+                                [class.bg-primary]="isTabActive(tab.id)" [class.text-white]="isTabActive(tab.id)"
+                                [class.text-muted]="!isTabActive(tab.id)" (click)="setActiveTab(tab.id)"
+                                [attr.aria-selected]="isTabActive(tab.id)" role="tab">
+                                <i class="fa" [class]="tab.icon"></i>
+                                {{ tab.label }}
                             </button>
                         </nav>
-                    </div>
-
-                    <!-- Tab Content -->
+                    </div> <!-- Tab Content -->
                     <div class="tab-content flex-grow-1 overflow-auto p-3">
+                        <!-- Tab Navigation Controls -->
+                        <div class="tab-controls d-flex justify-content-between align-items-center mb-3">
+                            <div class="tab-info">
+                                <span class="small text-muted">
+                                    <i [class]="getTabIcon(activeTab)"></i>
+                                    {{ getTabLabel(activeTab) }}
+                                </span>
+                            </div>
+                            <div class="tab-navigation">
+                                <button class="btn btn-outline-secondary btn-sm me-2" (click)="navigateToPreviousTab()"
+                                    title="Previous Tab">
+                                    <i class="fa fa-chevron-left"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" (click)="navigateToNextTab()"
+                                    title="Next Tab">
+                                    <i class="fa fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Overview Tab -->
-                        <div *ngIf="activeTab === 'overview'" class="tab-pane">
+                        <div *ngIf="isTabActive('overview')" class="tab-pane">
                             <div class="row g-3">
                                 <div class="col-md-8">
                                     <!-- Recent Activity -->
@@ -265,7 +264,7 @@
                         </div>
 
                         <!-- Billing Tab -->
-                        <div *ngIf="activeTab === 'billing'" class="tab-pane">
+                        <div *ngIf="isTabActive('billing')" class="tab-pane">
                             <div class="row g-3">
                                 <div class="col-md-8">
                                     <!-- Billing History -->
@@ -329,7 +328,7 @@
                         </div>
 
                         <!-- Subscription Tab -->
-                        <div *ngIf="activeTab === 'subscription'" class="tab-pane">
+                        <div *ngIf="isTabActive('subscription')" class="tab-pane">
                             <div class="content-card p-3 border bg-light">
                                 <h6 class="mb-3 fw-medium">Subscription Details</h6>
                                 <div class="subscription-info row g-3">
@@ -375,56 +374,100 @@
                         </div>
 
                         <!-- Settings Tab -->
-                        <div *ngIf="activeTab === 'settings'" class="tab-pane">
+                        <div *ngIf="isTabActive('settings')" class="tab-pane">
                             <div class="content-card p-3 border bg-light">
-                                <h6 class="mb-3 fw-medium">Company Settings</h6>
-                                <div class="settings-form">
+                                <h6 class="mb-3 fw-medium">
+                                    <i class="fa fa-cog me-2"></i>
+                                    Company Settings
+                                </h6>
+                                <form #settingsForm="ngForm" (ngSubmit)="saveCompanySettings()">
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">Company Name</label>
+                                                <label class="small text-muted">Company Name <span
+                                                        class="text-danger">*</span></label>
                                                 <input type="text" class="form-control form-control-sm"
-                                                    [value]="selectedCompany.name">
+                                                    [(ngModel)]="selectedCompany.name" name="companyName" required
+                                                    #companyName="ngModel" (blur)="updateCompanyName(companyName.value)"
+                                                    placeholder="Enter company name">
+                                                <div *ngIf="companyName.invalid && companyName.touched"
+                                                    class="text-danger small">
+                                                    Company name is required
+                                                </div>
                                             </div>
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">Domain</label>
+                                                <label class="small text-muted">Domain <span
+                                                        class="text-danger">*</span></label>
                                                 <input type="text" class="form-control form-control-sm"
-                                                    [value]="selectedCompany.domain">
+                                                    [(ngModel)]="selectedCompany.domain" name="domain" required
+                                                    #domain="ngModel" (blur)="updateCompanyDomain(domain.value)"
+                                                    placeholder="example.com">
+                                                <div *ngIf="domain.invalid && domain.touched" class="text-danger small">
+                                                    Domain is required
+                                                </div>
                                             </div>
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">Contact Email</label>
+                                                <label class="small text-muted">Contact Email <span
+                                                        class="text-danger">*</span></label>
                                                 <input type="email" class="form-control form-control-sm"
-                                                    [value]="selectedCompany.contactEmail">
+                                                    [(ngModel)]="selectedCompany.contactEmail" name="email" required
+                                                    email #email="ngModel" (blur)="updateCompanyEmail(email.value)"
+                                                    placeholder="admin@company.com">
+                                                <div *ngIf="email.invalid && email.touched" class="text-danger small">
+                                                    <span *ngIf="email.errors?.['required']">Email is required</span>
+                                                    <span *ngIf="email.errors?.['email']">Please enter a valid
+                                                        email</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group mb-3">
                                                 <label class="small text-muted">Phone</label>
                                                 <input type="tel" class="form-control form-control-sm"
-                                                    [value]="selectedCompany.phone">
+                                                    [(ngModel)]="selectedCompany.phone" name="phone" #phone="ngModel"
+                                                    (blur)="updateCompanyPhone(phone.value)"
+                                                    placeholder="+1 (555) 123-4567">
                                             </div>
                                             <div class="form-group mb-3">
                                                 <label class="small text-muted">Status</label>
-                                                <select class="form-control form-control-sm">
-                                                    <option [value]="selectedCompany.status" selected>{{
-                                                        selectedCompany.status | titlecase }}</option>
+                                                <select class="form-control form-control-sm"
+                                                    [(ngModel)]="selectedCompany.status" name="status" #status="ngModel"
+                                                    (change)="updateCompanyStatus(status.value)">
                                                     <option value="active">Active</option>
                                                     <option value="pending">Pending</option>
                                                     <option value="suspended">Suspended</option>
                                                     <option value="inactive">Inactive</option>
                                                 </select>
+                                                <small class="text-muted">
+                                                    Current status:
+                                                    <span class="badge rounded-pill ms-1" [ngClass]="{
+                                                        'bg-success': selectedCompany.status === 'active',
+                                                        'bg-warning': selectedCompany.status === 'pending',
+                                                        'bg-danger': selectedCompany.status === 'suspended',
+                                                        'bg-secondary': selectedCompany.status === 'inactive'
+                                                    }">
+                                                        {{ selectedCompany.status | titlecase }}
+                                                    </span>
+                                                </small>
                                             </div>
                                             <div class="form-group mb-3">
                                                 <div class="d-flex gap-2">
-                                                    <button
-                                                        class="btn btn-outline-secondary btn-sm flex-grow-1">Cancel</button>
-                                                    <button class="btn btn-primary btn-sm flex-grow-1">Save
-                                                        Changes</button>
+                                                    <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm flex-grow-1"
+                                                        (click)="cancelSettingsChanges()">
+                                                        <i class="fa fa-times me-1"></i>
+                                                        Cancel
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1"
+                                                        [disabled]="settingsForm.invalid">
+                                                        <i class="fa fa-save me-1"></i>
+                                                        Save Changes
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </form>
                             </div>
                         </div>
                     </div>

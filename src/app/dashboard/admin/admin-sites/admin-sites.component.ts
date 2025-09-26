@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, setDoc } from 'firebase/firestore';
 
 interface Company {
   id: number;
@@ -53,6 +54,10 @@ interface Activity {
   styleUrls: ['./admin-sites.component.scss']
 })
 export class AdminSitesComponent implements OnInit {
+  @Input() subTab: string = 'Sites';
+  @Output() childTabs = new EventEmitter<string[]>();
+  sectionIds: string[] = ['Sites'];
+  private previousSubTab: string = '';
   @Input() selectedTab: any = 'client-companies';
   @Output() selectedTabChange = new EventEmitter<any>();
   selectedCompany: Company | null = null;
@@ -62,6 +67,14 @@ export class AdminSitesComponent implements OnInit {
   subscriptionFilter: string = '';
   showAddCompanyModal: boolean = false;
 
+  // Available tabs for navigation
+  availableTabs = [
+    { id: 'overview', label: 'Overview', icon: 'fa-chart-line' },
+    { id: 'billing', label: 'Billing', icon: 'fa-credit-card' },
+    { id: 'subscription', label: 'Subscription', icon: 'fa-box' },
+    { id: 'settings', label: 'Settings', icon: 'fa-cog' }
+  ];
+
   // Filtered data
   filteredCompanies: Company[] = [];
   selectedAddons: Addon[] = [];
@@ -70,6 +83,38 @@ export class AdminSitesComponent implements OnInit {
   newCompany: Partial<Company> = {
     subscriptionPlan: 'basic'
   };
+
+  availableAddons: Addon[] = [
+    {
+      id: 1,
+      name: 'Premium Support',
+      description: '24/7 priority support with dedicated account manager',
+      monthlyPrice: 25,
+      features: ['24/7 Phone Support', 'Dedicated Account Manager', 'Priority Ticket Queue']
+    },
+    {
+      id: 2,
+      name: 'Advanced Analytics',
+      description: 'Detailed traffic analytics and reporting dashboard',
+      monthlyPrice: 15,
+      setupFee: 50,
+      features: ['Custom Reports', 'Real-time Analytics', 'Data Export']
+    },
+    {
+      id: 3,
+      name: 'SSL Certificate',
+      description: 'Wildcard SSL certificate for enhanced security',
+      monthlyPrice: 10,
+      features: ['Wildcard SSL', 'Auto-renewal', 'Installation Support']
+    },
+    {
+      id: 4,
+      name: 'CDN Service',
+      description: 'Global content delivery network for faster loading',
+      monthlyPrice: 20,
+      features: ['Global CDN', 'Image Optimization', 'Bandwidth Monitoring']
+    }
+  ];
 
   // Mock data
   companies: Company[] = [
@@ -133,40 +178,114 @@ export class AdminSitesComponent implements OnInit {
     }
   ];
 
-  availableAddons: Addon[] = [
-    {
-      id: 1,
-      name: 'Premium Support',
-      description: '24/7 priority support with dedicated account manager',
-      monthlyPrice: 25,
-      features: ['24/7 Phone Support', 'Dedicated Account Manager', 'Priority Ticket Queue']
-    },
-    {
-      id: 2,
-      name: 'Advanced Analytics',
-      description: 'Detailed traffic analytics and reporting dashboard',
-      monthlyPrice: 15,
-      setupFee: 50,
-      features: ['Custom Reports', 'Real-time Analytics', 'Data Export']
-    },
-    {
-      id: 3,
-      name: 'SSL Certificate',
-      description: 'Wildcard SSL certificate for enhanced security',
-      monthlyPrice: 10,
-      features: ['Wildcard SSL', 'Auto-renewal', 'Installation Support']
-    },
-    {
-      id: 4,
-      name: 'CDN Service',
-      description: 'Global content delivery network for faster loading',
-      monthlyPrice: 20,
-      features: ['Global CDN', 'Image Optimization', 'Bandwidth Monitoring']
-    }
-  ];
 
-  ngOnInit(): void {
-    this.filteredCompanies = [...this.companies];
+  private sitesCollection = 'companies';
+
+  async loadSitesFromDb() {
+    const db = getFirestore();
+    const querySnapshot = await getDocs(collection(db, this.sitesCollection));
+    this.companies = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        id: Number(docSnap.id),
+        name: data['name'] || '',
+        domain: data['domain'] || '',
+        logo: data['logo'] || '',
+        contactEmail: data['contactEmail'] || '',
+        phone: data['phone'] || '',
+        status: data['status'] || 'pending',
+        subscriptionPlan: data['subscriptionPlan'] || 'basic',
+        monthlyAmount: typeof data['monthlyAmount'] === 'number' ? data['monthlyAmount'] : Number(data['monthlyAmount']) || 0,
+        userCount: typeof data['userCount'] === 'number' ? data['userCount'] : Number(data['userCount']) || 0,
+        lastBilling: data['lastBilling'] ? new Date(data['lastBilling']) : new Date(),
+        nextBilling: data['nextBilling'] ? new Date(data['nextBilling']) : new Date(),
+        createdDate: data['createdDate'] ? new Date(data['createdDate']) : new Date(),
+        billingCycle: data['billingCycle'] || 'monthly',
+        lastFourDigits: data['lastFourDigits'] || '0000',
+        autoRenewal: typeof data['autoRenewal'] === 'boolean' ? data['autoRenewal'] : Boolean(data['autoRenewal']),
+        monthlyPageViews: typeof data['monthlyPageViews'] === 'number' ? data['monthlyPageViews'] : Number(data['monthlyPageViews']) || 0,
+        activeAddons: Array.isArray(data['activeAddons']) ? data['activeAddons'] : [],
+      };
+    });
+    this.applyFilters();
+  }
+
+  async addSiteToDb(company: Company) {
+    const db = getFirestore();
+    await addDoc(collection(db, this.sitesCollection), company);
+    await this.loadSitesFromDb();
+  }
+
+  async editSiteInDb(company: Company) {
+    const db = getFirestore();
+    const ref = doc(db, this.sitesCollection, String(company.id));
+    await setDoc(ref, company, { merge: true });
+    await this.loadSitesFromDb();
+  }
+
+  async softDeleteSite(company: Company) {
+    company.status = 'inactive';
+    await this.editSiteInDb(company);
+  }
+
+  ngOnChanges(): void {
+    if (this.subTab !== this.previousSubTab) {
+      // DON'T reset changed fields when switching tabs - preserve changes across views
+      // Only update the cached properties to reflect current state
+      this.previousSubTab = this.subTab;
+    }
+  }
+
+  async ngOnInit(): Promise<void> {
+    // Ensure subTab defaults to 'Home' if not provided
+    if (!this.subTab || this.subTab.trim() === '') {
+      this.subTab = 'Home';
+    }
+    // Load data asynchronously and emit child tabs
+    await Promise.all([
+      this.emitChildTabs()
+    ]);
+    this.loadSitesFromDb();
+  }
+
+  private async emitChildTabs(): Promise<void> {
+    // Emit available section IDs to parent components
+    this.childTabs.emit(this.sectionIds);
+  }
+
+
+  // Tab Management Methods
+  setActiveTab(tabId: string): void {
+    if (this.availableTabs.find(tab => tab.id === tabId)) {
+      this.activeTab = tabId;
+      console.log(`Switched to ${tabId} tab`);
+    }
+  }
+
+  isTabActive(tabId: string): boolean {
+    return this.activeTab === tabId;
+  }
+
+  getTabLabel(tabId: string): string {
+    const tab = this.availableTabs.find(t => t.id === tabId);
+    return tab ? tab.label : tabId;
+  }
+
+  getTabIcon(tabId: string): string {
+    const tab = this.availableTabs.find(t => t.id === tabId);
+    return tab ? tab.icon : 'fa-file';
+  }
+
+  navigateToNextTab(): void {
+    const currentIndex = this.availableTabs.findIndex(tab => tab.id === this.activeTab);
+    const nextIndex = (currentIndex + 1) % this.availableTabs.length;
+    this.setActiveTab(this.availableTabs[nextIndex].id);
+  }
+
+  navigateToPreviousTab(): void {
+    const currentIndex = this.availableTabs.findIndex(tab => tab.id === this.activeTab);
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : this.availableTabs.length - 1;
+    this.setActiveTab(this.availableTabs[prevIndex].id);
   }
 
   // Search and filter methods
@@ -257,13 +376,10 @@ export class AdminSitesComponent implements OnInit {
   }
 
   editCompany(company: Company): void {
-    // Open edit modal or navigate to edit page
     const updatedInfo = prompt(`Edit company name (current: ${company.name}):`, company.name);
     if (updatedInfo && updatedInfo.trim() !== company.name) {
       company.name = updatedInfo.trim();
-      console.log('Company updated:', company);
-
-      // Show success message
+      this.editSiteInDb(company);
       alert(`Company "${company.name}" has been updated successfully!`);
     }
   }
@@ -556,20 +672,9 @@ export class AdminSitesComponent implements OnInit {
   }
 
   deleteCompany(company: Company): void {
-    const confirmText = company.name;
-    const userInput = prompt(`⚠️ DANGER: This will permanently delete ${company.name} and all associated data.\n\nThis action CANNOT be undone!\n\nType "${confirmText}" to confirm deletion:`);
-
-    if (userInput === confirmText) {
-      const index = this.companies.findIndex(c => c.id === company.id);
-      if (index > -1) {
-        this.companies.splice(index, 1);
-        this.applyFilters();
-        this.closeDetails();
-        alert(`${company.name} has been permanently deleted.`);
-        console.log('Deleted company:', company);
-      }
-    } else if (userInput !== null) {
-      alert('Company name did not match. Deletion cancelled.');
+    if (confirm(`Soft delete ${company.name}? This will set status to 'inactive'.`)) {
+      this.softDeleteSite(company);
+      alert(`${company.name} has been soft deleted (status set to inactive).`);
     }
   }
 
@@ -609,10 +714,8 @@ export class AdminSitesComponent implements OnInit {
       professional: 79,
       enterprise: 199
     };
-
     const selectedPlan = this.newCompany.subscriptionPlan || 'basic';
     const monthlyAmount = planPricing[selectedPlan as keyof typeof planPricing];
-
     const company: Company = {
       id: Math.max(...this.companies.map(c => c.id)) + 1,
       name: this.newCompany.name.trim(),
@@ -632,18 +735,11 @@ export class AdminSitesComponent implements OnInit {
       monthlyPageViews: 0,
       activeAddons: []
     };
-
-    this.companies.push(company);
-    this.applyFilters();
+    this.addSiteToDb(company);
     this.showAddCompanyModal = false;
-
-    // Reset form
     this.newCompany = { subscriptionPlan: 'basic' };
-
-    // Show success message and select the new company
     alert(`${company.name} has been added successfully!\n\nPlan: ${selectedPlan}\nMonthly amount: $${monthlyAmount}`);
     this.selectCompany(company);
-
     console.log('Added new company:', company);
   }
 
@@ -664,8 +760,57 @@ export class AdminSitesComponent implements OnInit {
         return;
       }
 
+      // Save to Firebase if needed
+      this.editSiteInDb(this.selectedCompany);
+
       alert('Company settings saved successfully!');
       console.log('Saved company settings:', this.selectedCompany);
+    }
+  }
+
+  // Form field update methods for settings tab
+  updateCompanyName(name: string): void {
+    if (this.selectedCompany) {
+      this.selectedCompany.name = name.trim();
+    }
+  }
+
+  updateCompanyDomain(domain: string): void {
+    if (this.selectedCompany) {
+      this.selectedCompany.domain = domain.trim().toLowerCase();
+    }
+  }
+
+  updateCompanyEmail(email: string): void {
+    if (this.selectedCompany) {
+      this.selectedCompany.contactEmail = email.trim().toLowerCase();
+    }
+  }
+
+  updateCompanyPhone(phone: string): void {
+    if (this.selectedCompany) {
+      this.selectedCompany.phone = phone.trim();
+    }
+  }
+
+  updateCompanyStatus(status: string): void {
+    if (this.selectedCompany && this.selectedCompany.status !== status) {
+      const validStatuses: ('active' | 'inactive' | 'pending' | 'suspended')[] = ['active', 'inactive', 'pending', 'suspended'];
+      if (validStatuses.includes(status as any)) {
+        const confirmMessage = `Change status from "${this.selectedCompany.status}" to "${status}"?`;
+        if (confirm(confirmMessage)) {
+          this.selectedCompany.status = status as 'active' | 'inactive' | 'pending' | 'suspended';
+          console.log(`Company status updated to: ${status}`);
+        }
+      }
+    }
+  }
+
+  cancelSettingsChanges(): void {
+    if (confirm('Cancel all unsaved changes?')) {
+      // Reload company data from the original source
+      this.loadSitesFromDb();
+      console.log('Settings changes cancelled');
     }
   }
 

@@ -1,65 +1,183 @@
-<section class="p-5 pt-0">
-    <div class="section-wrapper bg-light p-0 p-lg-5 rounded">
-        <div class="addons-header text-start">
-            <h1 class="">Subscription <span appAnimateOnScroll animationClass="fade" class="text-tan">Plans</span></h1>
-            <hr class="my-5 " style="width:200px;">
-            <p class="m-0" appAnimateOnScroll animationClass="fade-up">
-                For businesses looking for ongoing support and growth, our monthly plans offer a cost-effective way
-                to keep your brand fresh, your website updated, and your marketing efforts consistent. Choose the
-                plan that fits your needs, then add on extra services as you grow.
-            </p>
-        </div>
-        <div class="row row-cols-1 row-cols-md-3 my-4">
-            <ng-container *ngFor="let addon of subscriptions | slice:0:popularAddonsCount">
-                <div class="p-3 pt-0">
-                    <div appAnimateOnScroll animationClass="fade" class="addon-card mb-4 bg-white">
-                        <h3>{{addon.title}}</h3>
-                        <p>{{addon.desc}}</p>
-                        <p class="addon-price">{{addon.price}}</p>
-                    </div>
-                </div>
-            </ng-container>
-        </div>
-    </div>
-</section>
-
-
-<section class="p-5 pt-0">
-    <div class="section-wrapper bg-white p-0 p-lg-5">
-        <div class="addons-section">
-            <div class="addons-header">
-                <h1 appAnimateOnScroll animationClass="fade">Enhance Your Plan with Add-Ons</h1>
-                <hr class="my-5 mx-auto" style="width:200px;">
-                <p appAnimateOnScroll animationClass="fade-up">Every business is unique, and sometimes you just need
-                    that extra boost. Our add-ons give you
-                    flexibility to
-                    expand your brand presence, amplify your reach, and manage growth without committing to a
-                    whole new
-                    package.
+<!-- Display Mode -->
+<div *ngIf="!editMode">
+    <section id="subscription-addons" class="p-5 pt-0">
+        <div class="section-wrapper bg-light p-0 p-lg-5 rounded">
+            <div class="addons-header text-start">
+                <h1 class="">{{ content.subscriptionSection.title }} <span appAnimateOnScroll animationClass="fade"
+                        class="text-tan">{{ content.subscriptionSection.highlight }}</span></h1>
+                <hr class="my-5" [style.width]="content.styling.hrWidth">
+                <p class="m-0" appAnimateOnScroll animationClass="fade-up">
+                    {{ content.subscriptionSection.description }}
                 </p>
             </div>
-            <div appAnimateOnScroll animationClass="fade-up" class="addons-grid">
-                <ng-container *ngFor="let addon of oneTimeAddons | slice:0:popularAddonsCount">
-                    <div class="addon-card">
-                        <h3>{{addon.title}}</h3>
-                        <p>{{addon.desc}}</p>
-                        <p class="addon-price">{{addon.price}}</p>
+            <div class="row row-cols-1 row-cols-md-3 my-4">
+                <ng-container *ngFor="let addon of subscriptions | slice:0:popularAddonsCount">
+                    <div class="p-3 pt-0">
+                        <div appAnimateOnScroll animationClass="fade" class="addon-card stat-card mb-4 bg-white">
+                            <h3>{{ addon.title }}</h3>
+                            <p>{{ addon.desc }}</p>
+                            <p class="addon-price">{{ addon.price }}</p>
+                        </div>
                     </div>
                 </ng-container>
-                <ng-container *ngIf="showAllAddons">
-                    <ng-container *ngFor="let addon of oneTimeAddons | slice:popularAddonsCount">
-                        <div class="addon-card">
-                            <h3>{{addon.title}}</h3>
-                            <p>{{addon.desc}}</p>
-                            <p class="addon-price">{{addon.price}}</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="addons" class="p-5 pt-0">
+        <div class="section-wrapper bg-white p-0 p-lg-5 stat-card">
+            <div class="addons-section">
+                <div class="addons-header">
+                    <h1 appAnimateOnScroll animationClass="fade">{{ content.addonsSection.title }}</h1>
+                    <hr class="my-5 mx-auto" [style.width]="content.styling.hrWidth">
+                    <p appAnimateOnScroll animationClass="fade-up">{{ content.addonsSection.description }}</p>
+                </div>
+                <div appAnimateOnScroll animationClass="fade-up" class="addons-grid">
+                    <ng-container *ngFor="let addon of oneTimeAddons | slice:0:popularAddonsCount">
+                        <div class="addon-card stat-card">
+                            <h3>{{ addon.title }}</h3>
+                            <p>{{ addon.desc }}</p>
+                            <p class="addon-price">{{ addon.price }}</p>
                         </div>
                     </ng-container>
-                </ng-container>
+                    <ng-container *ngIf="showAllAddons">
+                        <ng-container *ngFor="let addon of oneTimeAddons | slice:popularAddonsCount">
+                            <div class="addon-card stat-card">
+                                <h3>{{ addon.title }}</h3>
+                                <p>{{ addon.desc }}</p>
+                                <p class="addon-price">{{ addon.price }}</p>
+                            </div>
+                        </ng-container>
+                    </ng-container>
+                </div>
+                <button *ngIf="oneTimeAddons.length > popularAddonsCount" class="show-more-btn mt-5"
+                    (click)="toggleShowAllAddons()">
+                    {{ showAllAddons ? content.buttonText.showLess : content.buttonText.showMore }}
+                </button>
             </div>
-            <button *ngIf="oneTimeAddons.length > popularAddonsCount" class="show-more-btn mt-5"
-                (click)="showAllAddons = !showAllAddons">
-                {{ showAllAddons ? 'Show Less' : 'Show More Add-Ons' }}
-            </button>
+        </div>
+    </section>
+</div>
+
+<!-- Edit Mode -->
+<div *ngIf="editMode" class="edit-mode">
+    <!-- Subscription Section -->
+    <app-generic-h2-title [title]="'Add-Ons Editor'" [icon]="'fa-edit'"
+        [subTitle]="'Edit subscription plans and one-time add-ons sections.'"></app-generic-h2-title>
+    <div class="border p-4 rounded mb-4 bg-white stat-card">
+        <h4 class="text-tan mb-3">Subscription Plans Section</h4>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="subscriptionTitle" class="form-label fw-bold">Title:</label>
+                    <input type="text" id="subscriptionTitle" class="form-control"
+                        [(ngModel)]="content.subscriptionSection.title" (ngModelChange)="onContentChange()"
+                        placeholder="Enter subscription section title">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="subscriptionHighlight" class="form-label fw-bold">Highlight (colored text):</label>
+                    <input type="text" id="subscriptionHighlight" class="form-control"
+                        [(ngModel)]="content.subscriptionSection.highlight" (ngModelChange)="onContentChange()"
+                        placeholder="Enter highlighted text">
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="subscriptionDescription" class="form-label fw-bold">Description:</label>
+            <textarea id="subscriptionDescription" class="form-control" rows="4"
+                [(ngModel)]="content.subscriptionSection.description" (ngModelChange)="onContentChange()"
+                placeholder="Enter subscription section description"></textarea>
         </div>
     </div>
-</section>
+
+    <!-- Add-Ons Section -->
+    <div class="border p-4 rounded mb-4 bg-white stat-card">
+        <h4 class="text-tan mb-3">Add-Ons Section</h4>
+
+        <div class="mb-3">
+            <label for="addonsTitle" class="form-label fw-bold">Title:</label>
+            <input type="text" id="addonsTitle" class="form-control" [(ngModel)]="content.addonsSection.title"
+                (ngModelChange)="onContentChange()" placeholder="Enter add-ons section title">
+        </div>
+
+        <div class="mb-3">
+            <label for="addonsDescription" class="form-label fw-bold">Description:</label>
+            <textarea id="addonsDescription" class="form-control" rows="4"
+                [(ngModel)]="content.addonsSection.description" (ngModelChange)="onContentChange()"
+                placeholder="Enter add-ons section description"></textarea>
+        </div>
+    </div>
+
+    <!-- Button Text & Styling -->
+    <div class="border p-4 rounded mb-4 bg-white stat-card">
+        <h4 class="text-tan mb-3">Button Text & Styling</h4>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="showMoreText" class="form-label fw-bold">Show More Button Text:</label>
+                    <input type="text" id="showMoreText" class="form-control" [(ngModel)]="content.buttonText.showMore"
+                        (ngModelChange)="onContentChange()" placeholder="Show More Add-Ons">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="showLessText" class="form-label fw-bold">Show Less Button Text:</label>
+                    <input type="text" id="showLessText" class="form-control" [(ngModel)]="content.buttonText.showLess"
+                        (ngModelChange)="onContentChange()" placeholder="Show Less">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="hrWidth" class="form-label fw-bold">HR Line Width:</label>
+                    <input type="text" id="hrWidth" class="form-control" [(ngModel)]="content.styling.hrWidth"
+                        (ngModelChange)="onContentChange()" placeholder="e.g., 200px">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Plans Display (Read-only) -->
+    <div class="border p-4 rounded mb-4 bg-white stat-card">
+        <h4 class="text-tan mb-3">Subscription Plans (Data-driven)</h4>
+        <p class="text-muted">Subscription plans are loaded from the addons.data.ts file. Edit the data file to modify
+            plans.</p>
+        <div class="row row-cols-1 row-cols-md-3">
+            <div *ngFor="let addon of subscriptions | slice:0:popularAddonsCount" class="p-3 pt-0">
+                <div class="addon-card stat-card mb-4 bg-light">
+                    <h3>{{ addon.title }}</h3>
+                    <p>{{ addon.desc }}</p>
+                    <p class="addon-price">{{ addon.price }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- One-Time Add-Ons Display (Read-only) -->
+    <div class="border p-4 rounded mb-4 bg-white stat-card">
+        <h4 class="text-tan mb-3">One-Time Add-Ons (Data-driven)</h4>
+        <p class="text-muted">One-time add-ons are loaded from the addons.data.ts file. Edit the data file to modify
+            add-ons.</p>
+        <div class="addons-grid">
+            <div *ngFor="let addon of oneTimeAddons | slice:0:popularAddonsCount" class="addon-card stat-card">
+                <h3>{{ addon.title }}</h3>
+                <p>{{ addon.desc }}</p>
+                <p class="addon-price">{{ addon.price }}</p>
+            </div>
+        </div>
+        <button class="btn btn-outline-secondary mt-3" (click)="toggleShowAllAddons()">
+            {{ showAllAddons ? content.buttonText.showLess : content.buttonText.showMore }}
+        </button>
+        <div *ngIf="showAllAddons" class="addons-grid mt-3">
+            <div *ngFor="let addon of oneTimeAddons | slice:popularAddonsCount" class="addon-card stat-card">
+                <h3>{{ addon.title }}</h3>
+                <p>{{ addon.desc }}</p>
+                <p class="addon-price">{{ addon.price }}</p>
+            </div>
+        </div>
+    </div>
+</div>

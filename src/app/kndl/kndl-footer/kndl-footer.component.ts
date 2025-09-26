@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-kndl-footer',
@@ -6,5 +6,7 @@ import { Component } from '@angular/core';
   styleUrls: ['./kndl-footer.component.scss']
 })
 export class KndlFooterComponent {
+  @Input() editMode: boolean = false;
+  @Input() content: { headerText: string } | null = null;
 
 }

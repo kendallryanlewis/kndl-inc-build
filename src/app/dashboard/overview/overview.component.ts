@@ -90,11 +90,20 @@ export class OverviewComponent implements OnInit {
     // For now, create a mock user until we implement proper user management
     this.user = {
       id: '1',
-      email: 'customer@example.com',
       firstName: 'John',
       lastName: 'Doe',
+      name: 'John Doe',
+      email: 'customer@example.com',
+      phone: '555-123-4567',
+      avatarUrl: 'https://randomuser.me/api/portraits/men/1.jpg',
+      platforms: [],
       onboardingCompleted: true,
-      platforms: []
+      role: 'User',
+      status: 'Active',
+      joinDate: new Date('2025-01-01'),
+      lastLogin: new Date('2025-08-28'),
+      location: 'New York, NY',
+      bio: 'Customer at Pixel & Post (KNDL Inc.)'
     };
 
     // Generate mock data for demo purposes

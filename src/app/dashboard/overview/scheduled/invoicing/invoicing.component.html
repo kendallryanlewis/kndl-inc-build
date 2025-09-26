@@ -35,7 +35,7 @@
 
     <!-- Filters -->
     <div style="border:1px solid #333; border-radius:12px; padding:12px;">
-        <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+        <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
             <div>
                 <label style="font-size:12px; opacity:.8;">Status</label><br />
                 <select [(ngModel)]="filters().status" (ngModelChange)="setStatus($event)"

@@ -1,16 +1,19 @@
 export interface User {
     id: string;
-    email: string;
     firstName: string;
     lastName: string;
-    username?: string;
+    name: string;
+    email: string;
     phone?: string;
     avatarUrl?: string;
-    roles?: string[];
-    createdAt?: Date;
-    updatedAt?: Date;
-    onboardingCompleted: boolean;
     platforms: UserPlatform[];
+    onboardingCompleted?: boolean;
+    role: 'Admin' | 'User' | 'Manager';
+    status: 'Active' | 'Deleted' | 'Invited';
+    joinDate?: Date;
+    lastLogin?: Date;
+    location?: string; // Added location property
+    bio?: string;
 }
 
 export interface UserPlatform {

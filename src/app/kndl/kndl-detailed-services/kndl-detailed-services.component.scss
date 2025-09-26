@@ -179,3 +179,22 @@
 .cta-btn:hover {
     background: #000;
 }
+
+// Popular badge styles
+.popular-badge {
+    background: #ff6b35;
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-left: 8px;
+    vertical-align: top;
+}
+
+.pricing-card.popular {
+    border: 2px solid #ff6b35;
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.2);
+    transform: scale(1.02);
+}

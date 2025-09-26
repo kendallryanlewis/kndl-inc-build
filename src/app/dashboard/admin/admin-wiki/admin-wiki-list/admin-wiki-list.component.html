@@ -1,0 +1,386 @@
+<!-- Wiki Page View (when viewing a specific page) -->
+<div class="wiki-page-view" *ngIf="isViewingPage && selectedPage">
+    <div class="page-view-header">
+        <div class="back-button-container">
+            <button class="stat-card p-2 rounded" (click)="backToList()">
+                <i class="fa fa-arrow-left me-2"></i>
+                Back to Pages
+            </button>
+        </div>
+        <div class="page-actions" *ngIf="!isEditing(selectedPage)">
+            <button class="bg-blue admin-tab rounded" (click)="editPage(selectedPage)">
+                <i class="fa fa-edit"></i> Edit
+            </button>
+            <button class="bg-danger admin-tab rounded text-white" (click)="confirmDeletePage(selectedPage)">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+        <div class="page-actions edit-actions" *ngIf="isEditing(selectedPage)">
+            <button class="bg-success admin-tab rounded text-white" (click)="saveEdit()">
+                <i class="fa fa-check"></i> Save
+            </button>
+            <button class="bg-secondary admin-tab rounded text-white" (click)="cancelEdit()">
+                <i class="fa fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <div class="page-view-content">
+        <!-- Normal View Mode -->
+        <div class="page-header" *ngIf="!isEditing(selectedPage)">
+            <h1 class="page-title">{{ selectedPage.title }}</h1>
+            <div class="page-meta">
+                <span class="category-badge" [class]="'bg-' + getCategoryColor(selectedPage.category)">
+                    <i class="fa text-tan" [class]="getCategoryIcon(selectedPage.category)"></i>
+                    {{ selectedPage.category }}
+                </span>
+                <span class="status-badge" [class.published]="selectedPage.isPublished"
+                    [class.draft]="!selectedPage.isPublished">
+                    <i class="fa" [class.fa-eye]="selectedPage.isPublished"
+                        [class.fa-eye-slash]="!selectedPage.isPublished"></i>
+                    {{ selectedPage.isPublished ? 'Published' : 'Draft' }}
+                </span>
+                <span class="meta-item">
+                    <i class="fa fa-calendar"></i>
+                    {{ formatDate(selectedPage.lastModified) }}
+                </span>
+                <span class="meta-item" *ngIf="selectedPage.author">
+                    <i class="fa fa-user"></i>
+                    {{ selectedPage.author }}
+                </span>
+                <span class="meta-item">
+                    <i class="fa fa-eye"></i>
+                    {{ selectedPage.views }} views
+                </span>
+            </div>
+            <div class="page-tags" *ngIf="selectedPage.tags && selectedPage.tags.length > 0">
+                <span class="tag" *ngFor="let tag of selectedPage.tags">{{ tag }}</span>
+            </div>
+            <div class="page-summary" *ngIf="selectedPage.summary">
+                <p>{{ selectedPage.summary }}</p>
+            </div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div class="page-edit-header" *ngIf="isEditing(selectedPage) && editingPage">
+            <div class="edit-form-group">
+                <label class="edit-label">Title</label>
+                <input type="text" class="form-control page-title-edit" [(ngModel)]="editingPage.title"
+                    placeholder="Page Title">
+            </div>
+
+            <div class="page-meta-edit">
+                <div class="edit-form-group">
+                    <label class="edit-label">Category</label>
+                    <select class="form-select" [(ngModel)]="editingPage.category">
+                        <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+                    </select>
+                </div>
+
+                <div class="edit-form-group">
+                    <label class="edit-label">Status</label>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" [(ngModel)]="editingPage.isPublished"
+                            id="publishedCheck">
+                        <label class="form-check-label" for="publishedCheck">Published</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-form-group">
+                <label class="edit-label">Tags (comma separated)</label>
+                <input type="text" class="form-control" [value]="editingPage.tags.join(', ')"
+                    (input)="updateEditTags($event)" placeholder="Tags (comma separated)">
+            </div>
+
+            <div class="edit-form-group">
+                <label class="edit-label">Summary</label>
+                <textarea class="form-control" rows="3" [(ngModel)]="editingPage.summary"
+                    placeholder="Page Summary"></textarea>
+            </div>
+        </div>
+        <hr>
+        <div class="page-content-container">
+            <!-- Normal Content View - Rendered HTML -->
+            <div class="page-content rendered-content" *ngIf="!isEditing(selectedPage)">
+                <div class="content-display" [innerHTML]="selectedPage.content"></div>
+
+                <!-- Show placeholder if no content -->
+                <div class="empty-content" *ngIf="!selectedPage.content || selectedPage.content.trim() === ''">
+                    <p class="text-muted">No content available. Click "Edit" to add content to this page.</p>
+                </div>
+            </div>
+
+            <!-- Edit Content Mode -->
+            <div class="page-content-edit" *ngIf="isEditing(selectedPage) && editingPage">
+                <div class="editor-container">
+                    <!-- WYSIWYG Editor Toolbar -->
+                    <div class="toolbar">
+                        <a href="#" data-command="undo" title="Undo"><i class="fa fa-undo"></i></a>
+                        <a href="#" data-command="redo" title="Redo"><i class="fa fa-repeat"></i></a>
+
+                        <div class="fore-wrapper" title="Text Color">
+                            <i class="fa fa-font" style="color:#C96;"></i>
+                            <div class="fore-palette"></div>
+                        </div>
+
+                        <div class="back-wrapper" title="Background Color">
+                            <i class="fa fa-font" style="background:#C96;"></i>
+                            <div class="back-palette"></div>
+                        </div>
+
+                        <a href="#" data-command="bold" title="Bold"><i class="fa fa-bold"></i></a>
+                        <a href="#" data-command="italic" title="Italic"><i class="fa fa-italic"></i></a>
+                        <a href="#" data-command="underline" title="Underline"><i class="fa fa-underline"></i></a>
+                        <a href="#" data-command="strikeThrough" title="Strike Through"><i
+                                class="fa fa-strikethrough"></i></a>
+
+                        <a href="#" data-command="justifyLeft" title="Align Left"><i class="fa fa-align-left"></i></a>
+                        <a href="#" data-command="justifyCenter" title="Align Center"><i
+                                class="fa fa-align-center"></i></a>
+                        <a href="#" data-command="justifyRight" title="Align Right"><i
+                                class="fa fa-align-right"></i></a>
+                        <a href="#" data-command="justifyFull" title="Justify"><i class="fa fa-align-justify"></i></a>
+
+                        <a href="#" data-command="indent" title="Indent"><i class="fa fa-indent"></i></a>
+                        <a href="#" data-command="outdent" title="Outdent"><i class="fa fa-outdent"></i></a>
+
+                        <a href="#" data-command="insertUnorderedList" title="Unordered List"><i
+                                class="fa fa-list-ul"></i></a>
+                        <a href="#" data-command="insertOrderedList" title="Ordered List"><i
+                                class="fa fa-list-ol"></i></a>
+
+                        <a href="#" data-command="h1" data-toggle="H1" title="Heading 1">H1</a>
+                        <a href="#" data-command="h2" data-toggle="H2" title="Heading 2">H2</a>
+                        <a href="#" data-command="createlink" data-toggle="URL" title="Insert Link"><i
+                                class="fa fa-link"></i></a>
+                        <a href="#" data-command="unlink" title="Remove Link"><i class="fa fa-unlink"></i></a>
+
+                        <a href="#" data-command="insertHorizontalRule" title="Horizontal Rule"><i
+                                class="fa fa-minus"></i></a>
+                        <a href="#" data-command="removeFormat" title="Remove Format"><i class="fa fa-eraser"></i></a>
+                    </div>
+
+                    <!-- Contenteditable Editor -->
+                    <div #wysiwygEditor id="editor" contenteditable="true" (input)="onEditorContentChange($event)"
+                        (paste)="onEditorPaste($event)" placeholder="Start writing your content...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Wiki Management Interface (when not viewing a specific page) -->
+<div class="wiki-main-interface" *ngIf="!isViewingPage">
+    <!-- Knowledge Base Header -->
+    <div class="d-flex justify-content-between align-items-center">
+        <app-generic-h2-title [title]="'Wiki Pages'" [icon]="'fa-cog'"
+            [subTitle]="'Manage and organize your knowledge base articles and categories.'"></app-generic-h2-title>
+        <button type="button" class="admin-tab bg-blue my-auto" (click)="showAddServicePlanModal()">
+            <i class="fa fa-plus-circle me-1"></i>
+            Show All
+        </button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="search-container">
+            <div class="search-box stat-card bg-white">
+                <i class="fa fa-search search-icon"></i>
+                <input type="text" placeholder="Search Wiki Pages" [value]="searchTerm" (input)="onSearchInput($event)"
+                    style="border:0 !important; background: transparent !important;" class="search-input">
+                <button class="search-button">
+                    <i class="fa fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+        <!-- View Toggle Controls -->
+        <div class="admin-controls d-flex" *ngIf="isAdminMode">
+            <div class="view-toggle">
+                <button class="toggle-btn" [class.active]="viewMode === 'list'" (click)="changeViewMode('list')">
+                    <i class="fa fa-list"></i>
+                </button>
+                <button class="toggle-btn" [class.active]="viewMode === 'grid'" (click)="changeViewMode('grid')">
+                    <i class="fa fa-th-large"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Pages Management Section -->
+    <div class="admin-pages-section">
+        <!-- Pages List View -->
+        <div class="pages-management" [class]="viewMode">
+            <!-- No pages message -->
+            <div class="no-pages-message" *ngIf="wikiPages.length === 0">
+                <div class="empty-state">
+                    <i class="fa fa-book-open"></i>
+                    <h4>No Wiki Pages Found</h4>
+                    <p>Get started by creating your first knowledge base article.</p>
+                    <button class="btn btn-primary" (click)="createNewPage()">
+                        <i class="fa fa-plus"></i> Create First Page
+                    </button>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div class="pages-list" *ngIf="wikiPages.length > 0 && viewMode === 'list'">
+                <div class="list-header">
+                    <div class="col-title">Title</div>
+                    <div class="col-category">Category</div>
+                    <div class="col-status">Status</div>
+                    <div class="col-views">Views</div>
+                    <div class="col-modified">Last Modified</div>
+                    <div class="col-actions">Actions</div>
+                </div>
+                <div class="page-row" *ngFor="let page of filteredPages" [class.editing]="isEditing(page)">
+                    <div class="col-title" (click)="viewPage(page)">
+                        <div class="page-title-info" *ngIf="!isEditing(page)">
+                            <h4 class="page-title">{{ page.title }}</h4>
+                            <p class="page-summary">{{ page.summary }}</p>
+                            <div class="page-tags" *ngIf="page.tags && page.tags.length > 0">
+                                <span class="tag" *ngFor="let tag of page.tags">{{ tag }}</span>
+                            </div>
+                        </div>
+                        <!-- Inline Edit Form -->
+                        <div class="page-edit-form" *ngIf="isEditing(page) && editingPage"
+                            style="border: 2px solid red; padding: 10px;">
+                            <p style="color: red;">DEBUG: Edit form is showing</p>
+                            <input type="text" class="form-control edit-title" [(ngModel)]="editingPage.title"
+                                placeholder="Page Title">
+                            <textarea class="form-control edit-summary" [(ngModel)]="editingPage.summary"
+                                placeholder="Page Summary" rows="2"></textarea>
+                            <input type="text" class="form-control edit-tags" [value]="editingPage.tags.join(', ')"
+                                (input)="updateEditTags($event)" placeholder="Tags (comma separated)">
+                        </div>
+                    </div>
+                    <div class="col-category">
+                        <span class="category-badge" [class]="'bg-' + getCategoryColor(page.category)"
+                            *ngIf="!isEditing(page)">
+                            <i class="fa" [class]="getCategoryIcon(page.category)"></i>
+                            {{ page.category }}
+                        </span>
+                        <select class="form-select edit-category" [(ngModel)]="editingPage!.category"
+                            *ngIf="isEditing(page) && editingPage">
+                            <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+                        </select>
+                    </div>
+                    <div class="col-status">
+                        <span class="status-badge" [class.published]="page.isPublished"
+                            [class.draft]="!page.isPublished" *ngIf="!isEditing(page)">
+                            <i class="fa" [class.fa-eye]="page.isPublished"
+                                [class.fa-eye-slash]="!page.isPublished"></i>
+                            {{ page.isPublished ? 'Published' : 'Draft' }}
+                        </span>
+                        <div class="form-check" *ngIf="isEditing(page) && editingPage">
+                            <input type="checkbox" class="form-check-input" [(ngModel)]="editingPage.isPublished">
+                            <label class="form-check-label">Published</label>
+                        </div>
+                    </div>
+                    <div class="col-views">
+                        <span class="views-count">
+                            <i class="fa fa-chart-line"></i>
+                            {{ page.views }}
+                        </span>
+                    </div>
+                    <div class="col-modified">
+                        <span class="modified-date">{{ formatDate(page.lastModified) }}</span>
+                        <small class="author-info" *ngIf="page.author">by {{ page.author }}</small>
+                    </div>
+                    <div class="col-actions">
+                        <div class="edit-actions" *ngIf="isEditing(page)">
+                            <button class="action-btn save-btn" (click)="saveEdit()" title="Save Changes">
+                                <i class="fa fa-check"></i>
+                            </button>
+                            <button class="action-btn cancel-btn" (click)="cancelEdit()" title="Cancel">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid View -->
+            <div class="pages-grid" *ngIf="wikiPages.length > 0 && viewMode === 'grid'">
+                <ng-container *ngFor="let page of filteredPages">
+                    <div class="page-card stat-card" (click)="viewPage(page)">
+                        <div class="card-header" *ngIf="page.category">
+                            <div class="page-category-icon" [class]="getCategoryClass(page.category)">
+                                <i class="fa text-tan" [class]="getCategoryIcon(page.category)"></i>
+                            </div>
+                            <div class="page-status">
+                                <span class="status-dot" [class.published]="page.isPublished"
+                                    [class.draft]="!page.isPublished"
+                                    [title]="page.isPublished ? 'Published' : 'Draft'">{{ page.isPublished ? 'Published'
+                                    : 'Draft' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="card-content">
+                            <h4 class="page-title">{{ page.title }}</h4>
+                            <p class="page-summary">{{ page.summary }}</p>
+
+                            <div class="page-meta">
+                                <span class="category-tag" [class]="'bg-' + getCategoryColor(page.category)">
+                                    {{ page.category }}
+                                </span>
+                                <span class="views-count">
+                                    <i class="fa fa-eye"></i> {{ page.views }}
+                                </span>
+                            </div>
+
+                            <div class="page-tags" *ngIf="page.tags && page.tags.length > 0">
+                                <span class="tag" *ngFor="let tag of page.tags.slice(0, 3)">{{ tag }}</span>
+                                <span class="tag-more text-tan" *ngIf="page.tags.length > 3">+{{
+                                    page.tags.length - 3
+                                    }}</span>
+                            </div>
+
+                            <div class="page-date">
+                                <small>
+                                    <i class="fa fa-clock"></i>
+                                    {{ formatDate(page.lastModified) }}
+                                    <span *ngIf="page.author"> by {{ page.author }}</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+    </div>
+
+    <!-- Public Article List (when not in admin mode) -->
+    <div class="public-articles" *ngIf="!isAdminMode && filteredPages.length > 0">
+        <div class="articles-header">
+            <h2>{{ selectedCategoryName }} Articles</h2>
+            <button class="btn btn-outline" (click)="clearCategoryFilter()">
+                <i class="fa fa-times"></i> Clear Filter
+            </button>
+        </div>
+        <div class="articles-list">
+            <div class="article-item" *ngFor="let page of filteredPages" (click)="viewPage(page)">
+                <div class="article-meta">
+                    <span class="category-badge" [class]="'bg-' + getCategoryColor(page.category)">
+                        <i class="fa" [class]="getCategoryIcon(page.category)"></i>
+                        {{ page.category }}
+                    </span>
+                    <span class="article-date">{{ formatDate(page.lastModified) }}</span>
+                </div>
+                <h3 class="article-title">{{ page.title }}</h3>
+                <p class="article-summary">{{ page.summary }}</p>
+                <div class="article-tags" *ngIf="page.tags && page.tags.length > 0">
+                    <span class="tag" *ngFor="let tag of page.tags.slice(0, 3)">{{ tag }}</span>
+                </div>
+                <div class="article-stats">
+                    <span class="views">
+                        <i class="fa fa-eye"></i> {{ page.views }}
+                    </span>
+                    <span class="author" *ngIf="page.author">
+                        <i class="fa fa-user"></i> {{ page.author }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
