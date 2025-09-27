@@ -1,0 +1,743 @@
+<!-- Loading overlay -->
+<div *ngIf="loading" class="loading-overlay">
+  <div class="spinner-border text-primary" role="status">
+    <span class="sr-only">Loading...</span>
+  </div>
+  <p class="mt-2">Loading billing data...</p>
+</div>
+
+<!-- Error alert -->
+<div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  {{ error }}
+  <button type="button" class="btn-close" (click)="clearError()"></button>
+</div>
+
+<!-- Header -->
+<div class="billing-header">
+  <div class="row align-items-center mb-4">
+    <div class="col">
+      <h2 class="h3 mb-0">
+        <i class="fas fa-credit-card me-2"></i>
+        Billing Management
+      </h2>
+      <p class="text-muted mb-0">Manage your subscriptions, payment methods, and billing history</p>
+    </div>
+    <div class="col-auto">
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" (click)="showAddPaymentMethod()" [disabled]="!currentCustomer">
+          <i class="fas fa-plus me-1"></i>
+          Add Payment Method
+        </button>
+        <button class="btn btn-primary" (click)="showSelectPackage()" [disabled]="!hasPaymentMethods()">
+          <i class="fas fa-upgrade me-1"></i>
+          Upgrade Plan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-1">Active Subscriptions</h6>
+              <h3 class="mb-0">{{ getTotalActiveSubscriptions() }}</h3>
+            </div>
+            <i class="fas fa-subscription fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-1">Monthly Total</h6>
+              <h3 class="mb-0">{{ formatCurrency(getTotalMonthlyAmount()) }}</h3>
+            </div>
+            <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-1">Payment Methods</h6>
+              <h3 class="mb-0">{{ paymentMethods.length }}</h3>
+            </div>
+            <i class="fas fa-credit-card fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-1">Next Billing</h6>
+              <h5 class="mb-0">
+                <ng-container *ngIf="getNextBillingDate(); else noBilling">
+                  {{ formatDate(getNextBillingDate()!.getTime() / 1000) }}
+                </ng-container>
+                <ng-template #noBilling>N/A</ng-template>
+              </h5>
+            </div>
+            <i class="fas fa-calendar fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation tabs -->
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <button class="nav-link" 
+            [class.active]="activeTab === 'overview'"
+            (click)="setActiveTab('overview')">
+      <i class="fas fa-chart-line me-2"></i>Overview
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" 
+            [class.active]="activeTab === 'subscriptions'"
+            (click)="setActiveTab('subscriptions')">
+      <i class="fas fa-subscription me-2"></i>Subscriptions
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" 
+            [class.active]="activeTab === 'payment-methods'"
+            (click)="setActiveTab('payment-methods')">
+      <i class="fas fa-credit-card me-2"></i>Payment Methods
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" 
+            [class.active]="activeTab === 'transactions'"
+            (click)="setActiveTab('transactions')">
+      <i class="fas fa-receipt me-2"></i>Transactions
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" 
+            [class.active]="activeTab === 'invoices'"
+            (click)="setActiveTab('invoices')">
+      <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
+    </button>
+  </li>
+</ul>
+
+<!-- Tab content -->
+<div class="tab-content">
+  <!-- Overview tab -->
+  <div class="tab-pane fade" [class.show]="activeTab === 'overview'" [class.active]="activeTab === 'overview'">
+    <div class="row">
+      <div class="col-md-8">
+        <!-- Recent activity -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-clock me-2"></i>Recent Activity
+            </h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="transactions.length === 0" class="text-center py-4 text-muted">
+              <i class="fas fa-receipt fa-3x mb-3"></i>
+              <p>No recent transactions</p>
+            </div>
+            <div *ngFor="let transaction of transactions.slice(0, 5)" class="d-flex justify-content-between align-items-center py-2">
+              <div>
+                <strong>{{ formatCurrency(transaction.amount) }}</strong>
+                <span class="text-muted ms-2">{{ transaction.description }}</span>
+              </div>
+              <div class="text-end">
+                <span class="badge" [class]="'bg-' + getTransactionStatusColor(transaction.status)">
+                  {{ transaction.status | titlecase }}
+                </span>
+                <div class="text-muted small">{{ formatDate(transaction.created) }}</div>
+              </div>
+            </div>
+            <div *ngIf="transactions.length > 5" class="text-center mt-3">
+              <button class="btn btn-outline-primary btn-sm" (click)="setActiveTab('transactions')">
+                View All Transactions
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active subscriptions overview -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-subscription me-2"></i>Active Subscriptions
+            </h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="subscriptions.length === 0" class="text-center py-4 text-muted">
+              <i class="fas fa-subscription fa-3x mb-3"></i>
+              <p>No active subscriptions</p>
+              <button class="btn btn-primary" (click)="showSelectPackage()" [disabled]="!hasPaymentMethods()">
+                Choose a Plan
+              </button>
+            </div>
+            <div *ngFor="let subscription of subscriptions" class="subscription-item mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ subscription.packageType || 'Subscription' }}</h6>
+                  <div class="text-muted small">
+                    {{ formatCurrency(subscription.amount) }}/{{ subscription.interval }}
+                    • Next billing: {{ formatDate(subscription.currentPeriodEnd || subscription.current_period_end) }}
+                  </div>
+                </div>
+                <div class="text-end">
+                  <span class="badge" [class]="'bg-' + getSubscriptionStatusColor(subscription.status)">
+                    {{ subscription.status | titlecase }}
+                  </span>
+                  <div class="mt-1">
+                    <button class="btn btn-outline-primary btn-sm me-1" (click)="showSubscriptionDetail(subscription)">
+                      Details
+                    </button>
+                    <button *ngIf="subscription.status === 'active'" 
+                            class="btn btn-outline-danger btn-sm"
+                            (click)="cancelSubscription(subscription)">
+                      Cancel
+                    </button>
+                    <button *ngIf="subscription.cancel_at_period_end" 
+                            class="btn btn-outline-success btn-sm"
+                            (click)="reactivateSubscription(subscription)">
+                      Reactivate
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <!-- Account info -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-user me-2"></i>Account Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="currentCustomer">
+              <p><strong>Name:</strong> {{ currentCustomer.name }}</p>
+              <p><strong>Email:</strong> {{ currentCustomer.email }}</p>
+              <p *ngIf="currentCustomer.phone"><strong>Phone:</strong> {{ currentCustomer.phone }}</p>
+              <p><strong>Customer Since:</strong> {{ formatDate(currentCustomer.created) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing analytics -->
+        <div class="card" *ngIf="billingAnalytics">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-chart-pie me-2"></i>Billing Summary
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-2">
+              <small class="text-muted">This Month</small>
+              <div class="fw-bold">{{ formatCurrency(billingAnalytics.thisMonth || 0) }}</div>
+            </div>
+            <div class="mb-2">
+              <small class="text-muted">Total Spent</small>
+              <div class="fw-bold">{{ formatCurrency(billingAnalytics.totalSpent || 0) }}</div>
+            </div>
+            <div class="mb-2">
+              <small class="text-muted">Average Monthly</small>
+              <div class="fw-bold">{{ formatCurrency(billingAnalytics.averageMonthly || 0) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subscriptions tab -->
+  <div class="tab-pane fade" [class.show]="activeTab === 'subscriptions'" [class.active]="activeTab === 'subscriptions'">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-subscription me-2"></i>Your Subscriptions
+        </h5>
+        <button class="btn btn-primary" (click)="showSelectPackage()" [disabled]="!hasPaymentMethods()">
+          <i class="fas fa-plus me-1"></i>Add Subscription
+        </button>
+      </div>
+      <div class="card-body">
+        <div *ngIf="subscriptions.length === 0" class="text-center py-5">
+          <i class="fas fa-subscription fa-4x text-muted mb-3"></i>
+          <h5 class="text-muted">No Subscriptions</h5>
+          <p class="text-muted">You don't have any active subscriptions yet.</p>
+          <button class="btn btn-primary" (click)="showSelectPackage()" [disabled]="!hasPaymentMethods()">
+            Choose Your First Plan
+          </button>
+        </div>
+        
+        <div *ngFor="let subscription of subscriptions" class="subscription-card border rounded p-3 mb-3">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h6 class="mb-1">{{ subscription.packageType || 'Subscription' }}</h6>
+              <p class="text-muted mb-2">
+                {{ formatCurrency(subscription.amount) }}/{{ subscription.interval }}
+              </p>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge" [class]="'bg-' + getSubscriptionStatusColor(subscription.status)">
+                  {{ subscription.status | titlecase }}
+                </span>
+                <span *ngIf="subscription.cancel_at_period_end" class="badge bg-warning">
+                  Cancels {{ formatDate(subscription.currentPeriodEnd || subscription.current_period_end) }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-6 text-end">
+              <p class="mb-1">
+                <strong>Current Period:</strong><br>
+                {{ formatDate(subscription.current_period_start) }} - 
+                {{ formatDate(subscription.currentPeriodEnd || subscription.current_period_end) }}
+              </p>
+              <div class="btn-group" role="group">
+                <button class="btn btn-outline-primary btn-sm" (click)="showSubscriptionDetail(subscription)">
+                  Details
+                </button>
+                <button *ngIf="subscription.status === 'active' && !subscription.cancel_at_period_end" 
+                        class="btn btn-outline-danger btn-sm"
+                        (click)="cancelSubscription(subscription)">
+                  Cancel
+                </button>
+                <button *ngIf="subscription.cancel_at_period_end" 
+                        class="btn btn-outline-success btn-sm"
+                        (click)="reactivateSubscription(subscription)">
+                  Reactivate
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="subscription.addons && subscription.addons.length > 0" class="mt-2">
+            <small class="text-muted">Add-ons:</small>
+            <div class="d-flex gap-1 flex-wrap mt-1">
+              <span *ngFor="let addonId of subscription.addons" class="badge bg-secondary">
+                {{ getAddonById(addonId)?.name || addonId }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Methods tab -->
+  <div class="tab-pane fade" [class.show]="activeTab === 'payment-methods'" [class.active]="activeTab === 'payment-methods'">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-credit-card me-2"></i>Payment Methods
+        </h5>
+        <button class="btn btn-primary" (click)="showAddPaymentMethod()">
+          <i class="fas fa-plus me-1"></i>Add Payment Method
+        </button>
+      </div>
+      <div class="card-body">
+        <div *ngIf="paymentMethods.length === 0" class="text-center py-5">
+          <i class="fas fa-credit-card fa-4x text-muted mb-3"></i>
+          <h5 class="text-muted">No Payment Methods</h5>
+          <p class="text-muted">Add a payment method to manage your subscriptions.</p>
+          <button class="btn btn-primary" (click)="showAddPaymentMethod()">
+            Add Your First Payment Method
+          </button>
+        </div>
+        
+        <div *ngFor="let paymentMethod of paymentMethods" class="payment-method-card border rounded p-3 mb-3">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <i [class]="getCardBrandIcon(paymentMethod.card.brand)" class="fa-2x"></i>
+            </div>
+            <div class="col">
+              <h6 class="mb-1">
+                •••• •••• •••• {{ paymentMethod.card.last4 }}
+                <span *ngIf="paymentMethod.id === currentCustomer?.invoice_settings?.default_payment_method" 
+                      class="badge bg-primary ms-2">Default</span>
+              </h6>
+              <p class="text-muted mb-0">
+                {{ paymentMethod.card.brand | titlecase }} 
+                expires {{ paymentMethod.card.exp_month }}/{{ paymentMethod.card.exp_year }}
+              </p>
+            </div>
+            <div class="col-auto">
+              <div class="btn-group" role="group">
+                <button *ngIf="paymentMethod.id !== currentCustomer?.invoice_settings?.default_payment_method"
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="setDefaultPaymentMethod(paymentMethod.id)">
+                  Set Default
+                </button>
+                <button class="btn btn-outline-danger btn-sm"
+                        (click)="removePaymentMethod(paymentMethod.id)">
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions tab -->
+  <div class="tab-pane fade" [class.show]="activeTab === 'transactions'" [class.active]="activeTab === 'transactions'">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-receipt me-2"></i>Transaction History
+        </h5>
+      </div>
+      <div class="card-body">
+        <div *ngIf="transactions.length === 0" class="text-center py-5">
+          <i class="fas fa-receipt fa-4x text-muted mb-3"></i>
+          <h5 class="text-muted">No Transactions</h5>
+          <p class="text-muted">Your transaction history will appear here.</p>
+        </div>
+        
+        <div class="table-responsive" *ngIf="transactions.length > 0">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let transaction of transactions">
+                <td>{{ formatDateTime(transaction.created) }}</td>
+                <td>
+                  {{ transaction.description }}
+                  <div class="text-muted small" *ngIf="transaction.metadata?.subscription_id">
+                    Subscription: {{ transaction.metadata?.subscription_id }}
+                  </div>
+                </td>
+                <td>{{ formatCurrency(transaction.amount) }}</td>
+                <td>
+                  <span class="badge" [class]="'bg-' + getTransactionStatusColor(transaction.status)">
+                    {{ transaction.status | titlecase }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-outline-primary btn-sm" (click)="showTransactionDetail(transaction)">
+                    Details
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices tab -->
+  <div class="tab-pane fade" [class.show]="activeTab === 'invoices'" [class.active]="activeTab === 'invoices'">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
+        </h5>
+      </div>
+      <div class="card-body">
+        <div *ngIf="invoices.length === 0" class="text-center py-5">
+          <i class="fas fa-file-invoice-dollar fa-4x text-muted mb-3"></i>
+          <h5 class="text-muted">No Invoices</h5>
+          <p class="text-muted">Your invoices will appear here once you have subscriptions.</p>
+        </div>
+        
+        <div class="table-responsive" *ngIf="invoices.length > 0">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let invoice of invoices">
+                <td><code>{{ invoice.number }}</code></td>
+                <td>{{ formatDate(invoice.created) }}</td>
+                <td>{{ formatCurrency((invoice.amountPaid || invoice.amountDue || invoice.total)) }}</td>
+                <td>
+                  <span class="badge" [class]="invoice.paid ? 'bg-success' : 'bg-warning'">
+                    {{ invoice.status | titlecase }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="invoice.dueDate">{{ formatDate(invoice.dueDate) }}</span>
+                  <span *ngIf="!invoice.dueDate" class="text-muted">-</span>
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary btn-sm" (click)="downloadInvoice(invoice.id)">
+                      Download
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Payment Method Modal -->
+<div class="modal fade" 
+     [class.show]="showAddPaymentMethodModal" 
+     [style.display]="showAddPaymentMethodModal ? 'block' : 'none'"
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-credit-card me-2"></i>Add Payment Method
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="addPaymentMethod()">
+          <div class="mb-3">
+            <label class="form-label">Card Information</label>
+            <div id="card-element" class="form-control" style="height: 45px; padding: 10px;"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="addingPaymentMethod || !cardElementMounted">
+              <span *ngIf="addingPaymentMethod" class="spinner-border spinner-border-sm me-2"></span>
+              Add Payment Method
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Select Package Modal -->
+<div class="modal fade" 
+     [class.show]="showSelectPackageModal" 
+     [style.display]="showSelectPackageModal ? 'block' : 'none'"
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-upgrade me-2"></i>Choose Your Plan
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div *ngFor="let plan of packagePlans" class="col-md-4">
+            <div class="card plan-card h-100" 
+                 [class.selected]="selectedPackage?.id === plan.id"
+                 (click)="selectPackage(plan)">
+              <div class="card-header text-center">
+                <h5 class="card-title">{{ plan.name }}</h5>
+                <div class="plan-price">
+                  <span class="h3">{{ formatCurrency(plan.price) }}</span>
+                  <span class="text-muted">/{{ plan.interval }}</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <p class="card-text">{{ plan.description }}</p>
+                <ul class="list-unstyled">
+                  <li *ngFor="let feature of plan.features">
+                    <i class="fas fa-check text-success me-2"></i>{{ feature }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button type="button" 
+                class="btn btn-primary" 
+                (click)="createSubscription()"
+                [disabled]="!selectedPackage || creatingSubscription">
+          <span *ngIf="creatingSubscription" class="spinner-border spinner-border-sm me-2"></span>
+          Subscribe to {{ selectedPackage?.name }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Detail Modal -->
+<div class="modal fade" 
+     [class.show]="showTransactionDetailModal" 
+     [style.display]="showTransactionDetailModal ? 'block' : 'none'"
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-receipt me-2"></i>Transaction Details
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedTransaction">
+        <div class="row">
+          <div class="col-sm-4"><strong>Transaction ID:</strong></div>
+          <div class="col-sm-8"><code>{{ selectedTransaction.id }}</code></div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-4"><strong>Amount:</strong></div>
+          <div class="col-sm-8">{{ formatCurrency(selectedTransaction.amount) }}</div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-4"><strong>Status:</strong></div>
+          <div class="col-sm-8">
+            <span class="badge" [class]="'bg-' + getTransactionStatusColor(selectedTransaction.status)">
+              {{ selectedTransaction.status | titlecase }}
+            </span>
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-4"><strong>Date:</strong></div>
+          <div class="col-sm-8">{{ formatDateTime(selectedTransaction.created) }}</div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-4"><strong>Description:</strong></div>
+          <div class="col-sm-8">{{ selectedTransaction.description }}</div>
+        </div>
+        <div *ngIf="selectedTransaction.metadata" class="mt-3">
+          <strong>Additional Information:</strong>
+          <div class="mt-2">
+            <div *ngFor="let item of selectedTransaction.metadata | keyvalue" class="row">
+              <div class="col-sm-4"><small>{{ item.key | titlecase }}:</small></div>
+              <div class="col-sm-8"><small>{{ item.value }}</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subscription Detail Modal -->
+<div class="modal fade" 
+     [class.show]="showSubscriptionDetailModal" 
+     [style.display]="showSubscriptionDetailModal ? 'block' : 'none'"
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-subscription me-2"></i>Subscription Details
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedSubscription">
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Subscription ID:</strong></div>
+          <div class="col-sm-8"><code>{{ selectedSubscription.id }}</code></div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Plan:</strong></div>
+          <div class="col-sm-8">{{ selectedSubscription.packageType || 'Subscription' }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Amount:</strong></div>
+          <div class="col-sm-8">{{ formatCurrency(selectedSubscription.amount) }}/{{ selectedSubscription.interval }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Status:</strong></div>
+          <div class="col-sm-8">
+            <span class="badge" [class]="'bg-' + getSubscriptionStatusColor(selectedSubscription.status)">
+              {{ selectedSubscription.status | titlecase }}
+            </span>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Current Period:</strong></div>
+          <div class="col-sm-8">
+            {{ formatDate(selectedSubscription.current_period_start) }} - 
+            {{ formatDate(selectedSubscription.currentPeriodEnd || selectedSubscription.current_period_end) }}
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Created:</strong></div>
+          <div class="col-sm-8">{{ formatDateTime(selectedSubscription.created) }}</div>
+        </div>
+        
+        <div *ngIf="selectedSubscription.addons && selectedSubscription.addons.length > 0" class="mt-4">
+          <h6>Add-ons:</h6>
+          <div class="d-flex gap-2 flex-wrap">
+            <span *ngFor="let addonId of selectedSubscription.addons" class="badge bg-secondary">
+              {{ getAddonById(addonId)?.name || addonId }}
+            </span>
+          </div>
+        </div>
+        
+        <div *ngIf="selectedSubscription.cancel_at_period_end" class="mt-4 alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          This subscription will be canceled at the end of the current billing period 
+          ({{ formatDate(selectedSubscription.currentPeriodEnd || selectedSubscription.current_period_end) }}).
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Close</button>
+        <div class="btn-group" role="group">
+          <button *ngIf="selectedSubscription?.status === 'active' && !selectedSubscription?.cancel_at_period_end" 
+                  type="button"
+                  class="btn btn-outline-danger"
+                  (click)="cancelSubscription(selectedSubscription!)">
+            Cancel Subscription
+          </button>
+          <button *ngIf="selectedSubscription?.cancel_at_period_end" 
+                  type="button"
+                  class="btn btn-outline-success"
+                  (click)="reactivateSubscription(selectedSubscription!)">
+            Reactivate Subscription
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal backdrop -->
+<div *ngIf="showAddPaymentMethodModal || showSelectPackageModal || showTransactionDetailModal || showSubscriptionDetailModal" 
+     class="modal-backdrop fade show"
+     (click)="closeModal()">
+</div>

@@ -74,6 +74,9 @@
                     <h2>Latest transfers</h2>
                     <div class="filter-options">
                         <p>Filter selected: more than 100 $</p>
+                        <button class="icon-button" (click)="refreshBillingData()" title="Refresh billing data">
+                            <i class="ph-arrow-clockwise" [class.rotating]="isLoading"></i>
+                        </button>
                         <button class="icon-button">
                             <i class="ph-funnel"></i>
                         </button>
@@ -83,9 +86,18 @@
                     </div>
                 </div>
                 <div class="transfers">
-                    <div class="transfer" *ngFor="let transfer of transfers">
+                    <div *ngIf="isLoading" class="loading-state">
+                        <i class="ph-spinner spinning"></i>
+                        <p>Loading billing data...</p>
+                    </div>
+                    <div *ngIf="!isLoading && transfers.length === 0" class="empty-state">
+                        <i class="ph-receipt"></i>
+                        <p>No recent transactions found</p>
+                        <small>Transactions will appear here when companies you're associated with make payments</small>
+                    </div>
+                    <div class="transfer" *ngFor="let transfer of transfers" [class.highlight]="transfer.amount > 1000">
                         <div class="transfer-logo">
-                            <img [src]="transfer.logo" />
+                            <img [src]="transfer.logo" [alt]="transfer.company + ' logo'" />
                         </div>
                         <dl class="transfer-details">
                             <div>

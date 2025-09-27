@@ -315,6 +315,7 @@ a {
             background: rgb(44 61 80 / 15%);
             box-shadow: none;
             border: 1px solid #ffffff36;
+            color: white;
 
             &:focus {
                 border-color: #5e5e5e;
@@ -339,8 +340,9 @@ a {
         color: white !important;
     }
 
-    .toolbar {
-        background-color: #525e69;
+    .toolbar,
+    #Users .select-all-header {
+        background-color: #525e69 !important;
     }
 
     .admin-tab {
@@ -362,7 +364,7 @@ a {
     }
 
     .form-check-input:checked[type=checkbox] {
-        --bs-form-check-bg-image: url(data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e);
+        --bs-form-check-bg-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
     }
 
     .dashboard {

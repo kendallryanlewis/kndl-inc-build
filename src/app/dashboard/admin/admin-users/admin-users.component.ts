@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { getAuth, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
-import { User } from '../../../models/User';
+import { User, Company, AttachedSite } from '../../../models/User';
 export type UserRole = 'Admin' | 'User' | 'Manager';
 export type UserStatus = 'Active' | 'Deleted' | 'Invited';
 
@@ -31,10 +32,13 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   successMessage: string = ''; // Success message display
   errorMessage: string = ''; // Error message display
 
+  // Bulk selection properties
+  selectedUserIds: Set<string> = new Set(); // Track selected user IDs for bulk operations
+
   // Available tabs for navigation
   availableTabs = [
     { id: 'overview', label: 'Overview', icon: 'fa-chart-line' },
-    { id: 'activity', label: 'Activity', icon: 'fa-history' },
+    { id: 'sites', label: 'Sites', icon: 'fa-globe' },
     { id: 'permissions', label: 'Permissions', icon: 'fa-shield-alt' },
     { id: 'settings', label: 'Settings', icon: 'fa-cog' }
   ];
@@ -44,6 +48,14 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   firstName = '';
   lastName = '';
 
+  // Sites management properties
+  companies: Company[] = [];
+  selectedSiteIds: Set<string> = new Set(); // Track selected sites for attachment
+  showSiteSelectionModal = false;
+  siteSearchQuery = '';
+  loadingSites = false;
+  attachingSites = false;
+
   // Computed filtering
   private get q(): string { return this.searchQuery.trim().toLowerCase(); }
   private match(u: User): boolean { return !this.q || u.name.toLowerCase().includes(this.q) || u.email.toLowerCase().includes(this.q); }
@@ -51,7 +63,7 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   get deletedUsers(): User[] { return this.users.filter(u => u.status === 'Deleted' && this.match(u)); }
   get invitedUsers(): User[] { return this.users.filter(u => u.status === 'Invited' && this.match(u)); }
 
-  constructor() { }
+  constructor(private cdr: ChangeDetectorRef, private router: Router) { }
 
   async ngOnInit(): Promise<void> {
     // Ensure subTab defaults to 'Home' if not provided
@@ -60,7 +72,8 @@ export class AdminUsersComponent implements OnInit, OnChanges {
     }
     // Load data asynchronously and emit child tabs
     await Promise.all([
-      this.emitChildTabs()
+      this.emitChildTabs(),
+      this.loadCompanies() // Load companies for sites functionality
     ]);
     // Wait for authentication state before loading users
     this.waitForAuthAndLoadUsers();
@@ -100,6 +113,18 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       const firestore = getFirestore();
       await deleteDoc(doc(firestore, 'users', user.id));
       await this.loadUsers();
+    }
+  }
+
+  // Quick action methods for user cards
+  quickEditUser(user: User): void {
+    this.editingUser = { ...user }; // Create a copy to avoid modifying original
+    this.showEditUserModal = true;
+  }
+
+  async quickDeleteUser(user: User): Promise<void> {
+    if (confirm(`Are you sure you want to delete ${user.name}? This will mark the user as deleted.`)) {
+      await this.softDeleteUser(user);
     }
   }
   async loadUsers() {
@@ -145,7 +170,11 @@ export class AdminUsersComponent implements OnInit, OnChanges {
 
   // Tab Management Methods
   setActiveTab(tabId: string): void {
-    if (!this.availableTabs.find(tab => tab.id === tabId)) return;
+    console.log(`setActiveTab called with: ${tabId}`);
+    if (!this.availableTabs.find(tab => tab.id === tabId)) {
+      console.log(`Tab ${tabId} not found in availableTabs`);
+      return;
+    }
 
     // Check for unsaved changes when leaving settings tab
     if (this.activeTab === 'settings' && tabId !== 'settings' && this.hasUnsavedChanges()) {
@@ -158,11 +187,14 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       }
     }
 
+    console.log(`Setting activeTab from ${this.activeTab} to ${tabId}`);
     this.activeTab = tabId;
-    console.log(`Switched to ${tabId} tab`);
+    console.log(`activeTab is now: ${this.activeTab}`);
+    this.cdr.detectChanges(); // Force change detection
   }
 
   isTabActive(tabId: string): boolean {
+    console.log(`isTabActive called for: ${tabId}, current activeTab: ${this.activeTab}`);
     return this.activeTab === tabId;
   }
 
@@ -179,13 +211,19 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   navigateToNextTab(): void {
     const currentIndex = this.availableTabs.findIndex(tab => tab.id === this.activeTab);
     const nextIndex = (currentIndex + 1) % this.availableTabs.length;
-    this.setActiveTab(this.availableTabs[nextIndex].id);
+    const nextTab = this.availableTabs[nextIndex];
+    console.log(`Navigating to next tab: ${nextTab.label} (${nextTab.id})`);
+    this.setActiveTab(nextTab.id);
+    this.cdr.detectChanges(); // Force change detection
   }
 
   navigateToPreviousTab(): void {
     const currentIndex = this.availableTabs.findIndex(tab => tab.id === this.activeTab);
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : this.availableTabs.length - 1;
-    this.setActiveTab(this.availableTabs[prevIndex].id);
+    const prevTab = this.availableTabs[prevIndex];
+    console.log(`Navigating to previous tab: ${prevTab.label} (${prevTab.id})`);
+    this.setActiveTab(prevTab.id);
+    this.cdr.detectChanges(); // Force change detection
   }
 
   // User selection and management
@@ -197,13 +235,16 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       }
     }
 
+    // Store the previous user ID before reassigning
+    const previousUserId = this.selectedUser?.id;
+
     this.selectedUser = user;
     // Store original data for change detection
     this.originalUserData = JSON.parse(JSON.stringify(user));
     this.openDetails = true;
 
-    // If we're not on the overview tab, switch to it when selecting a new user
-    if (this.activeTab !== 'overview') {
+    // Only switch to overview tab when selecting a different user for the first time
+    if (previousUserId !== user.id) {
       this.activeTab = 'overview';
     }
   }
@@ -346,6 +387,166 @@ export class AdminUsersComponent implements OnInit, OnChanges {
     }
   }
 
+  // Form helper methods for enhanced validation
+  getFormCompletionPercentage(): number {
+    if (!this.selectedUser) return 0;
+
+    const requiredFields = ['firstName', 'lastName', 'email'];
+    const optionalFields = ['phone', 'role', 'status', 'location', 'bio'];
+    const allFields = [...requiredFields, ...optionalFields];
+
+    let completedFields = 0;
+    requiredFields.forEach(field => {
+      if (this.selectedUser![field as keyof User] &&
+        String(this.selectedUser![field as keyof User]).trim().length > 0) {
+        completedFields++;
+      }
+    });
+
+    optionalFields.forEach(field => {
+      if (this.selectedUser![field as keyof User] &&
+        String(this.selectedUser![field as keyof User]).trim().length > 0) {
+        completedFields++;
+      }
+    });
+
+    return Math.round((completedFields / allFields.length) * 100);
+  }
+
+  getChangedFieldsCount(): number {
+    if (!this.selectedUser || !this.originalUserData) return 0;
+
+    let changedCount = 0;
+    const fieldsToCheck = ['firstName', 'lastName', 'email', 'phone', 'role', 'status', 'location', 'bio'];
+
+    fieldsToCheck.forEach(field => {
+      if (this.selectedUser![field as keyof User] !== this.originalUserData![field as keyof User]) {
+        changedCount++;
+      }
+    });
+
+    return changedCount;
+  }
+
+  // Bulk selection methods
+  toggleUserSelection(userId: string, event: any): void {
+    if (event.target.checked) {
+      this.selectedUserIds.add(userId);
+    } else {
+      this.selectedUserIds.delete(userId);
+    }
+  }
+
+  toggleSelectAll(event: any): void {
+    if (event.target.checked) {
+      // Select all current users
+      this.getCurrentUsers().forEach(user => {
+        this.selectedUserIds.add(user.id);
+      });
+    } else {
+      // Deselect all
+      this.selectedUserIds.clear();
+    }
+  }
+
+  areAllUsersSelected(): boolean {
+    const currentUsers = this.getCurrentUsers();
+    return currentUsers.length > 0 && currentUsers.every(user => this.selectedUserIds.has(user.id));
+  }
+
+  areSomeUsersSelected(): boolean {
+    return this.selectedUserIds.size > 0;
+  }
+
+  clearSelection(): void {
+    this.selectedUserIds.clear();
+  }
+
+  // Bulk operation methods
+  async bulkChangeStatus(status: UserStatus): Promise<void> {
+    if (this.selectedUserIds.size === 0) return;
+
+    const selectedUsers = this.users.filter(user => this.selectedUserIds.has(user.id));
+    const confirmation = confirm(`Are you sure you want to change the status of ${selectedUsers.length} user(s) to "${status}"?`);
+
+    if (!confirmation) return;
+
+    try {
+      const firestore = getFirestore();
+      const updatePromises = selectedUsers.map(user =>
+        updateDoc(doc(firestore, 'users', user.id), { status })
+      );
+
+      await Promise.all(updatePromises);
+      await this.loadUsers();
+
+      this.successMessage = `Successfully updated ${selectedUsers.length} user(s) status to ${status}`;
+      this.clearSelection();
+
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Error in bulk status change:', error);
+      this.errorMessage = 'Failed to update user statuses: ' + (error as Error).message;
+    }
+  }
+
+  async bulkChangeRole(role: UserRole): Promise<void> {
+    if (this.selectedUserIds.size === 0) return;
+
+    const selectedUsers = this.users.filter(user => this.selectedUserIds.has(user.id));
+    const confirmation = confirm(`Are you sure you want to change the role of ${selectedUsers.length} user(s) to "${role}"?`);
+
+    if (!confirmation) return;
+
+    try {
+      const firestore = getFirestore();
+      const updatePromises = selectedUsers.map(user =>
+        updateDoc(doc(firestore, 'users', user.id), { role })
+      );
+
+      await Promise.all(updatePromises);
+      await this.loadUsers();
+
+      this.successMessage = `Successfully updated ${selectedUsers.length} user(s) role to ${role}`;
+      this.clearSelection();
+
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Error in bulk role change:', error);
+      this.errorMessage = 'Failed to update user roles: ' + (error as Error).message;
+    }
+  }
+
+  async bulkDeleteUsers(): Promise<void> {
+    if (this.selectedUserIds.size === 0) return;
+
+    const selectedUsers = this.users.filter(user => this.selectedUserIds.has(user.id));
+    const confirmation = confirm(`Are you sure you want to delete ${selectedUsers.length} user(s)? This will mark them as deleted.`);
+
+    if (!confirmation) return;
+
+    try {
+      const firestore = getFirestore();
+      const updatePromises = selectedUsers.map(user =>
+        updateDoc(doc(firestore, 'users', user.id), {
+          status: 'Deleted',
+          isDeleted: true
+        })
+      );
+
+      await Promise.all(updatePromises);
+      await this.loadUsers();
+
+      this.successMessage = `Successfully deleted ${selectedUsers.length} user(s)`;
+      this.clearSelection();
+
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      this.errorMessage = 'Failed to delete users: ' + (error as Error).message;
+    }
+  }
+
   addUser(): Promise<UserCredential | void> {
     if (!this.email || !this.password || !this.firstName || !this.lastName) {
       alert('All fields are required');
@@ -403,6 +604,13 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       });
   }
 
+  clearUserForm(): void {
+    this.email = '';
+    this.password = '';
+    this.firstName = '';
+    this.lastName = '';
+  }
+
   onUserClick(user: User) {
     this.selectedUser = user;
     this.openDetails = true;
@@ -432,6 +640,213 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   }
 
   onSearchChange(): void { /* no-op: getters handle filtering reactively */ }
+
+  // Sites management methods
+  async loadCompanies(): Promise<void> {
+    if (this.loadingSites) return;
+
+    this.loadingSites = true;
+    try {
+      console.log('Loading companies from Firestore...');
+      const firestore = getFirestore();
+      const querySnapshot = await getDocs(collection(firestore, 'companies'));
+
+      this.companies = querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          ...data,
+          id: data['id'] || docSnap.id,
+          dateCreated: data['dateCreated'] ? new Date(data['dateCreated']) : undefined,
+          dateUpdated: data['dateUpdated'] ? new Date(data['dateUpdated']) : undefined,
+          billing: data['billing'] ? {
+            ...data['billing'],
+            nextBillingDate: data['billing']['nextBillingDate'] ? new Date(data['billing']['nextBillingDate']) : undefined
+          } : undefined
+        } as Company;
+      });
+
+      console.log('Companies loaded successfully:', this.companies.length, 'companies');
+    } catch (error) {
+      console.error('Error loading companies from Firestore:', error);
+      this.errorMessage = 'Failed to load companies: ' + (error as Error).message;
+    } finally {
+      this.loadingSites = false;
+    }
+  }
+
+  // Get companies filtered by search query
+  get filteredCompanies(): Company[] {
+    if (!this.siteSearchQuery.trim()) {
+      return this.companies;
+    }
+    const query = this.siteSearchQuery.trim().toLowerCase();
+    return this.companies.filter(company =>
+      company.name.toLowerCase().includes(query) ||
+      company.website?.toLowerCase().includes(query) ||
+      company.industry?.toLowerCase().includes(query)
+    );
+  }
+
+  // Get companies that are not yet attached to the current user
+  get availableCompanies(): Company[] {
+    if (!this.selectedUser) return this.filteredCompanies;
+
+    const attachedCompanyIds = new Set(
+      this.selectedUser.attachedSites?.map(site => site.companyId) || []
+    );
+
+    return this.filteredCompanies.filter(company => !attachedCompanyIds.has(company.id));
+  }
+
+  // Get companies attached to the current user
+  get attachedCompanies(): Company[] {
+    if (!this.selectedUser?.attachedSites) return [];
+
+    return this.selectedUser.attachedSites
+      .map(attachedSite => this.companies.find(company => company.id === attachedSite.companyId))
+      .filter(company => company !== undefined) as Company[];
+  }
+
+  // Site attachment methods
+  openSiteSelectionModal(): void {
+    this.showSiteSelectionModal = true;
+    this.selectedSiteIds.clear();
+    this.siteSearchQuery = '';
+  }
+
+  closeSiteSelectionModal(): void {
+    this.showSiteSelectionModal = false;
+    this.selectedSiteIds.clear();
+    this.siteSearchQuery = '';
+  }
+
+  toggleSiteSelection(companyId: string): void {
+    if (this.selectedSiteIds.has(companyId)) {
+      this.selectedSiteIds.delete(companyId);
+    } else {
+      this.selectedSiteIds.add(companyId);
+    }
+  }
+
+  getFilteredCompanies(): Company[] {
+    if (!this.siteSearchQuery.trim()) {
+      return this.companies;
+    }
+
+    const query = this.siteSearchQuery.toLowerCase();
+    return this.companies.filter(company =>
+      company.name.toLowerCase().includes(query) ||
+      (company.website && company.website.toLowerCase().includes(query)) ||
+      (company.description && company.description.toLowerCase().includes(query))
+    );
+  }
+
+  filterCompanies(): void {
+    // This method is called when the search input changes
+    // The actual filtering is done by getFilteredCompanies()
+    // This method can be used for any additional side effects if needed
+  }
+
+  async attachSelectedSites(): Promise<void> {
+    if (!this.selectedUser || this.selectedSiteIds.size === 0 || this.attachingSites) return;
+
+    this.attachingSites = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      // Create AttachedSite objects for selected companies
+      const newAttachedSites: AttachedSite[] = Array.from(this.selectedSiteIds).map(companyId => {
+        const company = this.companies.find(c => c.id === companyId);
+        return {
+          companyId: companyId,
+          companyName: company?.name || 'Unknown Company',
+          dateAttached: new Date(),
+          role: 'User', // Default role
+          permissions: [], // Default permissions
+          notes: ''
+        };
+      });
+
+      // Update user's attached sites
+      const currentAttachedSites = this.selectedUser.attachedSites || [];
+      const updatedAttachedSites = [...currentAttachedSites, ...newAttachedSites];
+
+      // Save to Firebase
+      const firestore = getFirestore();
+      await updateDoc(doc(firestore, 'users', this.selectedUser.id), {
+        attachedSites: updatedAttachedSites
+      });
+
+      // Update local user data
+      this.selectedUser.attachedSites = updatedAttachedSites;
+      this.originalUserData = JSON.parse(JSON.stringify(this.selectedUser));
+
+      // Update the user in the users array
+      const userIndex = this.users.findIndex(u => u.id === this.selectedUser!.id);
+      if (userIndex !== -1) {
+        this.users[userIndex] = { ...this.selectedUser };
+      }
+
+      this.successMessage = `Successfully attached ${this.selectedSiteIds.size} site${this.selectedSiteIds.size === 1 ? '' : 's'} to ${this.selectedUser.name}`;
+      this.closeSiteSelectionModal();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error attaching sites:', error);
+      this.errorMessage = 'Failed to attach sites: ' + (error as Error).message;
+    } finally {
+      this.attachingSites = false;
+    }
+  }
+
+  async detachSite(companyId: string): Promise<void> {
+    if (!this.selectedUser || !confirm('Are you sure you want to detach this site from the user?')) return;
+
+    try {
+      // Remove the site from attached sites
+      const updatedAttachedSites = this.selectedUser.attachedSites?.filter(
+        site => site.companyId !== companyId
+      ) || [];
+
+      // Save to Firebase
+      const firestore = getFirestore();
+      await updateDoc(doc(firestore, 'users', this.selectedUser.id), {
+        attachedSites: updatedAttachedSites
+      });
+
+      // Update local user data
+      this.selectedUser.attachedSites = updatedAttachedSites;
+      this.originalUserData = JSON.parse(JSON.stringify(this.selectedUser));
+
+      // Update the user in the users array
+      const userIndex = this.users.findIndex(u => u.id === this.selectedUser!.id);
+      if (userIndex !== -1) {
+        this.users[userIndex] = { ...this.selectedUser };
+      }
+
+      const company = this.companies.find(c => c.id === companyId);
+      this.successMessage = `Successfully detached ${company?.name || 'site'} from ${this.selectedUser.name}`;
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error detaching site:', error);
+      this.errorMessage = 'Failed to detach site: ' + (error as Error).message;
+    }
+  }
+
+  // Helper method to get attached site info
+  getAttachedSite(companyId: string): AttachedSite | undefined {
+    return this.selectedUser?.attachedSites?.find(site => site.companyId === companyId);
+  }
 
   getInitials(name: string): string {
     if (!name) return '';
@@ -504,20 +919,44 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   async updateUser() {
     if (!this.editingUser) return;
 
-    const firestore = getFirestore();
-    await updateDoc(doc(firestore, 'users', this.editingUser.id), {
-      firstName: this.editingUser.firstName,
-      lastName: this.editingUser.lastName,
-      name: `${this.editingUser.firstName} ${this.editingUser.lastName}`,
-      email: this.editingUser.email,
-      role: this.editingUser.role,
-      location: this.editingUser.location,
-      bio: this.editingUser.bio
-    });
+    try {
+      // Update the name from first and last name
+      this.editingUser.name = `${this.editingUser.firstName} ${this.editingUser.lastName}`;
 
-    await this.loadUsers();
-    this.showEditUserModal = false;
-    this.editingUser = null;
+      const firestore = getFirestore();
+      await updateDoc(doc(firestore, 'users', this.editingUser.id), {
+        firstName: this.editingUser.firstName,
+        lastName: this.editingUser.lastName,
+        name: this.editingUser.name,
+        email: this.editingUser.email,
+        role: this.editingUser.role,
+        status: this.editingUser.status,
+        location: this.editingUser.location,
+        bio: this.editingUser.bio
+      });
+
+      await this.loadUsers();
+
+      // Update selected user if it's the one being edited
+      if (this.selectedUser && this.selectedUser.id === this.editingUser.id) {
+        const updatedUser = this.users.find(u => u.id === this.editingUser!.id);
+        if (updatedUser) {
+          this.selectedUser = updatedUser;
+          this.originalUserData = JSON.parse(JSON.stringify(updatedUser));
+        }
+      }
+
+      const userName = this.editingUser.name;
+
+      this.showEditUserModal = false;
+      this.editingUser = null;
+
+      this.successMessage = `Successfully updated ${userName}`;
+      setTimeout(() => this.successMessage = '', 3000);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      this.errorMessage = 'Failed to update user: ' + (error as Error).message;
+    }
   }
 
   deleteUser(user: User): void {
@@ -525,10 +964,25 @@ export class AdminUsersComponent implements OnInit, OnChanges {
     this.softDeleteUser(user);
   }
 
-  restoreUser(user: User): void {
+  async restoreUser(user: User): Promise<void> {
     if (user.status === 'Deleted' && confirm(`Are you sure you want to restore ${user.name}?`)) {
-      user.status = 'Active';
-      user.lastLogin = new Date();
+      const firestore = getFirestore();
+      await updateDoc(doc(firestore, 'users', user.id), {
+        isDeleted: false,
+        status: 'Active',
+        lastLogin: new Date()
+      });
+      await this.loadUsers();
+
+      // Update selected user if it's the one being restored
+      if (this.selectedUser && this.selectedUser.id === user.id) {
+        const restoredUser = this.users.find(u => u.id === user.id);
+        if (restoredUser) {
+          this.selectedUser = restoredUser;
+          this.originalUserData = JSON.parse(JSON.stringify(restoredUser));
+        }
+      }
+
       console.log('User restored:', user);
     }
   }

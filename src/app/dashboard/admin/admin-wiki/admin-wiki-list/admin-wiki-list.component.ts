@@ -54,6 +54,10 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
   editingPage: WikiPage | null = null;
   categories: string[] = ['Documentation', 'Tutorials', 'FAQ', 'Troubleshooting', 'API', 'Best Practices'];
 
+  // Track changes for confirmation dialogs
+  hasUnsavedChanges: boolean = false;
+  originalPageContent: string = '';
+
   @ViewChild('wysiwygEditor', { static: false }) wysiwygEditor!: ElementRef;
 
   ngAfterViewInit() {
@@ -136,6 +140,11 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
     console.log('Setting editingPageId to:', page.id);
     this.editingPageId = page.id;
     this.editingPage = { ...page };
+
+    // Track original content for change detection
+    this.originalPageContent = page.content;
+    this.hasUnsavedChanges = false;
+
     console.log('Edit mode active for:', this.editingPageId);
 
     // Initialize WYSIWYG editor after the edit mode is set and DOM is updated
@@ -148,25 +157,70 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
 
   saveEdit(): void {
     if (this.editingPage) {
-      // Get the latest content from WYSIWYG editor before saving
+      // Show confirmation dialog before saving
+      const confirmSave = window.confirm(
+        `Are you sure you want to save changes to "${this.editingPage.title}"?\n\n` +
+        'This will update the wiki page with your current changes.'
+      );
+
+      if (!confirmSave) {
+        return; // User cancelled the save
+      }
+
+      // Get the exact content from WYSIWYG editor before saving
       if (this.wysiwygEditor && this.wysiwygEditor.nativeElement) {
-        this.editingPage.content = this.wysiwygEditor.nativeElement.innerHTML;
+        const editorContent = this.wysiwygEditor.nativeElement.innerHTML;
+        console.log('Editor content before save:', editorContent);
+
+        // Store the exact HTML content as it appears in the editor
+        this.editingPage.content = editorContent;
+
+        console.log('Page content after save:', this.editingPage.content);
+
+        // Verify content matches
+        if (editorContent === this.editingPage.content) {
+          console.log('✅ Content consistency verified - editor matches saved content');
+        } else {
+          console.warn('⚠️ Content mismatch detected between editor and saved content');
+        }
       }
 
       // Update metadata
       this.editingPage.lastModified = new Date().toISOString();
 
       this.onSavePage.emit(this.editingPage);
+
+      // Reset change tracking since we just saved
+      this.hasUnsavedChanges = false;
+      this.originalPageContent = this.editingPage.content;
+
       this.cancelEdit();
     }
   }
 
   cancelEdit(): void {
+    // Check if there are unsaved changes
+    if (this.hasUnsavedChanges) {
+      const confirmCancel = window.confirm(
+        `⚠️ UNSAVED CHANGES ⚠️\n\n` +
+        `You have unsaved changes to "${this.editingPage?.title}". ` +
+        `If you cancel now, all your changes will be lost.\n\n` +
+        `Are you sure you want to cancel editing without saving?`
+      );
+
+      if (!confirmCancel) {
+        return; // User wants to keep editing
+      }
+    }
+
     // Clean up WYSIWYG editor event listeners
     this.removeWysiwygEventListeners();
 
+    // Reset tracking properties
     this.editingPageId = null;
     this.editingPage = null;
+    this.hasUnsavedChanges = false;
+    this.originalPageContent = '';
   }
 
   isEditing(page: WikiPage): boolean {
@@ -181,11 +235,82 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
         .split(',')
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
+
+      // Track changes for confirmation dialogs
+      this.checkForUnsavedChanges();
     }
   }
 
+  // Track changes in title field
+  onTitleChange(): void {
+    if (this.editingPage) {
+      this.checkForUnsavedChanges();
+    }
+  }
+
+  // Track changes in category field
+  onCategoryChange(): void {
+    if (this.editingPage) {
+      this.checkForUnsavedChanges();
+    }
+  }
+
+  // Track changes in summary field
+  onSummaryChange(): void {
+    if (this.editingPage) {
+      this.checkForUnsavedChanges();
+    }
+  }
+
+  // Helper method to check if any field has changed
+  public checkForUnsavedChanges(): void {
+    if (!this.editingPage) return;
+
+    // Find the original page to compare against
+    const originalPage = this.wikiPages.find(p => p.id === this.editingPage!.id);
+    if (!originalPage) return;
+
+    // Check if any field has changed
+    const hasChanges = (
+      this.editingPage.title !== originalPage.title ||
+      this.editingPage.category !== originalPage.category ||
+      this.editingPage.summary !== originalPage.summary ||
+      JSON.stringify(this.editingPage.tags.sort()) !== JSON.stringify(originalPage.tags.sort()) ||
+      this.editingPage.content !== this.originalPageContent
+    );
+
+    this.hasUnsavedChanges = hasChanges;
+
+    console.log('Unsaved changes check:', {
+      hasChanges,
+      titleChanged: this.editingPage.title !== originalPage.title,
+      categoryChanged: this.editingPage.category !== originalPage.category,
+      summaryChanged: this.editingPage.summary !== originalPage.summary,
+      tagsChanged: JSON.stringify(this.editingPage.tags.sort()) !== JSON.stringify(originalPage.tags.sort()),
+      contentChanged: this.editingPage.content !== this.originalPageContent
+    });
+  }
+
   confirmDeletePage(page: WikiPage): void {
-    this.onDeletePage.emit(page);
+    // Show confirmation dialog with detailed warning
+    const confirmDelete = window.confirm(
+      `⚠️ DELETE CONFIRMATION ⚠️\n\n` +
+      `Are you sure you want to permanently delete the wiki page:\n` +
+      `"${page.title}"\n\n` +
+      `This action cannot be undone. The page and all its content will be permanently removed.\n\n` +
+      `Page Details:\n` +
+      `• Category: ${page.category}\n` +
+      `• Author: ${page.author}\n` +
+      `• Created: ${new Date(page.createdDate).toLocaleDateString()}\n` +
+      `• Views: ${page.views}\n\n` +
+      `Click OK to permanently delete this page, or Cancel to keep it.`
+    );
+
+    if (confirmDelete) {
+      // User confirmed deletion
+      this.onDeletePage.emit(page);
+    }
+    // If user cancels, nothing happens - page remains
   }
 
   createNewPage(): void {
@@ -220,8 +345,19 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
       // Save cursor position
       const selection = this.saveSelection();
 
-      // Update content
-      this.editingPage.content = event.target.innerHTML;
+      // Get the exact content from the editor and store it
+      const currentContent = event.target.innerHTML;
+      this.editingPage.content = currentContent;
+
+      // Track if content has changed from original
+      this.hasUnsavedChanges = (currentContent !== this.originalPageContent);
+
+      console.log('Content updated in real-time:', {
+        length: currentContent.length,
+        hasFormatting: currentContent.includes('<'),
+        preview: currentContent.substring(0, 100),
+        hasUnsavedChanges: this.hasUnsavedChanges
+      });
 
       // Don't restore selection here to avoid infinite loop
       // The selection is preserved naturally since we're not re-rendering innerHTML
@@ -315,9 +451,29 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
     // Add toolbar event listeners
     this.addToolbarEventListeners();
 
-    // Populate editor with existing content
+    // Populate editor with existing content exactly as stored
     if (this.wysiwygEditor && this.wysiwygEditor.nativeElement && this.editingPage) {
-      this.wysiwygEditor.nativeElement.innerHTML = this.editingPage.content || '';
+      const contentToLoad = this.editingPage.content || '';
+      console.log('Loading content into editor:', {
+        length: contentToLoad.length,
+        hasFormatting: contentToLoad.includes('<'),
+        preview: contentToLoad.substring(0, 100)
+      });
+
+      // Set the content exactly as it was stored
+      this.wysiwygEditor.nativeElement.innerHTML = contentToLoad;
+
+      // Verify the content was loaded correctly
+      const loadedContent = this.wysiwygEditor.nativeElement.innerHTML;
+      if (loadedContent === contentToLoad) {
+        console.log('✅ Content loaded successfully into editor');
+      } else {
+        console.warn('⚠️ Content loading issue - stored vs loaded:', {
+          stored: contentToLoad,
+          loaded: loadedContent
+        });
+      }
+
       // Focus the editor
       this.wysiwygEditor.nativeElement.focus();
     }
@@ -373,6 +529,11 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private executeCommand(command: string, value?: string): void {
+    // Focus the editor to ensure commands work properly
+    if (this.wysiwygEditor?.nativeElement) {
+      this.wysiwygEditor.nativeElement.focus();
+    }
+
     if (command === 'h1' || command === 'h2') {
       document.execCommand('formatBlock', false, command);
     } else if (command === 'forecolor' || command === 'backcolor') {
@@ -386,9 +547,17 @@ export class AdminWikiListComponent implements OnInit, AfterViewInit, OnDestroy 
       document.execCommand(command, false, value);
     }
 
-    // Update the content after command execution
+    // Update the content after command execution and verify consistency
     if (this.wysiwygEditor && this.editingPage) {
-      this.editingPage.content = this.wysiwygEditor.nativeElement.innerHTML;
+      const updatedContent = this.wysiwygEditor.nativeElement.innerHTML;
+      this.editingPage.content = updatedContent;
+
+      console.log(`Command '${command}' executed:`, {
+        command,
+        value,
+        contentLength: updatedContent.length,
+        hasFormatting: updatedContent.includes('<')
+      });
     }
   }
 

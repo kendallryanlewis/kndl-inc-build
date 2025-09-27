@@ -5,10 +5,42 @@
         <div class="header-section d-flex justify-content-between align-items-center mb-3">
             <app-generic-h2-title [title]="'Admin Users'" [icon]="'fa-users'"
                 [subTitle]="'Manage users, roles, and permissions.'"></app-generic-h2-title>
-            <button class="admin-tab bg-blue my-auto" (click)="showCreateUserModal = true">
-                <i class="fa fa-plus me-2"></i>
-                Add User
-            </button>
+
+            <!-- Action Buttons -->
+            <div class="header-actions d-flex gap-2">
+                <!-- Bulk Actions (shown when users are selected) -->
+                <div class="bulk-actions d-flex gap-2" *ngIf="selectedUserIds.size > 0">
+                    <div class="selected-count-badge bg-primary text-white px-3 py-2 rounded-pill small">
+                        <i class="fa fa-check me-1"></i>
+                        {{ selectedUserIds.size }} selected
+                    </div>
+                    <button class="btn btn-outline-success btn-sm" (click)="bulkChangeStatus('Active')"
+                        title="Set selected users to Active">
+                        <i class="fa fa-check-circle me-1"></i>
+                        Activate
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" (click)="bulkChangeRole('Manager')"
+                        title="Set selected users to Manager role">
+                        <i class="fa fa-users me-1"></i>
+                        Make Manager
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" (click)="bulkDeleteUsers()"
+                        title="Delete selected users">
+                        <i class="fa fa-trash me-1"></i>
+                        Delete
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="clearSelection()" title="Clear selection">
+                        <i class="fa fa-times me-1"></i>
+                        Clear
+                    </button>
+                </div>
+
+                <!-- Add User Button -->
+                <button class="admin-tab bg-blue my-auto" (click)="showCreateUserModal = true">
+                    <i class="fa fa-plus me-2"></i>
+                    Add User
+                </button>
+            </div>
         </div>
 
         <div class="row w-100 h-100 g-2">
@@ -33,39 +65,95 @@
 
                     <!-- User Cards -->
                     <div class="users-list flex-grow-1 overflow-auto">
-                        <div *ngFor="let user of getCurrentUsers()"
-                            class="user-card d-flex align-items-center p-2 mb-3 bg-white border cursor-pointer rounded stat-card"
-                            [class.bg-primary]="selectedUser?.id === user.id"
-                            [class.text-white]="selectedUser?.id === user.id" (click)="selectUser(user)">
+                        <!-- Select All Header -->
+                        <div class="select-all-header d-flex align-items-center p-2 mb-2 bg-light "
+                            *ngIf="getCurrentUsers().length > 0">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAll"
+                                    [checked]="areAllUsersSelected()"
+                                    [indeterminate]="areSomeUsersSelected() && !areAllUsersSelected()"
+                                    (change)="toggleSelectAll($event)">
+                                <label class="form-check-label small text-muted" for="selectAll">
+                                    {{ selectedUserIds.size > 0 ? selectedUserIds.size + ' selected' : 'Select all' }}
+                                </label>
+                            </div>
+                        </div>
 
-                            <!-- User Avatar -->
-                            <div class="user-avatar me-2">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white fw-bold"
-                                    style="width: 32px; height: 32px; font-size: 0.875rem;">
-                                    {{ getInitials(user.name) }}
+                        <div *ngFor="let user of getCurrentUsers()"
+                            class="user-card d-flex align-items-center p-2 mb-3 bg-white border rounded stat-card position-relative"
+                            [class.bg-primary]="selectedUser?.id === user.id && selectedUserIds.size === 0"
+                            [class.text-white]="selectedUser?.id === user.id && selectedUserIds.size === 0"
+                            [class.bg-info]="selectedUserIds.has(user.id) && selectedUser?.id !== user.id"
+                            [class.text-white]="selectedUserIds.has(user.id)">
+
+                            <!-- Selection Checkbox -->
+                            <div class="user-checkbox me-2" (click)="$event.stopPropagation()">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" [id]="'user-' + user.id"
+                                        [checked]="selectedUserIds.has(user.id)"
+                                        (change)="toggleUserSelection(user.id, $event)">
                                 </div>
                             </div>
 
-                            <!-- User Info -->
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="min-w-0 flex-grow-1">
-                                        <h6 class="mb-0 fw-medium text-truncate" style="font-size: 0.9rem;">
-                                            {{ user.name }}
-                                        </h6>
-                                        <small class="text-muted d-block text-truncate">{{ user.email }}</small>
-                                    </div>
-                                    <div class="text-end ms-2">
-                                        <span class="badge rounded-pill" style="font-size: 0.65rem;" [ngClass]="{
-                                                  'bg-success': user.status === 'Active',
-                                                  'bg-warning': user.status === 'Invited',
-                                                  'bg-danger': user.status === 'Deleted'
-                                              }">
-                                            {{ user.status }}
-                                        </span>
-                                        <div class="text-muted mt-1 small">{{ user.role }}</div>
+                            <!-- Main User Info (Clickable) -->
+                            <div class="user-main-content d-flex align-items-center flex-grow-1 cursor-pointer"
+                                (click)="selectUser(user)">
+                                <!-- User Avatar -->
+                                <div class="user-avatar me-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white fw-bold"
+                                        style="width: 32px; height: 32px; font-size: 0.875rem;">
+                                        {{ getInitials(user.name) }}
                                     </div>
                                 </div>
+
+                                <!-- User Info -->
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="min-w-0 flex-grow-1">
+                                            <h6 class="mb-0 fw-medium text-truncate" style="font-size: 0.9rem;">
+                                                {{ user.name }}
+                                            </h6>
+                                            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+                                        </div>
+                                        <div class="text-end ms-2">
+                                            <span class="badge rounded-pill" style="font-size: 0.65rem;" [ngClass]="{
+                                                      'bg-success': user.status === 'Active',
+                                                      'bg-warning': user.status === 'Invited',
+                                                      'bg-danger': user.status === 'Deleted'
+                                                  }">
+                                                {{ user.status }}
+                                            </span>
+                                            <div class="text-muted mt-1 small">{{ user.role }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Action Buttons -->
+                            <div class="user-actions d-flex gap-1 ms-2" (click)="$event.stopPropagation()">
+                                <button
+                                    class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px; padding: 0;" (click)="quickEditUser(user)"
+                                    title="Quick Edit User"
+                                    [class.btn-outline-light]="selectedUser?.id === user.id || selectedUserIds.has(user.id)">
+                                    <i class="fa fa-edit" style="font-size: 0.75rem;"></i>
+                                </button>
+                                <button
+                                    class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px; padding: 0;" (click)="quickDeleteUser(user)"
+                                    title="Delete User"
+                                    [class.btn-outline-light]="selectedUser?.id === user.id || selectedUserIds.has(user.id)"
+                                    *ngIf="user.status !== 'Deleted'">
+                                    <i class="fa fa-trash" style="font-size: 0.75rem;"></i>
+                                </button>
+                                <button
+                                    class="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px; padding: 0;" (click)="restoreUser(user)"
+                                    title="Restore User"
+                                    [class.btn-outline-light]="selectedUser?.id === user.id || selectedUserIds.has(user.id)"
+                                    *ngIf="user.status === 'Deleted'">
+                                    <i class="fa fa-undo" style="font-size: 0.75rem;"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -129,7 +217,7 @@
                     </div>
 
                     <!-- Tabs Navigation -->
-                    <div class="tabs-nav px-3 py-2 border-bottom stat-card bg-blue text-tan">
+                    <div class="tabs-nav px-3 py-2  stat-card bg-blue text-tan">
                         <nav class="d-flex gap-1">
                             <button *ngFor="let tab of availableTabs"
                                 class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium d-flex align-items-center gap-2 text-tan"
@@ -143,36 +231,17 @@
                     </div>
 
                     <!-- Tab Content -->
-                    <div class="tab-content flex-grow-1 overflow-auto p-3">
-                        <!-- Tab Navigation Controls -->
-                        <div class="tab-controls d-flex justify-content-between align-items-center mb-3">
-                            <div class="tab-info">
-                                <span class="small text-muted">
-                                    <i class="fa" [class]="getTabIcon(activeTab)"></i>
-                                    {{ getTabLabel(activeTab) }}
-                                </span>
-                            </div>
-                            <div class="tab-navigation">
-                                <button class="btn btn-outline-secondary btn-sm me-2" (click)="navigateToPreviousTab()"
-                                    title="Previous Tab">
-                                    <i class="fa fa-chevron-left"></i>
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" (click)="navigateToNextTab()"
-                                    title="Next Tab">
-                                    <i class="fa fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
+                    <div class="tab-content flex-grow-1 overflow-auto mt-3">
 
                         <!-- Overview Tab -->
-                        <div *ngIf="isTabActive('overview')" class="tab-pane">
+                        <div *ngIf="isTabActive('overview')" class="stat-card p-3">
                             <div class="row g-3">
                                 <div class="col-md-8">
                                     <!-- Recent Activity -->
-                                    <div class="content-card p-3 border bg-light mb-3">
+                                    <div class="stt-card mb-3">
                                         <h6 class="mb-3 fw-medium">Recent Activity</h6>
                                         <div class="activity-list">
-                                            <div class="activity-item d-flex align-items-center p-2 mb-2 border-bottom"
+                                            <div class="activity-item d-flex align-items-center p-2 mb-2 "
                                                 *ngFor="let activity of getRecentActivity(selectedUser)">
                                                 <div class="activity-icon me-2 rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
                                                     style="width: 24px; height: 24px;">
@@ -188,7 +257,7 @@
                                     </div>
 
                                     <!-- User Performance -->
-                                    <div class="content-card p-3 border bg-light">
+                                    <div class="stt-card">
                                         <h6 class="mb-3 fw-medium">User Statistics</h6>
                                         <div class="performance-metrics row g-2">
                                             <div class="col-4">
@@ -221,11 +290,11 @@
 
                                 <div class="col-md-4">
                                     <!-- User Information -->
-                                    <div class="content-card p-3 border bg-light">
+                                    <div class="stt-card">
                                         <h6 class="mb-3 fw-medium">User Information</h6>
                                         <div class="info-list">
                                             <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
                                                 <span class="small text-muted">Status</span>
                                                 <span class="status-badge px-2 py-1 rounded-pill small fw-medium"
                                                     [ngClass]="{
@@ -237,18 +306,18 @@
                                                 </span>
                                             </div>
                                             <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
                                                 <span class="small text-muted">Role</span>
                                                 <span class="small fw-medium">{{ selectedUser.role }}</span>
                                             </div>
                                             <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
                                                 <span class="small text-muted">Location</span>
                                                 <span class="small">{{ selectedUser.location || 'Not specified'
                                                     }}</span>
                                             </div>
                                             <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
                                                 <span class="small text-muted">Joined</span>
                                                 <span class="small">{{ formatDate(selectedUser.joinDate) }}</span>
                                             </div>
@@ -263,20 +332,160 @@
                             </div>
                         </div>
 
-                        <!-- Activity Tab -->
-                        <div *ngIf="isTabActive('activity')" class="tab-pane">
-                            <div class="content-card p-3 border bg-light">
-                                <h6 class="mb-3 fw-medium">User Activity Log</h6>
-                                <div class="activity-timeline">
-                                    <div class="timeline-item d-flex align-items-start p-3 mb-3 border rounded"
-                                        *ngFor="let activity of getRecentActivity(selectedUser)">
-                                        <div class="timeline-icon me-3 rounded-circle bg-tan text-white d-flex align-items-center justify-content-center"
-                                            style="width: 36px; height: 32px; min-width: 32px;">
-                                            <i [class]="activity.icon" style="font-size: 0.875rem;"></i>
-                                        </div>
-                                        <div class="timeline-content flex-grow-1">
-                                            <div class="activity-description fw-medium">{{ activity.description }}</div>
-                                            <div class="activity-time text-muted small">{{ formatDate(activity.date) }}
+                        <!-- Sites Tab -->
+                        <div *ngIf="isTabActive('sites')" class="stat-card p-3">
+                            <div class="stt-card">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-medium">
+                                        <i class="fa fa-globe me-2"></i>
+                                        Attached Sites
+                                    </h6>
+                                    <button class="btn btn-primary btn-sm" (click)="openSiteSelectionModal()"
+                                        [disabled]="loadingSites">
+                                        <i class="fa fa-plus me-1"></i>
+                                        Attach Sites
+                                    </button>
+                                </div>
+
+                                <!-- Loading State -->
+                                <div class="text-center py-4" *ngIf="loadingSites">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading sites...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading available sites...</p>
+                                </div>
+
+                                <!-- Attached Sites List -->
+                                <div *ngIf="!loadingSites">
+                                    <!-- No Sites Attached -->
+                                    <div class="text-center py-4" *ngIf="attachedCompanies.length === 0">
+                                        <i class="fa fa-globe text-muted" style="font-size: 3rem;"></i>
+                                        <h6 class="mt-3 text-muted">No Sites Attached</h6>
+                                        <p class="text-muted">This user doesn't have any sites attached to their
+                                            profile.</p>
+                                        <button class="btn btn-outline-primary" (click)="openSiteSelectionModal()">
+                                            <i class="fa fa-plus me-1"></i>
+                                            Attach First Site
+                                        </button>
+                                    </div>
+
+                                    <!-- Sites Grid -->
+                                    <div class="sites-grid" *ngIf="attachedCompanies.length > 0">
+                                        <div class="row g-3">
+                                            <div class="col-md-6 col-lg-4" *ngFor="let company of attachedCompanies">
+                                                <div class="site-card border rounded p-3 h-100 d-flex flex-column">
+                                                    <!-- Site Header -->
+                                                    <div
+                                                        class="site-header d-flex justify-content-between align-items-start mb-2">
+                                                        <div class="site-info flex-grow-1">
+                                                            <h6 class="site-name mb-1 fw-bold">{{ company.name }}</h6>
+                                                            <small class="text-muted" *ngIf="company.website">
+                                                                <i class="fa fa-link me-1"></i>
+                                                                <a [href]="company.website" target="_blank"
+                                                                    class="text-decoration-none">
+                                                                    {{ company.website }}
+                                                                </a>
+                                                            </small>
+                                                        </div>
+                                                        <div class="site-actions">
+                                                            <button class="btn btn-outline-danger btn-sm"
+                                                                (click)="detachSite(company.id)" title="Detach Site">
+                                                                <i class="fa fa-unlink" style="font-size: 0.75rem;"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Site Details -->
+                                                    <div class="site-details flex-grow-1">
+                                                        <div class="site-info-item d-flex align-items-center mb-2"
+                                                            *ngIf="company.industry">
+                                                            <i class="fa fa-industry text-muted me-2"
+                                                                style="width: 16px;"></i>
+                                                            <span class="small">{{ company.industry }}</span>
+                                                        </div>
+
+                                                        <div class="site-info-item d-flex align-items-center mb-2"
+                                                            *ngIf="company.contactEmail">
+                                                            <i class="fa fa-envelope text-muted me-2"
+                                                                style="width: 16px;"></i>
+                                                            <span class="small">{{ company.contactEmail }}</span>
+                                                        </div>
+
+                                                        <div class="site-info-item d-flex align-items-center mb-2">
+                                                            <i class="fa fa-calendar text-muted me-2"
+                                                                style="width: 16px;"></i>
+                                                            <span class="small">
+                                                                Attached {{
+                                                                formatDate(getAttachedSite(company.id)?.dateAttached) }}
+                                                            </span>
+                                                        </div>
+
+                                                        <!-- Site Status -->
+                                                        <div class="site-status mt-2">
+                                                            <span class="badge rounded-pill"
+                                                                [class.bg-success]="company.status === 'Active'"
+                                                                [class.bg-warning]="company.status === 'Inactive'"
+                                                                [class.bg-danger]="company.status === 'Suspended'">
+                                                                {{ company.status }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Site Links -->
+                                                    <div class="site-links mt-3 pt-2 border-top"
+                                                        *ngIf="company.links && company.links.length > 0">
+                                                        <small class="text-muted d-block mb-2">Quick Links:</small>
+                                                        <div class="d-flex flex-wrap gap-1">
+                                                            <a *ngFor="let link of company.links.slice(0, 3)"
+                                                                [href]="link.url" target="_blank"
+                                                                class="badge bg-light text-dark text-decoration-none"
+                                                                [title]="link.name">
+                                                                <i class="fa" [class.fa-globe]="link.type === 'website'"
+                                                                    [class.fa-book]="link.type === 'documentation'"
+                                                                    [class.fa-question-circle]="link.type === 'support'"
+                                                                    [class.fa-share-alt]="link.type === 'social'"
+                                                                    [class.fa-link]="link.type === 'other'"
+                                                                    style="font-size: 0.75rem;"></i>
+                                                                {{ link.name }}
+                                                            </a>
+                                                            <span *ngIf="company.links.length > 3"
+                                                                class="badge bg-secondary"
+                                                                [title]="'And ' + (company.links.length - 3) + ' more links'">
+                                                                +{{ company.links.length - 3 }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Billing Info (if available) -->
+                                                    <div class="billing-info mt-3 pt-2 border-top"
+                                                        *ngIf="company.billing">
+                                                        <small class="text-muted d-block mb-2">Billing:</small>
+                                                        <div class="billing-details">
+                                                            <div class="d-flex justify-content-between align-items-center"
+                                                                *ngIf="company.billing.subscriptionPlan">
+                                                                <small class="text-muted">Plan:</small>
+                                                                <small class="fw-medium">{{
+                                                                    company.billing.subscriptionPlan }}</small>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between align-items-center"
+                                                                *ngIf="company.billing.monthlyRate">
+                                                                <small class="text-muted">Rate:</small>
+                                                                <small class="fw-medium">${{ company.billing.monthlyRate
+                                                                    }}/month</small>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between align-items-center"
+                                                                *ngIf="company.billing.subscriptionStatus">
+                                                                <small class="text-muted">Status:</small>
+                                                                <span class="badge badge-sm rounded-pill"
+                                                                    [class.bg-success]="company.billing.subscriptionStatus === 'Active'"
+                                                                    [class.bg-warning]="company.billing.subscriptionStatus === 'Past Due'"
+                                                                    [class.bg-danger]="company.billing.subscriptionStatus === 'Cancelled'">
+                                                                    {{ company.billing.subscriptionStatus }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -285,8 +494,8 @@
                         </div>
 
                         <!-- Permissions Tab -->
-                        <div *ngIf="isTabActive('permissions')" class="tab-pane">
-                            <div class="content-card p-3 border bg-light">
+                        <div *ngIf="isTabActive('permissions')" class="stat-card p-3">
+                            <div class="stt-card">
                                 <h6 class="mb-3 fw-medium">User Permissions</h6>
                                 <div class="permissions-grid">
                                     <div class="row g-3">
@@ -340,8 +549,8 @@
                         </div>
 
                         <!-- Settings Tab -->
-                        <div *ngIf="isTabActive('settings')" class="tab-pane">
-                            <div class="content-card p-3 border bg-light">
+                        <div *ngIf="isTabActive('settings')" class="stat-card p-3">
+                            <div class="stt-card">
                                 <h6 class="mb-3 fw-medium">
                                     <i class="fa fa-cog me-2"></i>
                                     User Settings
@@ -365,123 +574,310 @@
                                         aria-label="Close"></button>
                                 </div>
                                 <form #settingsForm="ngForm" (ngSubmit)="saveUserSettings()">
+                                    <!-- Form Progress Indicator -->
+                                    <div class="form-progress mb-4">
+                                        <div class="progress" style="height: 3px;">
+                                            <div class="progress-bar bg-primary"
+                                                [style.width]="getFormCompletionPercentage() + '%'"></div>
+                                        </div>
+                                        <small class="text-muted mt-1 d-block">
+                                            {{ getFormCompletionPercentage() }}% Complete
+                                        </small>
+                                    </div>
+
                                     <div class="row g-3">
                                         <div class="col-md-6">
+                                            <!-- First Name -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">
-                                                    First Name <span class="text-danger">*</span>
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-user me-1 text-primary"></i>
+                                                    First Name
+                                                    <span class="text-danger">*</span>
                                                     <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter the user's first name" style="cursor: help;"></i>
+                                                        title="Enter the user's first name (2-50 characters)"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
                                                 </label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    [class.is-valid]="firstName.valid && firstName.touched"
+                                                <input type="text" class="form-control enhanced-input"
+                                                    [class.is-valid]="firstName.valid && firstName.touched && firstName.value?.length > 0"
                                                     [class.is-invalid]="firstName.invalid && firstName.touched"
                                                     [(ngModel)]="selectedUser.firstName" name="firstName" required
-                                                    #firstName="ngModel" placeholder="Enter first name">
+                                                    minlength="2" maxlength="50" #firstName="ngModel"
+                                                    placeholder="Enter first name" autocomplete="given-name">
+                                                <div class="form-text text-muted" *ngIf="!firstName.touched">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    Enter the user's given name
+                                                </div>
                                                 <div *ngIf="firstName.invalid && firstName.touched"
                                                     class="invalid-feedback">
-                                                    First name is required
+                                                    <div *ngIf="firstName.errors?.['required']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        First name is required
+                                                    </div>
+                                                    <div *ngIf="firstName.errors?.['minlength']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        First name must be at least 2 characters
+                                                    </div>
+                                                    <div *ngIf="firstName.errors?.['maxlength']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        First name cannot exceed 50 characters
+                                                    </div>
+                                                </div>
+                                                <div *ngIf="firstName.valid && firstName.touched && firstName.value?.length > 0"
+                                                    class="valid-feedback">
+                                                    <i class="fa fa-check-circle me-1"></i>
+                                                    Looks good!
                                                 </div>
                                             </div>
+
+                                            <!-- Last Name -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">
-                                                    Last Name <span class="text-danger">*</span>
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-user me-1 text-primary"></i>
+                                                    Last Name
+                                                    <span class="text-danger">*</span>
                                                     <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter the user's last name" style="cursor: help;"></i>
+                                                        title="Enter the user's last name (2-50 characters)"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
                                                 </label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    [class.is-valid]="lastName.valid && lastName.touched"
+                                                <input type="text" class="form-control enhanced-input"
+                                                    [class.is-valid]="lastName.valid && lastName.touched && lastName.value?.length > 0"
                                                     [class.is-invalid]="lastName.invalid && lastName.touched"
                                                     [(ngModel)]="selectedUser.lastName" name="lastName" required
-                                                    #lastName="ngModel" placeholder="Enter last name">
+                                                    minlength="2" maxlength="50" #lastName="ngModel"
+                                                    placeholder="Enter last name" autocomplete="family-name">
+                                                <div class="form-text text-muted" *ngIf="!lastName.touched">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    Enter the user's family name
+                                                </div>
                                                 <div *ngIf="lastName.invalid && lastName.touched"
                                                     class="invalid-feedback">
-                                                    Last name is required
+                                                    <div *ngIf="lastName.errors?.['required']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        Last name is required
+                                                    </div>
+                                                    <div *ngIf="lastName.errors?.['minlength']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        Last name must be at least 2 characters
+                                                    </div>
+                                                    <div *ngIf="lastName.errors?.['maxlength']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        Last name cannot exceed 50 characters
+                                                    </div>
+                                                </div>
+                                                <div *ngIf="lastName.valid && lastName.touched && lastName.value?.length > 0"
+                                                    class="valid-feedback">
+                                                    <i class="fa fa-check-circle me-1"></i>
+                                                    Looks good!
                                                 </div>
                                             </div>
+
+                                            <!-- Email -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">
-                                                    Email <span class="text-danger">*</span>
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-envelope me-1 text-primary"></i>
+                                                    Email Address
+                                                    <span class="text-danger">*</span>
                                                     <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter a valid email address" style="cursor: help;"></i>
+                                                        title="Enter a valid email address (used for login)"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
                                                 </label>
-                                                <input type="email" class="form-control form-control-sm"
+                                                <input type="email" class="form-control enhanced-input"
                                                     [class.is-valid]="email.valid && email.touched"
                                                     [class.is-invalid]="email.invalid && email.touched"
                                                     [(ngModel)]="selectedUser.email" name="email" required email
-                                                    #email="ngModel" placeholder="user@example.com">
+                                                    #email="ngModel" placeholder="user@example.com"
+                                                    autocomplete="email">
+                                                <div class="form-text text-muted" *ngIf="!email.touched">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    This email will be used for login and notifications
+                                                </div>
                                                 <div *ngIf="email.invalid && email.touched" class="invalid-feedback">
-                                                    <span *ngIf="email.errors?.['required']">Email is required</span>
-                                                    <span *ngIf="email.errors?.['email']">Please enter a valid
-                                                        email</span>
+                                                    <div *ngIf="email.errors?.['required']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        Email address is required
+                                                    </div>
+                                                    <div *ngIf="email.errors?.['email']">
+                                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                                        Please enter a valid email address
+                                                    </div>
+                                                </div>
+                                                <div *ngIf="email.valid && email.touched" class="valid-feedback">
+                                                    <i class="fa fa-check-circle me-1"></i>
+                                                    Valid email format!
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="col-md-6">
+                                            <!-- Phone -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">
-                                                    Phone
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-phone me-1 text-primary"></i>
+                                                    Phone Number
                                                     <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter phone number with country code"
-                                                        style="cursor: help;"></i>
+                                                        title="Optional: Enter phone number with country code"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
                                                 </label>
-                                                <input type="tel" class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedUser.phone" name="phone"
-                                                    placeholder="+1 (555) 123-4567">
+                                                <input type="tel" class="form-control enhanced-input"
+                                                    [class.is-valid]="phone.valid && phone.touched && phone.value?.length > 0"
+                                                    [(ngModel)]="selectedUser.phone" name="phone" #phone="ngModel"
+                                                    placeholder="+1 (555) 123-4567" pattern="[\+]?[0-9\s\-\(\)]+"
+                                                    autocomplete="tel">
+                                                <div class="form-text text-muted" *ngIf="!phone.touched">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    Optional field for contact purposes
+                                                </div>
                                             </div>
+
+                                            <!-- Role -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">Role</label>
-                                                <select class="form-control form-control-sm"
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-shield-alt me-1 text-primary"></i>
+                                                    Role
+                                                    <i class="fa fa-info-circle ms-1 text-muted"
+                                                        title="User role determines permissions and access levels"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                </label>
+                                                <select class="form-control enhanced-input"
                                                     [(ngModel)]="selectedUser.role" name="role">
-                                                    <option value="User">User</option>
-                                                    <option value="Admin">Admin</option>
-                                                    <option value="Manager">Manager</option>
+                                                    <option value="User">
+                                                        <i class="fa fa-user"></i> User - Basic Access
+                                                    </option>
+                                                    <option value="Manager">
+                                                        <i class="fa fa-users"></i> Manager - Team Management
+                                                    </option>
+                                                    <option value="Admin">
+                                                        <i class="fa fa-crown"></i> Admin - Full Access
+                                                    </option>
                                                 </select>
+                                                <div class="form-text text-muted">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    <span *ngIf="selectedUser.role === 'User'">Basic dashboard and
+                                                        settings access</span>
+                                                    <span *ngIf="selectedUser.role === 'Manager'">Can create and manage
+                                                        users</span>
+                                                    <span *ngIf="selectedUser.role === 'Admin'">Full system
+                                                        administration access</span>
+                                                </div>
                                             </div>
+
+                                            <!-- Status -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">Status</label>
-                                                <select class="form-control form-control-sm"
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-toggle-on me-1 text-primary"></i>
+                                                    Status
+                                                    <i class="fa fa-info-circle ms-1 text-muted"
+                                                        title="User account status affects login ability"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                </label>
+                                                <select class="form-control enhanced-input"
                                                     [(ngModel)]="selectedUser.status" name="status">
-                                                    <option value="Active">Active</option>
-                                                    <option value="Invited">Invited</option>
-                                                    <option value="Deleted">Deleted</option>
+                                                    <option value="Active">
+                                                        <i class="fa fa-check-circle text-success"></i> Active - Can
+                                                        Login
+                                                    </option>
+                                                    <option value="Invited">
+                                                        <i class="fa fa-clock text-warning"></i> Invited - Pending Setup
+                                                    </option>
+                                                    <option value="Deleted">
+                                                        <i class="fa fa-times-circle text-danger"></i> Deleted - No
+                                                        Access
+                                                    </option>
                                                 </select>
+                                                <div class="form-text">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    <span class="text-success"
+                                                        *ngIf="selectedUser.status === 'Active'">User can log in and
+                                                        access the system</span>
+                                                    <span class="text-warning"
+                                                        *ngIf="selectedUser.status === 'Invited'">User has been invited
+                                                        but hasn't completed setup</span>
+                                                    <span class="text-danger"
+                                                        *ngIf="selectedUser.status === 'Deleted'">User account is
+                                                        disabled</span>
+                                                </div>
                                             </div>
+
+                                            <!-- Location -->
                                             <div class="form-group mb-3">
-                                                <label class="small text-muted">Location</label>
-                                                <input type="text" class="form-control form-control-sm"
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-map-marker-alt me-1 text-primary"></i>
+                                                    Location
+                                                    <i class="fa fa-info-circle ms-1 text-muted"
+                                                        title="Optional: User's location for contact and timezone purposes"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                </label>
+                                                <input type="text" class="form-control enhanced-input"
                                                     [(ngModel)]="selectedUser.location" name="location"
                                                     placeholder="City, Country">
+                                                <div class="form-text text-muted">
+                                                    <i class="fa fa-lightbulb me-1"></i>
+                                                    Optional field for location-based features
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <!-- Bio (Full Width) -->
                                         <div class="col-12">
-                                            <div class="form-group mb-3">
-                                                <label class="small text-muted">Bio</label>
-                                                <textarea class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedUser.bio" name="bio" rows="3"
+                                            <div class="form-group mb-4">
+                                                <label class="form-label fw-medium">
+                                                    <i class="fa fa-file-alt me-1 text-primary"></i>
+                                                    Biography
+                                                    <i class="fa fa-info-circle ms-1 text-muted"
+                                                        title="Optional: Brief description about the user"
+                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                </label>
+                                                <textarea class="form-control enhanced-input"
+                                                    [(ngModel)]="selectedUser.bio" name="bio" rows="3" maxlength="500"
                                                     placeholder="Brief description about the user"></textarea>
-                                            </div>
-                                            <div class="form-group mb-3">
-                                                <div class="d-flex gap-2">
-                                                    <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm flex-grow-1"
-                                                        (click)="cancelUserSettingsChanges()"
-                                                        [disabled]="savingSettings">
-                                                        <i class="fa fa-times me-1"></i>
-                                                        {{ hasUnsavedChanges() ? 'Cancel Changes' : 'Reset' }}
-                                                    </button>
-                                                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1"
-                                                        [disabled]="settingsForm.invalid || savingSettings || !hasUnsavedChanges()">
-                                                        <i class="fa fa-spinner fa-spin me-1"
-                                                            *ngIf="savingSettings"></i>
-                                                        <i class="fa fa-save me-1" *ngIf="!savingSettings"></i>
-                                                        {{ savingSettings ? 'Saving...' : 'Save Changes' }}
-                                                    </button>
+                                                <div class="form-text text-muted d-flex justify-content-between">
+                                                    <span>
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        Optional field for user profile information
+                                                    </span>
+                                                    <span class="text-end">
+                                                        {{ (selectedUser.bio?.length || 0) }}/500 characters
+                                                    </span>
                                                 </div>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="form-actions d-flex gap-2">
+                                                <button type="button" class="btn btn-outline-secondary flex-grow-1"
+                                                    (click)="cancelUserSettingsChanges()" [disabled]="savingSettings">
+                                                    <i class="fa fa-times me-1"></i>
+                                                    {{ hasUnsavedChanges() ? 'Cancel Changes' : 'Reset' }}
+                                                </button>
+                                                <button type="submit" class="btn btn-primary flex-grow-1"
+                                                    [disabled]="settingsForm.invalid || savingSettings || !hasUnsavedChanges()">
+                                                    <span *ngIf="savingSettings">
+                                                        <i class="fa fa-spinner fa-spin me-1"></i>
+                                                        Saving...
+                                                    </span>
+                                                    <span *ngIf="!savingSettings">
+                                                        <i class="fa fa-save me-1"></i>
+                                                        Save Changes ({{ getChangedFieldsCount() }} field{{
+                                                        getChangedFieldsCount() === 1 ? '' : 's' }})
+                                                    </span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+
+                        <!-- Tab Navigation Controls -->
+                        <div class="tab-controls d-flex justify-content-between align-items-center mb-3">
+                            <div class="tab-navigation">
+                                <button class="btn btn-outline-secondary btn-sm me-2" (click)="navigateToPreviousTab()"
+                                    title="Previous Tab">
+                                    <i class="fa fa-chevron-left"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" (click)="navigateToNextTab()"
+                                    title="Next Tab">
+                                    <i class="fa fa-chevron-right"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -491,114 +887,211 @@
     </div>
 
     <!-- Create User Modal -->
-    <div class="modal fade" [class.show]="showCreateUserModal" [style.display]="showCreateUserModal ? 'block' : 'none'"
-        tabindex="-1" role="dialog" aria-labelledby="createUserModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createUserModalLabel">Create New User</h5>
-                    <button type="button" class="btn-close" (click)="showCreateUserModal = false"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="firstName" class="form-label">First Name</label>
-                                <input type="text" class="form-control" id="firstName" [(ngModel)]="firstName"
-                                    name="firstName" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="lastName" class="form-label">Last Name</label>
-                                <input type="text" class="form-control" id="lastName" [(ngModel)]="lastName"
-                                    name="lastName" required>
-                            </div>
+    <!-- Create User Modal - Platform Styled -->
+    <div class="modal-backdrop" *ngIf="showCreateUserModal" (click)="showCreateUserModal = false">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-user-plus"></i>
+                    Create New User
+                </h2>
+                <button type="button" class="close-btn" (click)="showCreateUserModal = false" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form class="user-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="firstName" [(ngModel)]="firstName"
+                                name="firstName" placeholder="Enter first name" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" [(ngModel)]="email" name="email"
-                                required>
+                        <div class="form-group">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="lastName" [(ngModel)]="lastName" name="lastName"
+                                placeholder="Enter last name" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" [(ngModel)]="password"
-                                name="password" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        (click)="showCreateUserModal = false">Cancel</button>
-                    <button type="button" class="btn btn-primary" (click)="addUser(); showCreateUserModal = false"
-                        [disabled]="!email || !password || !firstName || !lastName">
-                        Create User
-                    </button>
-                </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" [(ngModel)]="email" name="email"
+                            placeholder="user@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" [(ngModel)]="password" name="password"
+                            placeholder="Enter secure password" required>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="clearUserForm(); showCreateUserModal = false">
+                    <i class="fa fa-times"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="addUser(); showCreateUserModal = false"
+                    [disabled]="!email || !password || !firstName || !lastName">
+                    <i class="fa fa-user-plus"></i>
+                    Create User
+                </button>
             </div>
         </div>
     </div>
-    <div class="modal-backdrop fade" [class.show]="showCreateUserModal" *ngIf="showCreateUserModal"></div>
 
-    <!-- Edit User Modal -->
-    <div class="modal fade" [class.show]="showEditUserModal" [style.display]="showEditUserModal ? 'block' : 'none'"
-        tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
-                    <button type="button" class="btn-close" (click)="showEditUserModal = false; editingUser = null"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body" *ngIf="editingUser">
-                    <form>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="editFirstName" class="form-label">First Name</label>
-                                <input type="text" class="form-control" id="editFirstName"
-                                    [(ngModel)]="editingUser.firstName" name="editFirstName" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editLastName" class="form-label">Last Name</label>
-                                <input type="text" class="form-control" id="editLastName"
-                                    [(ngModel)]="editingUser.lastName" name="editLastName" required>
-                            </div>
+    <!-- Edit User Modal - Platform Styled -->
+    <div class="modal-backdrop" *ngIf="showEditUserModal" (click)="showEditUserModal = false; editingUser = null">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-user-edit"></i>
+                    Quick Edit User
+                </h2>
+                <button type="button" class="close-btn" (click)="showEditUserModal = false; editingUser = null"
+                    aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" *ngIf="editingUser">
+                <form class="user-form" #editUserForm="ngForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="editFirstName"
+                                [(ngModel)]="editingUser.firstName" name="editFirstName" required minlength="2"
+                                maxlength="50" placeholder="Enter first name">
                         </div>
-                        <div class="mb-3">
-                            <label for="editEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="editEmail" [(ngModel)]="editingUser.email"
-                                name="editEmail" required>
+                        <div class="form-group">
+                            <label for="editLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="editLastName" [(ngModel)]="editingUser.lastName"
+                                name="editLastName" required minlength="2" maxlength="50" placeholder="Enter last name">
                         </div>
-                        <div class="mb-3">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="editEmail" [(ngModel)]="editingUser.email"
+                            name="editEmail" required email placeholder="user@example.com">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="editRole" class="form-label">Role</label>
-                            <select class="form-select" id="editRole" [(ngModel)]="editingUser.role" name="editRole"
+                            <select class="form-control" id="editRole" [(ngModel)]="editingUser.role" name="editRole"
                                 required>
-                                <option value="User">User</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Manager">Manager</option>
+                                <option value="User">User - Basic Access</option>
+                                <option value="Manager">Manager - Team Management</option>
+                                <option value="Admin">Admin - Full Access</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="editLocation" class="form-label">Location</label>
-                            <input type="text" class="form-control" id="editLocation" [(ngModel)]="editingUser.location"
-                                name="editLocation">
+                        <div class="form-group">
+                            <label for="editStatus" class="form-label">Status</label>
+                            <select class="form-control" id="editStatus" [(ngModel)]="editingUser.status"
+                                name="editStatus" required>
+                                <option value="Active">Active - Can Login</option>
+                                <option value="Invited">Invited - Pending Setup</option>
+                                <option value="Deleted">Deleted - No Access</option>
+                            </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="editBio" class="form-label">Bio</label>
-                            <textarea class="form-control" id="editBio" [(ngModel)]="editingUser.bio" name="editBio"
-                                rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLocation" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="editLocation" [(ngModel)]="editingUser.location"
+                            name="editLocation" placeholder="City, Country">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editBio" class="form-label">Biography</label>
+                        <textarea class="form-control" id="editBio" [(ngModel)]="editingUser.bio" name="editBio"
+                            rows="3" maxlength="500" placeholder="Brief description about the user"></textarea>
+                        <div class="character-count">
+                            {{ (editingUser.bio?.length || 0) }}/500 characters
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        (click)="showEditUserModal = false; editingUser = null">Cancel</button>
-                    <button type="button" class="btn btn-primary" (click)="updateUser()"
-                        [disabled]="!editingUser?.email || !editingUser?.firstName || !editingUser?.lastName">
-                        Update User
-                    </button>
-                </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="showEditUserModal = false; editingUser = null">
+                    <i class="fa fa-times"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="updateUser()"
+                    [disabled]="!editingUser?.email || !editingUser?.firstName || !editingUser?.lastName">
+                    <i class="fa fa-save"></i>
+                    Update User
+                </button>
             </div>
         </div>
     </div>
-    <div class="modal-backdrop fade" [class.show]="showEditUserModal" *ngIf="showEditUserModal"></div>
+</section>
+
+<!-- Site Selection Modal -->
+<section class="modal" [class.show]="showSiteSelectionModal"
+    [style.display]="showSiteSelectionModal ? 'block' : 'none'">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-building"></i>
+                    Select Sites for {{ selectedUser?.firstName }} {{ selectedUser?.lastName }}
+                </h5>
+                <button type="button" class="btn-close" (click)="closeSiteSelectionModal()"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" placeholder="Search companies..."
+                        [(ngModel)]="siteSearchQuery" (input)="filterCompanies()">
+                </div>
+
+                <div class="company-selection-list">
+                    <div *ngFor="let company of getFilteredCompanies()" class="company-selection-item"
+                        [class.selected]="selectedSiteIds.has(company.id)">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" [id]="'company-' + company.id"
+                                [checked]="selectedSiteIds.has(company.id)" (change)="toggleSiteSelection(company.id)">
+                            <label class="form-check-label" [for]="'company-' + company.id">
+                                <div class="company-info">
+                                    <h6 class="mb-1">{{ company.name }}</h6>
+                                    <small class="text-muted" *ngIf="company.website">{{ company.website }}</small>
+                                    <div *ngIf="company.billing" class="billing-info mt-2">
+                                        <span class="badge bg-info" *ngIf="company.billing.subscriptionPlan">{{
+                                            company.billing.subscriptionPlan }}</span>
+                                        <small class="text-muted ms-2" *ngIf="company.billing.monthlyRate">
+                                            ${{ company.billing.monthlyRate }}/month
+                                        </small>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="getFilteredCompanies().length === 0" class="text-center text-muted py-4">
+                    <i class="fa fa-search fa-2x mb-2"></i>
+                    <p>No companies found</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeSiteSelectionModal()">
+                    <i class="fa fa-times"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="attachSelectedSites()"
+                    [disabled]="selectedSiteIds.size === 0 || attachingSites">
+                    <i class="fa fa-spinner fa-spin" *ngIf="attachingSites"></i>
+                    <i class="fa fa-plus" *ngIf="!attachingSites"></i>
+                    {{ attachingSites ? 'Attaching...' : 'Attach ' + selectedSiteIds.size + ' Site(s)' }}
+                </button>
+            </div>
+        </div>
+    </div>
 </section>

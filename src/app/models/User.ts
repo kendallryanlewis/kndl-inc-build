@@ -7,6 +7,7 @@ export interface User {
     phone?: string;
     avatarUrl?: string;
     platforms: UserPlatform[];
+    attachedSites?: AttachedSite[]; // New property for attached sites
     onboardingCompleted?: boolean;
     role: 'Admin' | 'User' | 'Manager';
     status: 'Active' | 'Deleted' | 'Invited';
@@ -14,6 +15,9 @@ export interface User {
     lastLogin?: Date;
     location?: string; // Added location property
     bio?: string;
+    // Stripe integration
+    stripeCustomerId?: string;
+    companyId?: string;
 }
 
 export interface UserPlatform {
@@ -28,4 +32,48 @@ export interface UserPlatform {
     platformType?: string;
     status?: string;
     // Add more fields as needed for site/platform details
+}
+
+// Company/Site interfaces for the new Sites tab functionality
+export interface Company {
+    id: string;
+    name: string;
+    website?: string;
+    industry?: string;
+    description?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    address?: string;
+    billing?: BillingInfo;
+    links?: CompanyLink[];
+    status: 'Active' | 'Inactive' | 'Suspended';
+    dateCreated?: Date;
+    dateUpdated?: Date;
+}
+
+export interface BillingInfo {
+    billingEmail?: string;
+    billingAddress?: string;
+    paymentMethod?: string;
+    subscriptionPlan?: string;
+    subscriptionStatus?: 'Active' | 'Cancelled' | 'Past Due';
+    nextBillingDate?: Date;
+    monthlyRate?: number;
+}
+
+export interface CompanyLink {
+    id: string;
+    name: string;
+    url: string;
+    type: 'website' | 'social' | 'documentation' | 'support' | 'other';
+    description?: string;
+}
+
+export interface AttachedSite {
+    companyId: string;
+    companyName: string;
+    dateAttached: Date;
+    role?: string; // User's role for this specific site
+    permissions?: string[]; // Specific permissions for this site
+    notes?: string;
 }

@@ -16,11 +16,19 @@
             </button>
         </div>
         <div class="page-actions edit-actions" *ngIf="isEditing(selectedPage)">
-            <button class="bg-success admin-tab rounded text-white" (click)="saveEdit()">
-                <i class="fa fa-check"></i> Save
+            <button class="btn btn-success" (click)="saveEdit()">
+                <i class="fa fa-check"></i>
+                Save Changes
+                <span class="unsaved-indicator" *ngIf="hasUnsavedChanges" title="You have unsaved changes">●</span>
             </button>
-            <button class="bg-secondary admin-tab rounded text-white" (click)="cancelEdit()">
-                <i class="fa fa-times"></i> Cancel
+            <button class="btn btn-secondary" (click)="cancelEdit()">
+                <i class="fa fa-times"></i>
+                Cancel
+                <span class="unsaved-warning" *ngIf="hasUnsavedChanges"
+                    title="Warning: You have unsaved changes that will be lost">(Unsaved changes will be lost)</span>
+            </button>
+            <button class="btn btn-danger" (click)="confirmDeletePage(selectedPage!)">
+                <i class="fa fa-trash"></i> Delete Page
             </button>
         </div>
     </div>
@@ -66,13 +74,13 @@
             <div class="edit-form-group">
                 <label class="edit-label">Title</label>
                 <input type="text" class="form-control page-title-edit" [(ngModel)]="editingPage.title"
-                    placeholder="Page Title">
+                    (ngModelChange)="onTitleChange()" placeholder="Page Title">
             </div>
 
             <div class="page-meta-edit">
                 <div class="edit-form-group">
                     <label class="edit-label">Category</label>
-                    <select class="form-select" [(ngModel)]="editingPage.category">
+                    <select class="form-select" [(ngModel)]="editingPage.category" (ngModelChange)="onCategoryChange()">
                         <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
                     </select>
                 </div>
@@ -81,7 +89,7 @@
                     <label class="edit-label">Status</label>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" [(ngModel)]="editingPage.isPublished"
-                            id="publishedCheck">
+                            (ngModelChange)="checkForUnsavedChanges()" id="publishedCheck">
                         <label class="form-check-label" for="publishedCheck">Published</label>
                     </div>
                 </div>
@@ -96,7 +104,7 @@
             <div class="edit-form-group">
                 <label class="edit-label">Summary</label>
                 <textarea class="form-control" rows="3" [(ngModel)]="editingPage.summary"
-                    placeholder="Page Summary"></textarea>
+                    (ngModelChange)="onSummaryChange()" placeholder="Page Summary"></textarea>
             </div>
         </div>
         <hr>
@@ -247,9 +255,9 @@
                             style="border: 2px solid red; padding: 10px;">
                             <p style="color: red;">DEBUG: Edit form is showing</p>
                             <input type="text" class="form-control edit-title" [(ngModel)]="editingPage.title"
-                                placeholder="Page Title">
+                                (ngModelChange)="onTitleChange()" placeholder="Page Title">
                             <textarea class="form-control edit-summary" [(ngModel)]="editingPage.summary"
-                                placeholder="Page Summary" rows="2"></textarea>
+                                (ngModelChange)="onSummaryChange()" placeholder="Page Summary" rows="2"></textarea>
                             <input type="text" class="form-control edit-tags" [value]="editingPage.tags.join(', ')"
                                 (input)="updateEditTags($event)" placeholder="Tags (comma separated)">
                         </div>
@@ -261,7 +269,7 @@
                             {{ page.category }}
                         </span>
                         <select class="form-select edit-category" [(ngModel)]="editingPage!.category"
-                            *ngIf="isEditing(page) && editingPage">
+                            (ngModelChange)="onCategoryChange()" *ngIf="isEditing(page) && editingPage">
                             <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
                         </select>
                     </div>
@@ -273,7 +281,8 @@
                             {{ page.isPublished ? 'Published' : 'Draft' }}
                         </span>
                         <div class="form-check" *ngIf="isEditing(page) && editingPage">
-                            <input type="checkbox" class="form-check-input" [(ngModel)]="editingPage.isPublished">
+                            <input type="checkbox" class="form-check-input" [(ngModel)]="editingPage.isPublished"
+                                (ngModelChange)="checkForUnsavedChanges()">
                             <label class="form-check-label">Published</label>
                         </div>
                     </div>

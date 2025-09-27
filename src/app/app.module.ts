@@ -71,6 +71,7 @@ import { AdminWikiNewComponent } from './dashboard/admin/admin-wiki/admin-wiki-n
 import { AdminWikiListComponent } from './dashboard/admin/admin-wiki/admin-wiki-list/admin-wiki-list.component';
 import { QuillModule } from 'ngx-quill';
 import { EditorModule } from "@progress/kendo-angular-editor";
+import { BillingManagementComponent } from './dashboard/billing-management/billing-management.component';
 
 @NgModule({
   declarations: [
@@ -135,7 +136,8 @@ import { EditorModule } from "@progress/kendo-angular-editor";
     ServicePlansEditorComponent,
     GenericH2TitleComponent,
     AdminWikiNewComponent,
-    AdminWikiListComponent
+    AdminWikiListComponent,
+    BillingManagementComponent
   ],
   imports: [
     EditorModule,

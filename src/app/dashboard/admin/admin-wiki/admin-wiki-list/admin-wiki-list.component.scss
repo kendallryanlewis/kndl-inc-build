@@ -1,5 +1,50 @@
 // Wiki Page View Styles - Matching admin-wiki theme
 .wiki-page-view {
+
+    // Header actions styling
+    .header-actions {
+        .admin-tab {
+            &.bg-tan {
+                background: linear-gradient(135deg, var(--c-tan-500, #c4945b) 0%, var(--c-tan-600, #b8874f) 100%);
+                color: var(--c-gray-900, #1a1a1a);
+                border: none;
+
+                &:hover {
+                    background: linear-gradient(135deg, var(--c-tan-400, #d4a574) 0%, var(--c-tan-500, #c4945b) 100%);
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(196, 148, 91, 0.3);
+                }
+            }
+        }
+    }
+
+    // Unsaved changes indicators
+    .unsaved-indicator {
+        color: #ffeb3b;
+        margin-left: 0.5rem;
+        font-weight: bold;
+        animation: pulse 1.5s infinite;
+    }
+
+    .unsaved-warning {
+        font-size: 0.75rem;
+        color: #ff8a65;
+        margin-left: 0.5rem;
+        opacity: 0.8;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
     .page-view-header {
         display: flex;
         justify-content: space-between;
@@ -148,6 +193,21 @@
 
                 &.rendered-content {
                     .content-display {
+                        // Ensure content displays exactly as in editor
+                        color: var(--c-white);
+                        font-family: 'Dosis', Arial, sans-serif;
+                        font-size: 14px;
+                        line-height: 1.6;
+
+                        // Preserve all inline styles exactly as they appear in editor
+                        * {
+                            color: inherit;
+                        }
+
+                        // Override for specific elements that need color preservation
+                        [style*="color"] {
+                            color: inherit !important;
+                        }
 
                         // Rich text content styling for better rendering
                         h1,
@@ -181,6 +241,7 @@
                         p {
                             margin-bottom: 1em;
                             line-height: 1.6;
+                            color: var(--c-white);
                         }
 
                         ul,
@@ -190,6 +251,7 @@
 
                             li {
                                 margin: 0.5em 0;
+                                color: var(--c-white);
                             }
                         }
 
@@ -258,20 +320,65 @@
                         }
 
                         // WYSIWYG Editor Formatting Support
-                        // Text Alignment
-                        [style*="text-align: left"] {
+                        // Enhanced Text Alignment - Support all possible variations
+                        [style*="text-align: left"],
+                        [style*="text-align:left"],
+                        div[style*="text-align: left"],
+                        p[style*="text-align: left"],
+                        span[style*="text-align: left"],
+                        td[style*="text-align: left"],
+                        th[style*="text-align: left"] {
                             text-align: left !important;
                         }
 
-                        [style*="text-align: center"] {
+                        [style*="text-align: center"],
+                        [style*="text-align:center"],
+                        div[style*="text-align: center"],
+                        p[style*="text-align: center"],
+                        span[style*="text-align: center"],
+                        td[style*="text-align: center"],
+                        th[style*="text-align: center"] {
                             text-align: center !important;
                         }
 
-                        [style*="text-align: right"] {
+                        [style*="text-align: right"],
+                        [style*="text-align:right"],
+                        div[style*="text-align: right"],
+                        p[style*="text-align: right"],
+                        span[style*="text-align: right"],
+                        td[style*="text-align: right"],
+                        th[style*="text-align: right"] {
                             text-align: right !important;
                         }
 
-                        [style*="text-align: justify"] {
+                        [style*="text-align: justify"],
+                        [style*="text-align:justify"],
+                        div[style*="text-align: justify"],
+                        p[style*="text-align: justify"],
+                        span[style*="text-align: justify"],
+                        td[style*="text-align: justify"],
+                        th[style*="text-align: justify"] {
+                            text-align: justify !important;
+                        }
+
+                        // Additional alignment support for common editor output
+                        .align-left,
+                        .text-left {
+                            text-align: left !important;
+                        }
+
+                        .align-center,
+                        .text-center {
+                            text-align: center !important;
+                        }
+
+                        .align-right,
+                        .text-right {
+                            text-align: right !important;
+                        }
+
+                        .align-justify,
+                        .text-justify {
                             text-align: justify !important;
                         }
 
@@ -279,6 +386,40 @@
                         [style*="background-color:"] {
                             padding: 2px 4px;
                             border-radius: 3px;
+
+                            // Maintain alignment for highlighted text
+                            &[style*="text-align: left"] {
+                                text-align: left !important;
+                            }
+
+                            &[style*="text-align: center"] {
+                                text-align: center !important;
+                            }
+
+                            &[style*="text-align: right"] {
+                                text-align: right !important;
+                            }
+
+                            &[style*="text-align: justify"] {
+                                text-align: justify !important;
+                            }
+                        }
+
+                        // Specific support for common highlight colors
+                        [style*="background-color: yellow"],
+                        [style*="background-color:#ffff00"],
+                        [style*="background-color: #ffff00"] {
+                            background-color: #ffff00 !important;
+                            color: #000000 !important;
+                            padding: 2px 4px;
+                            border-radius: 3px;
+                        }
+
+                        // Support for parent elements with alignment containing highlighted text
+                        div[style*="text-align:"] {
+                            [style*="background-color:"] {
+                                display: inline; // Ensure highlighted text doesn't break alignment
+                            }
                         }
 
                         // Font formatting
@@ -339,8 +480,11 @@
                         // Horizontal rules
                         hr {
                             border: none;
-                            border-top: 2px solid rgba(255, 255, 255, 0.2);
-                            margin: 2em 0;
+                            border-top: 1px solid var(--c-text-primary);
+                            margin: 20px 0;
+                            color: var(--c-text-primary) !important;
+                            background-color: var(--c-text-primary);
+                            height: 1px;
                         }
 
                         // Tables (if any)
@@ -348,18 +492,47 @@
                             border-collapse: collapse;
                             width: 100%;
                             margin: 1em 0;
+                            border: 1px solid rgba(255, 255, 255, 0.2);
 
                             th,
                             td {
                                 border: 1px solid rgba(255, 255, 255, 0.2);
                                 padding: 0.5em 1em;
                                 text-align: left;
+                                color: var(--c-white);
+                                background-color: transparent;
+
+                                // Preserve cell-specific alignment from editor
+                                &[style*="text-align: left"] {
+                                    text-align: left !important;
+                                }
+
+                                &[style*="text-align: center"] {
+                                    text-align: center !important;
+                                }
+
+                                &[style*="text-align: right"] {
+                                    text-align: right !important;
+                                }
+
+                                &[style*="text-align: justify"] {
+                                    text-align: justify !important;
+                                }
                             }
 
                             th {
                                 background-color: rgba(255, 255, 255, 0.1);
                                 font-weight: bold;
                                 color: var(--c-tan-400, #f6e05e);
+                            }
+
+                            // Ensure table content displays properly
+                            tr:nth-child(even) td {
+                                background-color: rgba(255, 255, 255, 0.02);
+                            }
+
+                            tr:hover td {
+                                background-color: rgba(255, 255, 255, 0.05);
                             }
                         }
 
@@ -1700,6 +1873,23 @@
                         border: 1px solid #3c3c3c !important;
                         padding: 10px 12px !important;
                         color: #e8e8e8 !important;
+
+                        // Preserve cell-specific alignment from editor
+                        &[style*="text-align: left"] {
+                            text-align: left !important;
+                        }
+
+                        &[style*="text-align: center"] {
+                            text-align: center !important;
+                        }
+
+                        &[style*="text-align: right"] {
+                            text-align: right !important;
+                        }
+
+                        &[style*="text-align: justify"] {
+                            text-align: justify !important;
+                        }
                     }
 
                     th {
@@ -2079,7 +2269,12 @@
         }
 
         hr {
-            border-top-color: rgba(255, 255, 255, 0.2) !important;
+            border: none !important;
+            border-top: 1px solid var(--c-text-primary) !important;
+            margin: 20px 0 !important;
+            color: var(--c-text-primary) !important;
+            background-color: var(--c-text-primary) !important;
+            height: 1px !important;
         }
 
         // Enhanced support for WYSIWYG formatting in dark mode
@@ -2172,11 +2367,45 @@
                 background: rgba(255, 255, 255, 0.1) !important;
                 color: #ffffff !important;
                 border-color: rgba(255, 255, 255, 0.2) !important;
+
+                // Preserve cell-specific alignment from editor
+                &[style*="text-align: left"] {
+                    text-align: left !important;
+                }
+
+                &[style*="text-align: center"] {
+                    text-align: center !important;
+                }
+
+                &[style*="text-align: right"] {
+                    text-align: right !important;
+                }
+
+                &[style*="text-align: justify"] {
+                    text-align: justify !important;
+                }
             }
 
             td {
                 color: #f3f3fa !important;
                 border-color: rgba(255, 255, 255, 0.1) !important;
+
+                // Preserve cell-specific alignment from editor
+                &[style*="text-align: left"] {
+                    text-align: left !important;
+                }
+
+                &[style*="text-align: center"] {
+                    text-align: center !important;
+                }
+
+                &[style*="text-align: right"] {
+                    text-align: right !important;
+                }
+
+                &[style*="text-align: justify"] {
+                    text-align: justify !important;
+                }
             }
         }
 
@@ -2401,3 +2630,25 @@
         }
     }
 }
+
+// Wiki Main Interface Styles
+.wiki-main-interface {
+
+    // Header actions styling
+    .header-actions {
+        .admin-tab {
+            &.bg-tan {
+                background: linear-gradient(135deg, var(--c-tan-500, #c4945b) 0%, var(--c-tan-600, #b8874f) 100%);
+                color: var(--c-gray-900, #1a1a1a);
+                border: none;
+
+                &:hover {
+                    background: linear-gradient(135deg, var(--c-tan-400, #d4a574) 0%, var(--c-tan-500, #c4945b) 100%);
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(196, 148, 91, 0.3);
+                }
+            }
+        }
+    }
+}
+

@@ -1,1 +1,422 @@
-<p>preferences works!</p>
+<!-- User Profile Settings -->
+<div class="preferences-container h-100 d-flex flex-column">
+    <!-- Header -->
+    <div class="header-section d-flex justify-content-between align-items-center mb-4">
+        <app-generic-h2-title [title]="'Profile Settings'" [icon]="'fa-user-cog'"
+            [subTitle]="'Manage your personal information and preferences.'">
+        </app-generic-h2-title>
+
+        <!-- Status Indicators -->
+        <div class="header-actions d-flex gap-2 align-items-center">
+            <div class="profile-completion">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress" style="width: 100px; height: 8px;">
+                        <div class="progress-bar bg-primary" [style.width]="getFormCompletionPercentage() + '%'">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ getFormCompletionPercentage() }}% Complete</small>
+                </div>
+            </div>
+
+            <!-- Unsaved Changes Badge -->
+            <div class="unsaved-changes-badge" *ngIf="hasUnsavedChanges()">
+                <span class="badge bg-warning text-dark">
+                    <i class="fa fa-exclamation-triangle me-1"></i>
+                    {{ getChangedFieldsCount() }} unsaved change{{ getChangedFieldsCount() === 1 ? '' : 's' }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-container d-flex justify-content-center align-items-center h-100" *ngIf="isLoading">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">Loading your profile...</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-container flex-grow-1" *ngIf="!isLoading && currentUser">
+        <div class="row h-100">
+            <!-- Profile Form -->
+            <div class="col-lg-8 col-md-12">
+                <div class="profile-form-card bg-white border rounded-3 shadow-sm p-4 h-100">
+                    <!-- Success Message -->
+                    <div class="alert alert-success d-flex align-items-center mb-3" *ngIf="successMessage">
+                        <i class="fa fa-check-circle me-2"></i>
+                        {{ successMessage }}
+                        <button type="button" class="btn-close ms-auto" (click)="clearMessage()"
+                            aria-label="Close"></button>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="alert alert-danger d-flex align-items-center mb-3" *ngIf="errorMessage">
+                        <i class="fa fa-exclamation-triangle me-2"></i>
+                        {{ errorMessage }}
+                        <button type="button" class="btn-close ms-auto" (click)="clearMessage()"
+                            aria-label="Close"></button>
+                    </div>
+
+                    <form #profileForm="ngForm" (ngSubmit)="saveProfile()">
+                        <div class="row g-4">
+                            <!-- Personal Information Section -->
+                            <div class="col-12">
+                                <h5 class="section-title mb-3">
+                                    <i class="fa fa-user me-2 text-primary"></i>
+                                    Personal Information
+                                </h5>
+                            </div>
+
+                            <!-- First Name -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-user me-1 text-primary"></i>
+                                        First Name
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control enhanced-input"
+                                        [class.is-valid]="firstName.valid && firstName.touched && firstName.value?.length > 0"
+                                        [class.is-invalid]="firstName.invalid && firstName.touched"
+                                        [(ngModel)]="currentUser.firstName" name="firstName" required minlength="2"
+                                        maxlength="50" #firstName="ngModel" placeholder="Enter your first name"
+                                        autocomplete="given-name">
+
+                                    <div class="form-text text-muted" *ngIf="!firstName.touched">
+                                        <i class="fa fa-lightbulb me-1"></i>
+                                        Enter your given name (2-50 characters)
+                                    </div>
+
+                                    <div *ngIf="firstName.invalid && firstName.touched" class="invalid-feedback">
+                                        <div *ngIf="firstName.errors?.['required']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            First name is required
+                                        </div>
+                                        <div *ngIf="firstName.errors?.['minlength']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Must be at least 2 characters
+                                        </div>
+                                        <div *ngIf="firstName.errors?.['maxlength']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Cannot exceed 50 characters
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="firstName.valid && firstName.touched && firstName.value?.length > 0"
+                                        class="valid-feedback">
+                                        <i class="fa fa-check-circle me-1"></i>
+                                        Looks good!
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Last Name -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-user me-1 text-primary"></i>
+                                        Last Name
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control enhanced-input"
+                                        [class.is-valid]="lastName.valid && lastName.touched && lastName.value?.length > 0"
+                                        [class.is-invalid]="lastName.invalid && lastName.touched"
+                                        [(ngModel)]="currentUser.lastName" name="lastName" required minlength="2"
+                                        maxlength="50" #lastName="ngModel" placeholder="Enter your last name"
+                                        autocomplete="family-name">
+
+                                    <div class="form-text text-muted" *ngIf="!lastName.touched">
+                                        <i class="fa fa-lightbulb me-1"></i>
+                                        Enter your family name (2-50 characters)
+                                    </div>
+
+                                    <div *ngIf="lastName.invalid && lastName.touched" class="invalid-feedback">
+                                        <div *ngIf="lastName.errors?.['required']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Last name is required
+                                        </div>
+                                        <div *ngIf="lastName.errors?.['minlength']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Must be at least 2 characters
+                                        </div>
+                                        <div *ngIf="lastName.errors?.['maxlength']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Cannot exceed 50 characters
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="lastName.valid && lastName.touched && lastName.value?.length > 0"
+                                        class="valid-feedback">
+                                        <i class="fa fa-check-circle me-1"></i>
+                                        Looks good!
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contact Information Section -->
+                            <div class="col-12">
+                                <h5 class="section-title mb-3 mt-4">
+                                    <i class="fa fa-address-book me-2 text-primary"></i>
+                                    Contact Information
+                                </h5>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-envelope me-1 text-primary"></i>
+                                        Email Address
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="email" class="form-control enhanced-input"
+                                        [class.is-valid]="email.valid && email.touched"
+                                        [class.is-invalid]="email.invalid && email.touched"
+                                        [(ngModel)]="currentUser.email" name="email" required email #email="ngModel"
+                                        placeholder="your@email.com" autocomplete="email">
+
+                                    <div class="form-text text-muted" *ngIf="!email.touched">
+                                        <i class="fa fa-lightbulb me-1"></i>
+                                        This email will be used for login and notifications
+                                    </div>
+
+                                    <div *ngIf="email.invalid && email.touched" class="invalid-feedback">
+                                        <div *ngIf="email.errors?.['required']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Email address is required
+                                        </div>
+                                        <div *ngIf="email.errors?.['email']">
+                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                            Please enter a valid email address
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="email.valid && email.touched" class="valid-feedback">
+                                        <i class="fa fa-check-circle me-1"></i>
+                                        Valid email format!
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-phone me-1 text-primary"></i>
+                                        Phone Number
+                                    </label>
+                                    <input type="tel" class="form-control enhanced-input"
+                                        [class.is-valid]="phone.valid && phone.touched && phone.value?.length > 0"
+                                        [(ngModel)]="currentUser.phone" name="phone" #phone="ngModel"
+                                        placeholder="+1 (555) 123-4567" pattern="[\+]?[0-9\s\-\(\)]+"
+                                        autocomplete="tel">
+
+                                    <div class="form-text text-muted">
+                                        <i class="fa fa-lightbulb me-1"></i>
+                                        Optional - for contact purposes
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Information Section -->
+                            <div class="col-12">
+                                <h5 class="section-title mb-3 mt-4">
+                                    <i class="fa fa-info-circle me-2 text-primary"></i>
+                                    Additional Information
+                                </h5>
+                            </div>
+
+                            <!-- Location -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-map-marker-alt me-1 text-primary"></i>
+                                        Location
+                                    </label>
+                                    <input type="text" class="form-control enhanced-input"
+                                        [(ngModel)]="currentUser.location" name="location" placeholder="City, Country">
+
+                                    <div class="form-text text-muted">
+                                        <i class="fa fa-lightbulb me-1"></i>
+                                        Optional - for location-based features
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Role Display -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-shield-alt me-1 text-primary"></i>
+                                        Role
+                                    </label>
+                                    <div class="form-control-plaintext">
+                                        <span class="badge" [class.bg-primary]="currentUser.role === 'Admin'"
+                                            [class.bg-success]="currentUser.role === 'Manager'"
+                                            [class.bg-secondary]="currentUser.role === 'User'">
+                                            <i class="fa" [class.fa-crown]="currentUser.role === 'Admin'"
+                                                [class.fa-users]="currentUser.role === 'Manager'"
+                                                [class.fa-user]="currentUser.role === 'User'" me-1></i>
+                                            {{ currentUser.role }}
+                                        </span>
+                                    </div>
+                                    <div class="form-text text-muted">
+                                        <i class="fa fa-info-circle me-1"></i>
+                                        Contact an administrator to change your role
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Biography -->
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="form-label fw-medium">
+                                        <i class="fa fa-file-alt me-1 text-primary"></i>
+                                        Biography
+                                    </label>
+                                    <textarea class="form-control enhanced-input" [(ngModel)]="currentUser.bio"
+                                        name="bio" rows="4" maxlength="500"
+                                        placeholder="Tell us a bit about yourself..."></textarea>
+
+                                    <div class="form-text text-muted d-flex justify-content-between">
+                                        <span>
+                                            <i class="fa fa-lightbulb me-1"></i>
+                                            Optional - brief description for your profile
+                                        </span>
+                                        <span class="text-end">
+                                            {{ (currentUser.bio?.length || 0) }}/500 characters
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="col-12">
+                                <div class="form-actions d-flex gap-2 pt-3 border-top">
+                                    <button type="button" class="btn btn-outline-secondary flex-grow-1"
+                                        (click)="cancelChanges()" [disabled]="isSaving">
+                                        <i class="fa fa-times me-1"></i>
+                                        {{ hasUnsavedChanges() ? 'Cancel Changes' : 'Reset' }}
+                                    </button>
+
+                                    <button type="submit" class="btn btn-primary flex-grow-1"
+                                        [disabled]="profileForm.invalid || isSaving || !hasUnsavedChanges()">
+                                        <span *ngIf="isSaving">
+                                            <i class="fa fa-spinner fa-spin me-1"></i>
+                                            Saving...
+                                        </span>
+                                        <span *ngIf="!isSaving">
+                                            <i class="fa fa-save me-1"></i>
+                                            Save Profile
+                                            <span *ngIf="hasUnsavedChanges()">({{ getChangedFieldsCount() }} change{{
+                                                getChangedFieldsCount() === 1 ? '' : 's' }})</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Profile Preview Sidebar -->
+            <div class="col-lg-4 col-md-12">
+                <div class="profile-preview-card bg-light border rounded-3 shadow-sm p-4 h-100">
+                    <h6 class="mb-3 fw-medium">
+                        <i class="fa fa-eye me-2"></i>
+                        Profile Preview
+                    </h6>
+
+                    <!-- User Avatar -->
+                    <div class="text-center mb-4">
+                        <div class="user-avatar mx-auto mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white fw-bold"
+                                style="width: 80px; height: 80px; font-size: 1.5rem;">
+                                {{ ((currentUser.firstName || '').charAt(0) || '') + ((currentUser.lastName ||
+                                '').charAt(0) || '') }}
+                            </div>
+                        </div>
+                        <h5 class="mb-1">{{ currentUser.name || 'Your Name' }}</h5>
+                        <p class="text-muted small">{{ currentUser.email }}</p>
+                    </div>
+
+                    <!-- Profile Stats -->
+                    <div class="profile-stats">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="stat-card bg-white p-2 rounded text-center border">
+                                    <div class="stat-value fw-bold text-primary">{{ getFormCompletionPercentage() }}%
+                                    </div>
+                                    <div class="stat-label small text-muted">Complete</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card bg-white p-2 rounded text-center border">
+                                    <div class="stat-value fw-bold"
+                                        [class.text-success]="currentUser.status === 'Active'"
+                                        [class.text-warning]="currentUser.status === 'Invited'"
+                                        [class.text-danger]="currentUser.status === 'Deleted'">
+                                        {{ currentUser.status }}
+                                    </div>
+                                    <div class="stat-label small text-muted">Status</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Details -->
+                    <div class="profile-details">
+                        <div class="detail-item d-flex align-items-center mb-2" *ngIf="currentUser.phone">
+                            <i class="fa fa-phone text-muted me-2" style="width: 16px;"></i>
+                            <span class="small">{{ currentUser.phone }}</span>
+                        </div>
+
+                        <div class="detail-item d-flex align-items-center mb-2" *ngIf="currentUser.location">
+                            <i class="fa fa-map-marker-alt text-muted me-2" style="width: 16px;"></i>
+                            <span class="small">{{ currentUser.location }}</span>
+                        </div>
+
+                        <div class="detail-item d-flex align-items-center mb-2">
+                            <i class="fa fa-calendar text-muted me-2" style="width: 16px;"></i>
+                            <span class="small">Joined {{ currentUser.joinDate | date:'mediumDate' }}</span>
+                        </div>
+
+                        <div class="detail-item d-flex align-items-center mb-3" *ngIf="currentUser.lastLogin">
+                            <i class="fa fa-clock text-muted me-2" style="width: 16px;"></i>
+                            <span class="small">Last login {{ currentUser.lastLogin | date:'short' }}</span>
+                        </div>
+
+                        <div class="bio-preview" *ngIf="currentUser.bio">
+                            <h6 class="small fw-medium mb-2">Bio:</h6>
+                            <p class="small text-muted">{{ currentUser.bio }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Tips -->
+                    <div class="mt-4 p-3 bg-info bg-opacity-10 border border-info border-opacity-25 rounded">
+                        <h6 class="small fw-medium mb-2">
+                            <i class="fa fa-lightbulb text-info me-1"></i>
+                            Profile Tips
+                        </h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li>Complete all fields for a 100% profile</li>
+                            <li>Add a bio to help others know you better</li>
+                            <li>Keep your contact info up to date</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-container text-center" *ngIf="!isLoading && !currentUser">
+        <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle me-2"></i>
+            Unable to load your profile. Please try refreshing the page or contact support if the issue persists.
+        </div>
+    </div>
+</div>
