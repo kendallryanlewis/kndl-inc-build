@@ -1,20 +1,41 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { Component, OnInit, OnDestroy, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { StripeService, StripeProduct, StripePrice } from '../../../../services/stripe.service';
+import { Subject, combineLatest } from 'rxjs';
+import { takeUntil, take } from 'rxjs/operators';
+import { environment } from '../../../../../environments/environment';
 
+// Updated interface to work primarily with Stripe data
 export interface SubscriptionPlan {
-  id: string;
+  // Stripe IDs (primary identifiers)
+  stripeProductId: string;
+  stripeMonthlyPriceId?: string;
+  stripeYearlyPriceId?: string;
+
+  // Core plan info (from Stripe Product)
   name: string;
   description: string;
+  active: boolean;
+
+  // Pricing (from Stripe Prices)
   monthlyPrice: number;
-  yearlyPrice: number;
+  yearlyPrice?: number;
+  currency: string;
+
+  // Extended metadata (stored in Stripe metadata)
   features: string[];
   isPopular: boolean;
-  status: 'Active' | 'Inactive' | 'Deprecated';
   maxUsers?: number;
   storageLimit?: string;
   supportLevel: 'Basic' | 'Priority' | 'Premium';
   trialDays?: number;
   category: 'Starter' | 'Business' | 'Enterprise';
+
+  // Stripe timestamps
+  created: Date;
+  updated: Date;
+
+  // Computed properties
+  status: 'Active' | 'Inactive' | 'Deprecated';
   lastModified: string;
 }
 
@@ -23,7 +44,7 @@ export interface SubscriptionPlan {
   templateUrl: './subscription-editor.component.html',
   styleUrls: ['./subscription-editor.component.scss']
 })
-export class SubscriptionEditorComponent implements OnInit {
+export class SubscriptionEditorComponent implements OnInit, OnDestroy {
   @Output() dataChange = new EventEmitter<any>();
 
   subscriptionPlans: SubscriptionPlan[] = [];
@@ -33,186 +54,348 @@ export class SubscriptionEditorComponent implements OnInit {
   deletingPlan: SubscriptionPlan | null = null;
   isDeleting: boolean = false;
 
-  // Firebase
-  private firestore = getFirestore();
-  private plansCollection = 'subscriptionPlans';
+  // Stripe integration properties
+  stripeProducts: StripeProduct[] = [];
+  stripePrices: StripePrice[] = [];
+  syncingWithStripe = false;
+  stripeSyncStatus: { [planId: string]: 'syncing' | 'synced' | 'error' } = {};
+  private destroy$ = new Subject<void>();
 
-  ngOnInit(): void {
-    this.loadSubscriptionPlans();
+  // Loading state
+  isLoadingPlans: boolean = false;
+  showSyncSection: boolean = false;
+  // Message handling
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
+
+  // Development mode check
+  get isUsingMockData(): boolean {
+    return !environment.production && !environment.useRealFirebaseFunctions;
   }
 
-  async loadSubscriptionPlans(): Promise<void> {
-    try {
-      const querySnapshot = await getDocs(collection(this.firestore, this.plansCollection));
-      this.subscriptionPlans = [];
+  constructor(
+    public stripeService: StripeService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<SubscriptionPlan, 'id'>;
-        const plan = {
-          id: doc.id,
-          ...data
-        };
+  ngOnInit(): void {
+    this.loadPlansFromStripe();
+    this.initializeStripeData();
 
-        // Debug logging for each plan loaded
-        console.log('📄 Loaded plan:', plan.name, 'ID:', doc.id, 'Type:', typeof doc.id);
+    // Log current state after a short delay to allow data loading
+    setTimeout(() => {
+      this.logCurrentStripeState();
 
-        this.subscriptionPlans.push(plan);
-      });
+      // Check if we received data, if not retry
+      if (this.stripeProducts.length === 0 && this.stripePrices.length === 0) {
+        this.manualDataLoad();
+      }
 
-      // Sort by category and name
-      this.subscriptionPlans.sort((a, b) => {
-        if (a.category !== b.category) {
-          const categoryOrder = { 'Starter': 1, 'Business': 2, 'Enterprise': 3 };
-          return categoryOrder[a.category] - categoryOrder[b.category];
-        }
-        return a.name.localeCompare(b.name);
-      });
+      // Automatically run debug test to see what Firebase functions return
+      this.debugFirebaseFunctions();
+    }, 3000);
 
-      console.log('✅ Loaded', this.subscriptionPlans.length, 'subscription plans');
-      console.log('All plan IDs:', this.subscriptionPlans.map(p => ({ name: p.name, id: p.id })));
+    // Additional check after more time
+    setTimeout(() => {
+      if (this.stripeProducts.length === 0 && this.stripePrices.length === 0) {
+        this.stripeService.forceDataRefresh();
+      }
+    }, 5000);
 
-      // Emit data change for change tracking
-      this.dataChange.emit({
-        subscriptionPlans: this.subscriptionPlans,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('❌ Error loading subscription plans:', error);
+    // Expose debug methods to global window object for console access
+    if (typeof window !== 'undefined') {
+      (window as any).debugSubscriptionEditor = {
+        logState: () => this.logCurrentStripeState(),
+        debugFunctions: () => this.debugFirebaseFunctions(),
+        refreshData: () => this.refreshPlansFromStripe(),
+        component: this
+      };
+      console.log('🛠️ DEBUG HELPER: Use window.debugSubscriptionEditor.* methods for debugging');
     }
   }
 
-  // Subscription plan management methods
-  openPlanModal(plan?: SubscriptionPlan): void {
-    if (plan && plan.id) {
-      // Editing existing plan - create a deep copy and ensure ID is preserved
-      this.selectedPlan = {
-        id: plan.id, // Explicitly preserve the ID
-        name: plan.name,
-        description: plan.description,
-        monthlyPrice: plan.monthlyPrice,
-        yearlyPrice: plan.yearlyPrice,
-        features: [...plan.features],
-        isPopular: plan.isPopular,
-        status: plan.status,
-        maxUsers: plan.maxUsers,
-        storageLimit: plan.storageLimit,
-        supportLevel: plan.supportLevel,
-        trialDays: plan.trialDays,
-        category: plan.category,
-        lastModified: plan.lastModified
-      };
-      console.log('Editing plan with ID:', plan.id, 'Selected plan:', this.selectedPlan);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initializeStripeData(): void {
+    this.stripeService.products$.pipe(take(1)).subscribe(products => {
+      console.log('📦 Current products observable value:', products);
+    });
+    this.stripeService.prices$.pipe(take(1)).subscribe(prices => {
+      console.log('💰 Current prices observable value:', prices);
+    });
+
+    // Initialize Stripe products and prices loading
+    this.stripeService.initializeProductsAndPrices();
+
+    // Subscribe to products separately
+    this.stripeService.products$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (products) => {
+          if (products && products.length === 0) {
+            console.log('⚠️ Products observable emitted empty array - this indicates the Firebase function might not be returning data properly');
+          }
+        },
+        error: (error) => {
+          console.error('❌ ERROR in products observable:', error);
+        }
+      });
+
+    // Subscribe to prices separately  
+    this.stripeService.prices$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (prices) => {
+          if (prices && prices.length === 0) {
+            console.log('⚠️ Prices observable emitted empty array - this indicates the Firebase function might not be returning data properly');
+          }
+        },
+        error: (error) => {
+          console.error('❌ ERROR in prices observable:', error);
+        }
+      });
+
+    // Subscribe to Stripe products and prices - combine both streams
+    combineLatest([
+      this.stripeService.products$,
+      this.stripeService.prices$
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([products, prices]) => {
+        this.stripeProducts = Array.isArray(products) ? products : [];
+        this.stripePrices = Array.isArray(prices) ? prices : [];
+
+        this.buildSubscriptionPlansFromStripeData(this.stripeProducts, this.stripePrices);
+
+        // Force change detection to update the UI
+        this.cdr.detectChanges();
+      });
+  }
+
+  // Load plans directly from Stripe data
+  private loadPlansFromStripe(): void {
+    this.isLoadingPlans = true;
+    this.stripeService.initializeProductsAndPrices();
+  }
+
+  // Build subscription plans from Stripe products and prices
+  private buildSubscriptionPlansFromStripeData(products: StripeProduct[], prices: StripePrice[]): void {
+    // Prevent building plans if we're in the middle of a sync operation
+    if (this.syncingWithStripe) {
+      return;
+    }
+
+    // Ensure we have arrays to work with
+    const safeProducts = Array.isArray(products) ? products : [];
+    const safePrices = Array.isArray(prices) ? prices : [];
+    this.subscriptionPlans = safeProducts.map(product => this.convertStripeProductToPlan(product, safePrices));
+    this.isLoadingPlans = false;
+  }
+
+  // Helper method to log current stripe data state
+  logCurrentStripeState(): void {
+    if (this.subscriptionPlans.length > 0) {
+      this.subscriptionPlans.forEach((plan, index) => {
+        console.log(`  ${index + 1}. ${plan.name} - $${plan.monthlyPrice}/month (${plan.status})`);
+      });
+    }
+  }
+
+  toggleSyncSection(): void {
+    this.showSyncSection = !this.showSyncSection;
+  }
+
+  // Manual data loading method to force data retrieval
+  async manualDataLoad(): Promise<void> {
+    try {
+      // Manually get data from BehaviorSubjects current values
+      const currentProducts = this.stripeService.products$.pipe(take(1)).toPromise();
+      const currentPrices = this.stripeService.prices$.pipe(take(1)).toPromise();
+
+      const [products, prices] = await Promise.all([currentProducts, currentPrices]);
+      if (products && products.length > 0) {
+        this.stripeProducts = products;
+      }
+
+      if (prices && prices.length > 0) {
+        this.stripePrices = prices;
+      }
+
+      // Force rebuild with any data we got
+      this.buildSubscriptionPlansFromStripeData(this.stripeProducts, this.stripePrices);
+      this.cdr.detectChanges();
+
+    } catch (error) {
+      console.error('❌ Error in manual data load:', error);
+    }
+  }
+
+  // Debug method to manually test Firebase functions
+  async debugFirebaseFunctions(): Promise<void> {
+    try {
+      await this.stripeService.debugFirebaseFunctions();
+
+      // Test connection first
+      const connectionResult = await this.stripeService.testStripeConnection().toPromise();
+
+      // Test the products function directly
+      const productsResult = await this.stripeService.getProducts().toPromise();
+
+      // Test the prices function directly
+      const pricesResult = await this.stripeService.getPrices().toPromise();
+
+      // Force re-initialize
+      this.stripeService.initializeProductsAndPrices();
+
+    } catch (error: any) {
+      console.error('❌ Error in manual Firebase function test:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
+    }
+  }
+
+  // Convert Stripe product + prices to SubscriptionPlan
+  private convertStripeProductToPlan(product: StripeProduct, prices: StripePrice[]): SubscriptionPlan {
+    // Find prices for this product - ensure prices is an array
+    const safePrices = Array.isArray(prices) ? prices : [];
+    const productPrices = safePrices.filter(price => price.product === product.id);
+    const monthlyPrice = productPrices.find(p => p.recurring?.interval === 'month');
+    const yearlyPrice = productPrices.find(p => p.recurring?.interval === 'year');
+
+    // Parse metadata back to structured data
+    const metadata = product.metadata || {};
+
+    return {
+      // Stripe identifiers
+      stripeProductId: product.id,
+      stripeMonthlyPriceId: monthlyPrice?.id,
+      stripeYearlyPriceId: yearlyPrice?.id,
+
+      // Core info
+      name: product.name,
+      description: product.description || '',
+      active: product.active,
+
+      // Pricing
+      monthlyPrice: monthlyPrice ? monthlyPrice.unit_amount / 100 : 0,
+      yearlyPrice: yearlyPrice ? yearlyPrice.unit_amount / 100 : undefined,
+      currency: monthlyPrice?.currency || 'usd',
+
+      // Extended metadata
+      features: this.parseJsonMetadata(metadata['features'], ['']),
+      isPopular: metadata['isPopular'] === 'true',
+      maxUsers: metadata['maxUsers'] ? parseInt(metadata['maxUsers']) : undefined,
+      storageLimit: metadata['storageLimit'] || undefined,
+      supportLevel: (metadata['supportLevel'] as any) || 'Basic',
+      trialDays: metadata['trialDays'] ? parseInt(metadata['trialDays']) : undefined,
+      category: (metadata['category'] as any) || 'Business',
+
+      // Timestamps
+      created: new Date(product.created * 1000),
+      updated: new Date(product.updated * 1000),
+
+      // Computed
+      status: product.active ? 'Active' : 'Inactive',
+      lastModified: new Date(product.updated * 1000).toISOString().split('T')[0]
+    };
+  }
+
+  // Helper to safely parse JSON from metadata
+  private parseJsonMetadata(jsonString: string, defaultValue: any): any {
+    try {
+      return jsonString ? JSON.parse(jsonString) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+
+  // Refresh plans from Stripe
+  async refreshPlansFromStripe(): Promise<void> {
+    try {
+      // Removed debug logs for production
+      // Don't set isLoadingPlans here if we're already syncing
+      if (!this.syncingWithStripe) {
+        this.isLoadingPlans = true;
+      }
+
+      // Re-initialize to get fresh data
+      this.stripeService.initializeProductsAndPrices();
+
+      // Wait for the data to be fetched (shorter timeout to avoid hanging)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+    } catch (error) {
+      console.error('❌ ERROR DURING REFRESH: Error refreshing plans from Stripe:', error);
+    } finally {
+      // Always reset loading state when not syncing
+      if (!this.syncingWithStripe) {
+        this.isLoadingPlans = false;
+      }
+    }
+  }
+  // Modal Management
+  openPlanModal = (plan?: SubscriptionPlan) => {
+    // Clear any previous messages
+    this.errorMessage = null;
+    this.successMessage = null;
+
+    if (plan) {
+      // Editing existing plan
+      this.selectedPlan = { ...plan };
     } else {
       // Creating new plan
       this.selectedPlan = {
-        id: '', // Empty ID for new plans
+        stripeProductId: '', // Will be set when created
         name: '',
         description: '',
+        active: true,
         monthlyPrice: 0,
-        yearlyPrice: 0,
+        currency: 'usd',
         features: [''],
         isPopular: false,
-        status: 'Active',
-        maxUsers: undefined,
-        storageLimit: '',
         supportLevel: 'Basic',
-        trialDays: 0,
-        category: 'Starter',
-        lastModified: new Date().toISOString()
-      };
-      console.log('Creating new plan');
+        category: 'Business',
+        created: new Date(),
+        updated: new Date(),
+        status: 'Active',
+        lastModified: new Date().toISOString().split('T')[0]
+      } as SubscriptionPlan;
     }
+
+    // Force modal to show and trigger change detection
     this.showPlanModal = true;
+    this.cdr.detectChanges();
   }
 
   closePlanModal(): void {
+    // Force the modal to close immediately
     this.showPlanModal = false;
-    this.selectedPlan = null;
+
+    // Clear any messages when closing modal
+    this.errorMessage = null;
+    this.successMessage = null;
+
+    // Reset sync flags to prevent hanging states
+    this.syncingWithStripe = false;
+    this.isLoadingPlans = false;
+
+    // Force change detection to ensure UI updates immediately
+    this.cdr.detectChanges();
+
+    // Clear selected plan after a short delay to ensure smooth transition
+    setTimeout(() => {
+      this.selectedPlan = null;
+      this.cdr.detectChanges();
+    }, 100);
   }
 
-  async savePlan(): Promise<void> {
-    if (!this.selectedPlan) {
-      console.error('No selected plan to save');
-      return;
-    }
-
-    console.log('Saving plan:', this.selectedPlan);
-    console.log('Plan ID check:', this.selectedPlan.id, 'Type:', typeof this.selectedPlan.id, 'Length:', this.selectedPlan.id?.length);
-
-    try {
-      const now = new Date().toISOString();
-
-      // Determine if this is an update or create operation
-      const isUpdate = this.selectedPlan.id && this.selectedPlan.id.trim().length > 0;
-
-      console.log('Operation type:', isUpdate ? 'UPDATE' : 'CREATE');
-
-      if (isUpdate) {
-        // UPDATE EXISTING PLAN
-        console.log('Updating existing plan with ID:', this.selectedPlan.id);
-
-        const updatedPlan = this.cleanFirebaseData({
-          name: this.selectedPlan.name,
-          description: this.selectedPlan.description,
-          monthlyPrice: this.selectedPlan.monthlyPrice,
-          yearlyPrice: this.selectedPlan.yearlyPrice,
-          features: this.selectedPlan.features,
-          isPopular: this.selectedPlan.isPopular,
-          status: this.selectedPlan.status,
-          maxUsers: this.selectedPlan.maxUsers,
-          storageLimit: this.selectedPlan.storageLimit,
-          supportLevel: this.selectedPlan.supportLevel,
-          trialDays: this.selectedPlan.trialDays,
-          category: this.selectedPlan.category,
-          lastModified: now
-        });
-
-        await updateDoc(doc(this.firestore, this.plansCollection, this.selectedPlan.id), updatedPlan);
-        console.log('✅ Plan UPDATED successfully with ID:', this.selectedPlan.id);
-
-      } else {
-        // CREATE NEW PLAN
-        console.log('Creating new plan');
-
-        const newPlan = this.cleanFirebaseData({
-          name: this.selectedPlan.name,
-          description: this.selectedPlan.description,
-          monthlyPrice: this.selectedPlan.monthlyPrice,
-          yearlyPrice: this.selectedPlan.yearlyPrice,
-          features: this.selectedPlan.features,
-          isPopular: this.selectedPlan.isPopular,
-          status: this.selectedPlan.status,
-          maxUsers: this.selectedPlan.maxUsers,
-          storageLimit: this.selectedPlan.storageLimit,
-          supportLevel: this.selectedPlan.supportLevel,
-          trialDays: this.selectedPlan.trialDays,
-          category: this.selectedPlan.category,
-          lastModified: now
-        });
-
-        const docRef = await addDoc(collection(this.firestore, this.plansCollection), newPlan);
-        console.log('✅ Plan CREATED successfully with ID:', docRef.id);
-      }
-
-      this.closePlanModal();
-      await this.loadSubscriptionPlans();
-
-    } catch (error) {
-      console.error('❌ Error saving plan:', error);
-      alert('Error saving plan: ' + error);
-    }
-  }
-
-  confirmDeletePlan(plan: SubscriptionPlan): void {
-    console.log('🗑️ Confirming delete for plan:', plan);
-    console.log('Plan ID:', plan.id, 'Type:', typeof plan.id, 'Length:', plan.id?.length);
-
-    if (!plan.id || plan.id.trim() === '') {
-      console.error('❌ Cannot delete plan - invalid ID:', plan);
-      alert('Error: Cannot delete plan - invalid ID');
-      return;
-    }
-
+  openDeleteModal(plan: SubscriptionPlan): void {
     this.deletingPlan = plan;
     this.showDeleteModal = true;
   }
@@ -222,86 +405,225 @@ export class SubscriptionEditorComponent implements OnInit {
     this.deletingPlan = null;
   }
 
-  openDeleteModal(plan: SubscriptionPlan): void {
-    console.log('🗑️ Opening delete modal for plan:', plan);
-    console.log('Plan ID:', plan.id, 'Type:', typeof plan.id);
+  // Plan Management - Now working with Stripe directly
+  async savePlan(): Promise<void> {
+    if (!this.selectedPlan) return;
 
-    if (!plan || !plan.id) {
-      console.error('❌ Invalid plan object:', plan);
-      alert('Error: Invalid plan selected for deletion');
-      return;
-    }
-
-    // Validate plan ID format
-    if (typeof plan.id !== 'string' || plan.id.trim() === '') {
-      console.error('❌ Invalid plan ID:', plan.id);
-      alert('Error: Invalid plan ID');
-      return;
-    }
-
-    this.deletingPlan = plan;
-    this.showDeleteModal = true;
-  }
-
-  async deletePlan(): Promise<void> {
-    if (!this.deletingPlan) {
-      console.error('❌ No plan selected for deletion');
-      return;
-    }
-
-    if (!this.deletingPlan.id || this.deletingPlan.id.trim() === '') {
-      console.error('❌ Invalid plan ID for deletion:', this.deletingPlan);
-      alert('Error: Invalid plan ID. Cannot delete plan.');
-      return;
-    }
-
-    console.log('🗑️ Deleting plan:', this.deletingPlan.name, 'with ID:', this.deletingPlan.id);
-    console.log('Collection:', this.plansCollection);
-    console.log('Full document path:', `${this.plansCollection}/${this.deletingPlan.id}`);
-
-    this.isDeleting = true;
+    // Clear previous messages
+    this.errorMessage = null;
+    this.successMessage = null;
 
     try {
-      await deleteDoc(doc(this.firestore, this.plansCollection, this.deletingPlan.id));
-      console.log('✅ Plan deleted successfully:', this.deletingPlan.id);
+      this.syncingWithStripe = true;
+      const isUpdate = !!this.selectedPlan.stripeProductId;
+      const planName = this.selectedPlan.name;
+
+      if (isUpdate) {
+        await this.updateStripeProduct(this.selectedPlan);
+      } else {
+        await this.createStripeProduct(this.selectedPlan);
+      }
+
+      // Wait for the data refresh to complete
+      await this.refreshPlansFromStripe();
+
+      // Show success message
+      this.successMessage = isUpdate
+        ? `Plan "${planName}" updated successfully!`
+        : `Plan "${planName}" created successfully!`;
+
+      // Close modal after a short delay to show success message
+      setTimeout(() => {
+        this.closePlanModal();
+      }, 1500);
+
+    } catch (error: any) {
+      // Only keep error logging, remove debug logs
+      console.error('❌ Error saving plan:', error);
+
+      // Extract user-friendly error message
+      let errorMsg = 'An unexpected error occurred while saving the plan.';
+
+      if (error.message) {
+        if (error.message.includes('validation failed') || error.message.includes('Validation failed')) {
+          errorMsg = error.message;
+        } else if (error.message.includes('999999')) {
+          errorMsg = 'Price exceeds the maximum allowed limit ($999,999.99).';
+        } else if (error.message.includes('unit_amount')) {
+          errorMsg = 'Invalid price amount. Please check the price and try again.';
+        } else {
+          errorMsg = `Error: ${error.message}`;
+        }
+      }
+
+      this.errorMessage = errorMsg;
+
+      // Close modal after showing error for a few seconds
+      setTimeout(() => {
+        this.closePlanModal();
+      }, 3000);
+
+    } finally {
+      // Always reset the syncing flag
+      this.syncingWithStripe = false;
+      this.isLoadingPlans = false;
+    }
+  }
+
+  // Save plan with Stripe sync (same as savePlan now)
+  async savePlanWithStripeSync(): Promise<void> {
+    await this.savePlan();
+  }
+
+  // Create new product in Stripe
+  private async createStripeProduct(plan: SubscriptionPlan): Promise<void> {
+    try {
+      const unitAmount = Math.round(plan.monthlyPrice * 100);
+
+      // Validate data before sending to Stripe
+      const validation = this.stripeService.validateStripeProductData({
+        name: plan.name,
+        description: plan.description,
+        unitAmount: unitAmount,
+        currency: plan.currency,
+        interval: 'month'
+      });
+
+      if (!validation.isValid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      const result = await this.stripeService.createProductWithPrice({
+        name: plan.name,
+        description: plan.description,
+        unitAmount: unitAmount,
+        currency: plan.currency,
+        interval: 'month',
+        trialDays: plan.trialDays,
+        metadata: {
+          features: JSON.stringify(plan.features),
+          isPopular: plan.isPopular.toString(),
+          maxUsers: plan.maxUsers?.toString() || '',
+          storageLimit: plan.storageLimit || '',
+          supportLevel: plan.supportLevel,
+          trialDays: plan.trialDays?.toString() || '',
+          category: plan.category
+        }
+      }).toPromise();
+    } catch (error) {
+      // Only keep error logging, remove debug logs
+      console.error('❌ Error creating plan in Stripe:', error);
+      throw error;
+    }
+  }
+
+  // Update existing product in Stripe
+  private async updateStripeProduct(plan: SubscriptionPlan): Promise<void> {
+    if (!plan.stripeProductId) return;
+
+    try {
+      await this.stripeService.updateProduct(plan.stripeProductId, {
+        name: plan.name,
+        description: plan.description,
+        active: plan.active,
+        metadata: {
+          features: JSON.stringify(plan.features),
+          isPopular: plan.isPopular.toString(),
+          maxUsers: plan.maxUsers?.toString() || '',
+          storageLimit: plan.storageLimit || '',
+          supportLevel: plan.supportLevel,
+          trialDays: plan.trialDays?.toString() || '',
+          category: plan.category
+        }
+      }).toPromise();
+
+      // Handle price updates if needed
+      const currentPrice = Array.isArray(this.stripePrices)
+        ? this.stripePrices.find(p => p.id === plan.stripeMonthlyPriceId)
+        : undefined;
+      const newPriceAmount = Math.round(plan.monthlyPrice * 100);
+
+      if (currentPrice && currentPrice.unit_amount !== newPriceAmount) {
+        // Archive old price and create new one
+        if (plan.stripeMonthlyPriceId) {
+          await this.stripeService.archivePrice(plan.stripeMonthlyPriceId).toPromise();
+        }
+
+        // Validate price data before creating
+        const priceValidation = this.stripeService.validateStripeProductData({
+          name: `${plan.name} - Monthly`,
+          unitAmount: newPriceAmount,
+          currency: plan.currency
+        });
+
+        if (!priceValidation.isValid) {
+          throw new Error(`Price validation failed: ${priceValidation.errors.join(', ')}`);
+        }
+
+        const newPrice = await this.stripeService.createPrice({
+          productId: plan.stripeProductId,
+          unitAmount: newPriceAmount,
+          currency: plan.currency,
+          recurring: { interval: 'month' },
+          nickname: `${plan.name} - Monthly`
+        }).toPromise();
+      }
+    } catch (error) {
+      // Only keep error logging, remove debug logs
+      console.error('❌ Error updating plan in Stripe:', error);
+      throw error;
+    }
+  }
+
+  // Delete plan from Stripe
+  async deletePlan(): Promise<void> {
+    if (!this.deletingPlan) return;
+
+    try {
+      this.isDeleting = true;
+
+      if (this.deletingPlan.stripeProductId) {
+        // Archive the product in Stripe (safer than deletion)
+        await this.stripeService.archiveProduct(this.deletingPlan.stripeProductId).toPromise();
+      }
+
       this.closeDeleteModal();
-      await this.loadSubscriptionPlans();
+      await this.refreshPlansFromStripe();
+
     } catch (error) {
       console.error('❌ Error deleting plan:', error);
-      alert('Error deleting plan: ' + error);
     } finally {
       this.isDeleting = false;
     }
   }
 
+  // Toggle plan status
   async togglePlanStatus(plan: SubscriptionPlan): Promise<void> {
     try {
       const newStatus = plan.status === 'Active' ? 'Inactive' : 'Active';
-      const updatedData = this.cleanFirebaseData({
-        status: newStatus,
-        lastModified: new Date().toISOString().split('T')[0]
-      });
 
-      await updateDoc(doc(this.firestore, this.plansCollection, plan.id), updatedData);
-
-      console.log(`Subscription plan ${plan.name} status changed to ${newStatus}`);
-      await this.loadSubscriptionPlans();
-    } catch (error) {
-      console.error('Error toggling subscription plan status:', error);
-    }
-  }
-
-  // Helper method to clean Firebase data by removing undefined values
-  private cleanFirebaseData(data: any): any {
-    const cleaned: any = {};
-    for (const key in data) {
-      if (data[key] !== undefined && data[key] !== null) {
-        cleaned[key] = data[key];
+      if (plan.stripeProductId) {
+        await this.stripeService.updateProduct(plan.stripeProductId, {
+          active: newStatus === 'Active'
+        }).toPromise();
+        await this.refreshPlansFromStripe();
       }
+    } catch (error) {
+      console.error('Error toggling plan status:', error);
     }
-    return cleaned;
   }
 
+  // Stripe sync methods
+  async syncPlanWithStripe(plan: SubscriptionPlan): Promise<void> {
+    // Since we're now using Stripe as primary source, this just refreshes data
+    await this.refreshPlansFromStripe();
+  }
+
+  async syncAllPlansWithStripe(): Promise<void> {
+    await this.refreshPlansFromStripe();
+  }
+
+  // Utility methods
   addFeature(): void {
     if (this.selectedPlan) {
       this.selectedPlan.features.push('');
@@ -318,6 +640,11 @@ export class SubscriptionEditorComponent implements OnInit {
     return index;
   }
 
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  }
+
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -325,39 +652,63 @@ export class SubscriptionEditorComponent implements OnInit {
     }).format(amount);
   }
 
-  // Utility method for status badges
-  getStatusBadgeClass(status: string): string {
-    switch (status.toLowerCase()) {
-      case 'active': return 'badge bg-success';
-      case 'inactive': return 'badge bg-secondary';
-      case 'deprecated': return 'badge bg-danger';
-      default: return 'badge bg-primary';
+  // Helper methods for template
+  getActivePricesCount(): number {
+    if (!Array.isArray(this.stripePrices)) {
+      return 0;
     }
+    return this.stripePrices.filter(p => p?.active).length;
+  }
+
+  getSyncedPlansCount(): number {
+    return this.subscriptionPlans.length; // All plans are now synced with Stripe
   }
 
   getCategoryClass(category: string): string {
-    switch (category.toLowerCase()) {
-      case 'starter': return 'text-success';
-      case 'business': return 'text-primary';
-      case 'enterprise': return 'text-warning';
-      default: return 'text-muted';
-    }
+    const classes = {
+      'Starter': 'bg-info',
+      'Business': 'bg-primary',
+      'Enterprise': 'bg-warning text-dark'
+    };
+    return classes[category as keyof typeof classes] || 'bg-secondary';
   }
 
-  getSupportLevelIcon(supportLevel: string): string {
-    switch (supportLevel.toLowerCase()) {
-      case 'basic': return 'fa fa-chat';
-      case 'priority': return 'fa fa-chat-dots';
-      case 'premium': return 'fa fa-headset';
-      default: return 'fa fa-question-circle';
-    }
+  getStatusBadgeClass(status: string): string {
+    const classes = {
+      'Active': 'bg-success',
+      'Inactive': 'bg-secondary',
+      'Deprecated': 'bg-danger'
+    };
+    return classes[status as keyof typeof classes] || 'bg-secondary';
   }
 
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  getSupportLevelIcon(level: string): string {
+    const icons = {
+      'Basic': 'fa-envelope',
+      'Priority': 'fa-phone',
+      'Premium': 'fa-headset'
+    };
+    return icons[level as keyof typeof icons] || 'fa-envelope';
+  }
+
+  // Stripe sync status methods
+  getStripeSyncStatus(plan: SubscriptionPlan): string {
+    return 'synced'; // All plans are now synced with Stripe
+  }
+
+  getStripeSyncIcon(plan: SubscriptionPlan): string {
+    return 'fa-check-circle text-success';
+  }
+
+  openStripeProduct(productId: string): void {
+    // Check if this is a mock product
+    if (productId.startsWith('prod_mock_') || productId.startsWith('prod_sample_')) {
+      alert(`🧪 Mock Product: ${productId}\n\nThis is a development mock product and doesn't exist in Stripe.\n\nTo see real Stripe products, set 'useRealFirebaseFunctions: true' in environment.ts`);
+      return;
+    }
+
+    const mode = this.stripeService.isLiveMode() ? 'live' : 'test';
+    const url = `https://dashboard.stripe.com/${mode}/products/${productId}`;
+    window.open(url, '_blank');
   }
 }

@@ -1001,4 +1001,347 @@
             }
         }
     }
+
+    // Quick Links & Resources Section
+    .quick-link-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 1px solid #e9ecef !important;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            border-color: #007bff !important;
+        }
+
+        h5 {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.25rem;
+        }
+
+        h6 {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .fa-lg {
+            font-size: 1.5rem;
+            width: 40px;
+            text-align: center;
+        }
+
+        .btn {
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+            padding: 0.5rem 0.75rem;
+
+            &:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            i {
+                width: 16px;
+                text-align: center;
+            }
+        }
+
+        // Custom button colors
+        .btn-outline-purple {
+            color: #6f42c1;
+            border-color: #6f42c1;
+
+            &:hover {
+                background-color: #6f42c1;
+                border-color: #6f42c1;
+                color: white;
+            }
+        }
+
+        // Enhanced button hover states
+        .btn-outline-primary:hover {
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-outline-success:hover {
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-outline-info:hover {
+            box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+        }
+
+        .btn-outline-warning:hover {
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-outline-danger:hover {
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-outline-secondary:hover {
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-outline-dark:hover {
+            box-shadow: 0 2px 4px rgba(52, 58, 64, 0.3);
+        }
+    }
+
+    .quick-stat {
+        padding: 1rem 0;
+
+        h4 {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            font-size: 1.5rem;
+        }
+
+        small {
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    }
+
+    // Icon colors for quick links (enhanced)
+    .fa-credit-card {
+        color: #007bff;
+    }
+
+    .fa-users {
+        color: #28a745;
+    }
+
+    .fa-cogs {
+        color: #ffc107;
+    }
+
+    .fa-comments {
+        color: #17a2b8;
+    }
+
+    .fa-chart-line {
+        color: #6f42c1;
+    }
+
+    .fa-shield-alt {
+        color: #dc3545;
+    }
+
+    // Category-specific styling
+    .quick-link-card {
+
+        // Payment section
+        &:has(.fa-credit-card) {
+            border-left: 4px solid #007bff !important;
+        }
+
+        // User section
+        &:has(.fa-users) {
+            border-left: 4px solid #28a745 !important;
+        }
+
+        // System section
+        &:has(.fa-cogs) {
+            border-left: 4px solid #ffc107 !important;
+        }
+
+        // Analytics section
+        &:has(.fa-chart-line) {
+            border-left: 4px solid #6f42c1 !important;
+        }
+
+        // Communication section
+        &:has(.fa-comments) {
+            border-left: 4px solid #17a2b8 !important;
+        }
+
+        // Security section
+        &:has(.fa-shield-alt) {
+            border-left: 4px solid #dc3545 !important;
+        }
+    }
+
+    // Responsive adjustments
+    @media (max-width: 768px) {
+        .quick-link-card {
+            margin-bottom: 1rem;
+
+            .btn {
+                font-size: 0.8rem;
+                padding: 0.375rem 0.5rem;
+
+                i {
+                    margin-right: 0.25rem !important;
+                }
+            }
+
+            .fa-lg {
+                font-size: 1.25rem;
+                width: 30px;
+            }
+
+            h5 {
+                font-size: 1rem;
+            }
+        }
+
+        .quick-stat {
+            padding: 0.5rem 0;
+
+            h4 {
+                font-size: 1.25rem;
+            }
+
+            small {
+                font-size: 0.75rem;
+            }
+        }
+    }
+
+    @media (max-width: 576px) {
+        .quick-link-card {
+            .btn {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
+
+            .row.g-2 {
+                --bs-gutter-x: 0.25rem;
+                --bs-gutter-y: 0.25rem;
+            }
+        }
+    }
+
+    // Stripe Dashboard Quick Links Styling
+    .stripe-link-card {
+        transition: all 0.3s ease;
+        text-decoration: none !important;
+        color: inherit !important;
+
+        &:hover {
+            transform: translateY(-3px);
+            text-decoration: none !important;
+            color: inherit !important;
+
+            .card {
+                border-color: #007bff !important;
+                box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+                background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+            }
+
+            .stripe-icon i {
+                transform: scale(1.1);
+            }
+
+            .fa-external-link-alt {
+                color: #007bff !important;
+                transform: translateX(2px);
+            }
+        }
+
+        .card {
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            background: #ffffff;
+
+            &:hover {
+                border-color: #007bff;
+            }
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .stripe-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+
+            i {
+                transition: all 0.3s ease;
+            }
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-text {
+            font-size: 0.95rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .fa-external-link-alt {
+            font-size: 1.1rem;
+            color: #adb5bd;
+            transition: all 0.3s ease;
+        }
+
+        // Individual icon colors for better visual distinction
+        .fa-tachometer-alt {
+            color: #007bff;
+        }
+
+        .fa-box {
+            color: #28a745;
+        }
+
+        .fa-users {
+            color: #17a2b8;
+        }
+
+        .fa-credit-card {
+            color: #ffc107;
+        }
+
+        .fa-sync-alt {
+            color: #6f42c1;
+        }
+
+        .fa-webhook {
+            color: #6c757d;
+        }
+
+        .fa-key {
+            color: #dc3545;
+        }
+
+        .fa-cogs {
+            color: #343a40;
+        }
+    }
+
+    // Custom color classes
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+
+    .btn-outline-purple {
+        color: #6f42c1;
+        border-color: #6f42c1;
+
+        &:hover {
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+            color: white;
+            box-shadow: 0 2px 4px rgba(111, 66, 193, 0.3);
+        }
+    }
 }

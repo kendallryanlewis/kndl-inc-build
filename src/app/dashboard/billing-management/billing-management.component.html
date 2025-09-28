@@ -102,37 +102,27 @@
 <!-- Navigation tabs -->
 <ul class="nav nav-tabs mb-4">
   <li class="nav-item">
-    <button class="nav-link" 
-            [class.active]="activeTab === 'overview'"
-            (click)="setActiveTab('overview')">
+    <button class="nav-link" [class.active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
       <i class="fas fa-chart-line me-2"></i>Overview
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link" 
-            [class.active]="activeTab === 'subscriptions'"
-            (click)="setActiveTab('subscriptions')">
+    <button class="nav-link" [class.active]="activeTab === 'subscriptions'" (click)="setActiveTab('subscriptions')">
       <i class="fas fa-subscription me-2"></i>Subscriptions
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link" 
-            [class.active]="activeTab === 'payment-methods'"
-            (click)="setActiveTab('payment-methods')">
+    <button class="nav-link" [class.active]="activeTab === 'payment-methods'" (click)="setActiveTab('payment-methods')">
       <i class="fas fa-credit-card me-2"></i>Payment Methods
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link" 
-            [class.active]="activeTab === 'transactions'"
-            (click)="setActiveTab('transactions')">
+    <button class="nav-link" [class.active]="activeTab === 'transactions'" (click)="setActiveTab('transactions')">
       <i class="fas fa-receipt me-2"></i>Transactions
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link" 
-            [class.active]="activeTab === 'invoices'"
-            (click)="setActiveTab('invoices')">
+    <button class="nav-link" [class.active]="activeTab === 'invoices'" (click)="setActiveTab('invoices')">
       <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
     </button>
   </li>
@@ -156,7 +146,8 @@
               <i class="fas fa-receipt fa-3x mb-3"></i>
               <p>No recent transactions</p>
             </div>
-            <div *ngFor="let transaction of transactions.slice(0, 5)" class="d-flex justify-content-between align-items-center py-2">
+            <div *ngFor="let transaction of transactions.slice(0, 5)"
+              class="d-flex justify-content-between align-items-center py-2">
               <div>
                 <strong>{{ formatCurrency(transaction.amount) }}</strong>
                 <span class="text-muted ms-2">{{ transaction.description }}</span>
@@ -208,14 +199,12 @@
                     <button class="btn btn-outline-primary btn-sm me-1" (click)="showSubscriptionDetail(subscription)">
                       Details
                     </button>
-                    <button *ngIf="subscription.status === 'active'" 
-                            class="btn btn-outline-danger btn-sm"
-                            (click)="cancelSubscription(subscription)">
+                    <button *ngIf="subscription.status === 'active'" class="btn btn-outline-danger btn-sm"
+                      (click)="cancelSubscription(subscription)">
                       Cancel
                     </button>
-                    <button *ngIf="subscription.cancel_at_period_end" 
-                            class="btn btn-outline-success btn-sm"
-                            (click)="reactivateSubscription(subscription)">
+                    <button *ngIf="subscription.cancel_at_period_end" class="btn btn-outline-success btn-sm"
+                      (click)="reactivateSubscription(subscription)">
                       Reactivate
                     </button>
                   </div>
@@ -225,7 +214,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="col-md-4">
         <!-- Account info -->
         <div class="card mb-4">
@@ -271,7 +260,8 @@
   </div>
 
   <!-- Subscriptions tab -->
-  <div class="tab-pane fade" [class.show]="activeTab === 'subscriptions'" [class.active]="activeTab === 'subscriptions'">
+  <div class="tab-pane fade" [class.show]="activeTab === 'subscriptions'"
+    [class.active]="activeTab === 'subscriptions'">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">
@@ -290,7 +280,7 @@
             Choose Your First Plan
           </button>
         </div>
-        
+
         <div *ngFor="let subscription of subscriptions" class="subscription-card border rounded p-3 mb-3">
           <div class="row align-items-center">
             <div class="col-md-6">
@@ -310,27 +300,25 @@
             <div class="col-md-6 text-end">
               <p class="mb-1">
                 <strong>Current Period:</strong><br>
-                {{ formatDate(subscription.current_period_start) }} - 
+                {{ formatDate(subscription.current_period_start) }} -
                 {{ formatDate(subscription.currentPeriodEnd || subscription.current_period_end) }}
               </p>
               <div class="btn-group" role="group">
                 <button class="btn btn-outline-primary btn-sm" (click)="showSubscriptionDetail(subscription)">
                   Details
                 </button>
-                <button *ngIf="subscription.status === 'active' && !subscription.cancel_at_period_end" 
-                        class="btn btn-outline-danger btn-sm"
-                        (click)="cancelSubscription(subscription)">
+                <button *ngIf="subscription.status === 'active' && !subscription.cancel_at_period_end"
+                  class="btn btn-outline-danger btn-sm" (click)="cancelSubscription(subscription)">
                   Cancel
                 </button>
-                <button *ngIf="subscription.cancel_at_period_end" 
-                        class="btn btn-outline-success btn-sm"
-                        (click)="reactivateSubscription(subscription)">
+                <button *ngIf="subscription.cancel_at_period_end" class="btn btn-outline-success btn-sm"
+                  (click)="reactivateSubscription(subscription)">
                   Reactivate
                 </button>
               </div>
             </div>
           </div>
-          
+
           <div *ngIf="subscription.addons && subscription.addons.length > 0" class="mt-2">
             <small class="text-muted">Add-ons:</small>
             <div class="d-flex gap-1 flex-wrap mt-1">
@@ -345,7 +333,8 @@
   </div>
 
   <!-- Payment Methods tab -->
-  <div class="tab-pane fade" [class.show]="activeTab === 'payment-methods'" [class.active]="activeTab === 'payment-methods'">
+  <div class="tab-pane fade" [class.show]="activeTab === 'payment-methods'"
+    [class.active]="activeTab === 'payment-methods'">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">
@@ -364,7 +353,7 @@
             Add Your First Payment Method
           </button>
         </div>
-        
+
         <div *ngFor="let paymentMethod of paymentMethods" class="payment-method-card border rounded p-3 mb-3">
           <div class="row align-items-center">
             <div class="col-auto">
@@ -373,23 +362,21 @@
             <div class="col">
               <h6 class="mb-1">
                 •••• •••• •••• {{ paymentMethod.card.last4 }}
-                <span *ngIf="paymentMethod.id === currentCustomer?.invoice_settings?.default_payment_method" 
-                      class="badge bg-primary ms-2">Default</span>
+                <span *ngIf="paymentMethod.id === currentCustomer?.invoice_settings?.default_payment_method"
+                  class="badge bg-primary ms-2">Default</span>
               </h6>
               <p class="text-muted mb-0">
-                {{ paymentMethod.card.brand | titlecase }} 
+                {{ paymentMethod.card.brand | titlecase }}
                 expires {{ paymentMethod.card.exp_month }}/{{ paymentMethod.card.exp_year }}
               </p>
             </div>
             <div class="col-auto">
               <div class="btn-group" role="group">
                 <button *ngIf="paymentMethod.id !== currentCustomer?.invoice_settings?.default_payment_method"
-                        class="btn btn-outline-primary btn-sm"
-                        (click)="setDefaultPaymentMethod(paymentMethod.id)">
+                  class="btn btn-outline-primary btn-sm" (click)="setDefaultPaymentMethod(paymentMethod.id)">
                   Set Default
                 </button>
-                <button class="btn btn-outline-danger btn-sm"
-                        (click)="removePaymentMethod(paymentMethod.id)">
+                <button class="btn btn-outline-danger btn-sm" (click)="removePaymentMethod(paymentMethod.id)">
                   Remove
                 </button>
               </div>
@@ -414,7 +401,7 @@
           <h5 class="text-muted">No Transactions</h5>
           <p class="text-muted">Your transaction history will appear here.</p>
         </div>
-        
+
         <div class="table-responsive" *ngIf="transactions.length > 0">
           <table class="table table-hover">
             <thead>
@@ -468,7 +455,7 @@
           <h5 class="text-muted">No Invoices</h5>
           <p class="text-muted">Your invoices will appear here once you have subscriptions.</p>
         </div>
-        
+
         <div class="table-responsive" *ngIf="invoices.length > 0">
           <table class="table table-hover">
             <thead>
@@ -512,10 +499,8 @@
 </div>
 
 <!-- Add Payment Method Modal -->
-<div class="modal fade" 
-     [class.show]="showAddPaymentMethodModal" 
-     [style.display]="showAddPaymentMethodModal ? 'block' : 'none'"
-     tabindex="-1" role="dialog">
+<div class="modal fade" [class.show]="showAddPaymentMethodModal"
+  [style.display]="showAddPaymentMethodModal ? 'block' : 'none'" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -544,10 +529,8 @@
 </div>
 
 <!-- Select Package Modal -->
-<div class="modal fade" 
-     [class.show]="showSelectPackageModal" 
-     [style.display]="showSelectPackageModal ? 'block' : 'none'"
-     tabindex="-1" role="dialog">
+<div class="modal fade" [class.show]="showSelectPackageModal"
+  [style.display]="showSelectPackageModal ? 'block' : 'none'" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -559,9 +542,8 @@
       <div class="modal-body">
         <div class="row g-3">
           <div *ngFor="let plan of packagePlans" class="col-md-4">
-            <div class="card plan-card h-100" 
-                 [class.selected]="selectedPackage?.id === plan.id"
-                 (click)="selectPackage(plan)">
+            <div class="card plan-card h-100" [class.selected]="selectedPackage?.id === plan.id"
+              (click)="selectPackage(plan)">
               <div class="card-header text-center">
                 <h5 class="card-title">{{ plan.name }}</h5>
                 <div class="plan-price">
@@ -583,10 +565,8 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button type="button" 
-                class="btn btn-primary" 
-                (click)="createSubscription()"
-                [disabled]="!selectedPackage || creatingSubscription">
+        <button type="button" class="btn btn-primary" (click)="createSubscription()"
+          [disabled]="!selectedPackage || creatingSubscription">
           <span *ngIf="creatingSubscription" class="spinner-border spinner-border-sm me-2"></span>
           Subscribe to {{ selectedPackage?.name }}
         </button>
@@ -596,10 +576,8 @@
 </div>
 
 <!-- Transaction Detail Modal -->
-<div class="modal fade" 
-     [class.show]="showTransactionDetailModal" 
-     [style.display]="showTransactionDetailModal ? 'block' : 'none'"
-     tabindex="-1" role="dialog">
+<div class="modal fade" [class.show]="showTransactionDetailModal"
+  [style.display]="showTransactionDetailModal ? 'block' : 'none'" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -655,10 +633,8 @@
 </div>
 
 <!-- Subscription Detail Modal -->
-<div class="modal fade" 
-     [class.show]="showSubscriptionDetailModal" 
-     [style.display]="showSubscriptionDetailModal ? 'block' : 'none'"
-     tabindex="-1" role="dialog">
+<div class="modal fade" [class.show]="showSubscriptionDetailModal"
+  [style.display]="showSubscriptionDetailModal ? 'block' : 'none'" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -678,7 +654,8 @@
         </div>
         <div class="row mb-3">
           <div class="col-sm-4"><strong>Amount:</strong></div>
-          <div class="col-sm-8">{{ formatCurrency(selectedSubscription.amount) }}/{{ selectedSubscription.interval }}</div>
+          <div class="col-sm-8">{{ formatCurrency(selectedSubscription.amount) }}/{{ selectedSubscription.interval }}
+          </div>
         </div>
         <div class="row mb-3">
           <div class="col-sm-4"><strong>Status:</strong></div>
@@ -691,7 +668,7 @@
         <div class="row mb-3">
           <div class="col-sm-4"><strong>Current Period:</strong></div>
           <div class="col-sm-8">
-            {{ formatDate(selectedSubscription.current_period_start) }} - 
+            {{ formatDate(selectedSubscription.current_period_start) }} -
             {{ formatDate(selectedSubscription.currentPeriodEnd || selectedSubscription.current_period_end) }}
           </div>
         </div>
@@ -699,7 +676,7 @@
           <div class="col-sm-4"><strong>Created:</strong></div>
           <div class="col-sm-8">{{ formatDateTime(selectedSubscription.created) }}</div>
         </div>
-        
+
         <div *ngIf="selectedSubscription.addons && selectedSubscription.addons.length > 0" class="mt-4">
           <h6>Add-ons:</h6>
           <div class="d-flex gap-2 flex-wrap">
@@ -708,26 +685,22 @@
             </span>
           </div>
         </div>
-        
+
         <div *ngIf="selectedSubscription.cancel_at_period_end" class="mt-4 alert alert-warning">
           <i class="fas fa-exclamation-triangle me-2"></i>
-          This subscription will be canceled at the end of the current billing period 
+          This subscription will be canceled at the end of the current billing period
           ({{ formatDate(selectedSubscription.currentPeriodEnd || selectedSubscription.current_period_end) }}).
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="closeModal()">Close</button>
         <div class="btn-group" role="group">
-          <button *ngIf="selectedSubscription?.status === 'active' && !selectedSubscription?.cancel_at_period_end" 
-                  type="button"
-                  class="btn btn-outline-danger"
-                  (click)="cancelSubscription(selectedSubscription!)">
+          <button *ngIf="selectedSubscription?.status === 'active' && !selectedSubscription?.cancel_at_period_end"
+            type="button" class="btn btn-outline-danger" (click)="cancelSubscription(selectedSubscription!)">
             Cancel Subscription
           </button>
-          <button *ngIf="selectedSubscription?.cancel_at_period_end" 
-                  type="button"
-                  class="btn btn-outline-success"
-                  (click)="reactivateSubscription(selectedSubscription!)">
+          <button *ngIf="selectedSubscription?.cancel_at_period_end" type="button" class="btn btn-outline-success"
+            (click)="reactivateSubscription(selectedSubscription!)">
             Reactivate Subscription
           </button>
         </div>
@@ -737,7 +710,7 @@
 </div>
 
 <!-- Modal backdrop -->
-<div *ngIf="showAddPaymentMethodModal || showSelectPackageModal || showTransactionDetailModal || showSubscriptionDetailModal" 
-     class="modal-backdrop fade show"
-     (click)="closeModal()">
+<div
+  *ngIf="showAddPaymentMethodModal || showSelectPackageModal || showTransactionDetailModal || showSubscriptionDetailModal"
+  class="modal-backdrop fade show" (click)="closeModal()">
 </div>

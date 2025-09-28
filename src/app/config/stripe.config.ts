@@ -1,7 +1,29 @@
+export interface StripeEnvironment {
+  mode: 'test' | 'live';
+  publishableKey: string;
+  webhookEndpoint?: string;
+}
+
+export const stripeEnvironments: { [key: string]: StripeEnvironment } = {
+  test: {
+    mode: 'test',
+    publishableKey: 'pk_test_51SBnYFB5xXNyoBvWCacEhu1suc4FZATxhFIDUEevkCY4qKpbhzPDUpXZy6heLzMrWT7BaTAmHS0eEj4dh7HLoJGj007rwjrrTb',
+    webhookEndpoint: 'https://your-api.com/webhooks/stripe-test'
+  },
+  live: {
+    mode: 'live',
+    publishableKey: 'pk_live_your_live_key_here', // Replace with your actual live key when ready
+    webhookEndpoint: 'https://your-api.com/webhooks/stripe-live'
+  }
+};
+
 export const stripeConfig = {
-  publishableKey: 'pk_test_your_stripe_publishable_key', // Replace with your actual key
   apiVersion: '2023-10-16' as const,
-  currency: 'usd'
+  currency: 'usd',
+  // Default to test mode for safety
+  defaultEnvironment: 'test' as const,
+  // Legacy support
+  publishableKey: stripeEnvironments['test'].publishableKey
 };
 
 export interface StripeCustomer {

@@ -1,8 +1,11 @@
 import { ChangeDetectorRef, Component, OnChanges, SimpleChanges, HostListener, OnDestroy, OnInit, Renderer2, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { UserServiceService } from '../services/user-service.service';
+import { StripeService } from 'src/app/services/stripe.service';
 import { User } from '../models/User';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 enum MainTabs {
   Onboarding = 'onboarding',
@@ -41,8 +44,14 @@ export class DashboardComponent implements OnDestroy, OnChanges, OnInit {
   isUploadingPhoto: boolean = false;
   uploadProgress: number = 0;
   private intersectionObserver: IntersectionObserver | null = null;
+
+  // Stripe environment state
+  isStripeTestMode: boolean = true;
+  private destroy$ = new Subject<void>();
+
   constructor(
     private userService: UserServiceService,
+    public stripeService: StripeService,
     private cdr: ChangeDetectorRef,
     private renderer: Renderer2,
     @Inject(DOCUMENT) private document: Document
@@ -58,6 +67,24 @@ export class DashboardComponent implements OnDestroy, OnChanges, OnInit {
     this.loadDarkModePreference();
     this.verifyLogin();
     this.updateBodyClass();
+
+    // Initialize Stripe mode state immediately
+    this.initializeStripeMode();
+
+    // Subscribe to Stripe environment changes
+    this.stripeService.isLiveMode$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isLive => {
+        this.isStripeTestMode = !isLive;
+        this.cdr.detectChanges();
+      });
+  }
+
+  private initializeStripeMode(): void {
+    // Get current mode immediately to set initial icon state
+    const currentMode = this.stripeService.isLiveMode();
+    this.isStripeTestMode = !currentMode;
+    this.cdr.detectChanges();
   }
 
   private loadDarkModePreference() {
@@ -574,5 +601,81 @@ export class DashboardComponent implements OnDestroy, OnChanges, OnInit {
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
     }
+
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // Toggle Stripe environment between test and live mode
+  async toggleStripeEnvironment(): Promise<void> {
+    try {
+      const currentMode = this.isStripeTestMode ? 'test' : 'live';
+      const newMode = this.isStripeTestMode ? 'live' : 'test';
+
+      // Show warning when switching to live mode
+      if (newMode === 'live') {
+        const confirmed = confirm(
+          '⚠️ CAUTION: You are switching to LIVE mode.\n\n' +
+          'This will process real payments with real money.\n' +
+          'Are you sure you want to continue?'
+        );
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      await this.stripeService.switchEnvironment(newMode);
+      console.log(`Switched from ${currentMode} to ${newMode} mode`);
+
+    } catch (error: any) {
+      console.error('Error switching Stripe environment:', error);
+
+      // Check if it's an HTTPS-related error
+      if (error.message && error.message.includes('HTTPS')) {
+        alert(
+          '🔒 HTTPS Required for Live Mode\n\n' +
+          error.message + '\n\n' +
+          'For development, continue using Test Mode which works over HTTP.'
+        );
+      } else {
+        alert('Failed to switch Stripe environment: ' + (error.message || 'Unknown error'));
+      }
+    }
+  }
+
+  // Get the appropriate icon for current Stripe environment
+  getStripeEnvironmentIcon(): string {
+    return this.isStripeTestMode ? 'fa-flask' : 'fa-credit-card';
+  }
+
+  // Get tooltip text for Stripe environment button
+  getStripeEnvironmentTooltip(): string {
+    return this.isStripeTestMode
+      ? 'Currently in Test Mode - Click to switch to Live Mode'
+      : 'Currently in Live Mode - Click to switch to Test Mode';
+  }
+
+  // Get environment status text for display
+  getStripeEnvironmentStatus(): string {
+    return this.isStripeTestMode ? 'Test Mode' : 'Live Mode';
+  }
+
+  // Get environment status color class
+  getStripeEnvironmentClass(): string {
+    return this.isStripeTestMode ? 'text-warning' : 'text-success';
+  }
+
+  // Method to refresh Stripe mode state (can be called manually if needed)
+  refreshStripeMode(): void {
+    const currentMode = this.stripeService.isLiveMode();
+    this.isStripeTestMode = !currentMode;
+    this.cdr.detectChanges();
+    console.log(`Stripe mode refreshed: ${this.isStripeTestMode ? 'Test' : 'Live'} mode active`);
+  }
+
+  // Get detailed Stripe environment info for debugging
+  getStripeEnvironmentInfo(): any {
+    return this.stripeService.getEnvironmentStatus();
   }
 }

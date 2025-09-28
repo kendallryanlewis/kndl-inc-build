@@ -60,6 +60,9 @@ Apache-2.0
 @firebase/firestore
 Apache-2.0
 
+@firebase/functions
+Apache-2.0
+
 @firebase/installations
 Apache-2.0
 
@@ -467,6 +470,8 @@ firebase/app
 firebase/auth
 
 firebase/firestore
+
+firebase/functions
 
 firebase/storage
 

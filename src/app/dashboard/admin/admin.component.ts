@@ -1030,4 +1030,43 @@ export class AdminComponent implements OnInit, AfterViewInit {
 
   // Add pending payments count property
   pendingPaymentsCount = 0;
+
+  /**
+   * Navigate to a specific dashboard tab
+   */
+  navigateTo(tab: string): void {
+    // Emit the tab change to parent component
+    this.childTabs.emit([tab]);
+  }
+
+  /**
+   * Get total number of users
+   */
+  getTotalUsers(): number {
+    // Return actual user count or placeholder
+    return 1247; // Placeholder value
+  }
+
+  /**
+   * Get number of active subscriptions
+   */
+  getActiveSubscriptions(): number {
+    // Return actual subscription count or placeholder
+    return 892; // Placeholder value
+  }
+
+  /**
+   * Get total revenue (reuse existing totalRevenue or calculate)
+   */
+  getTotalRevenue(): number {
+    return this.totalRevenue || 0;
+  }
+
+  /**
+   * Get system uptime
+   */
+  getSystemUptime(): string {
+    // Return system uptime or placeholder
+    return '99.9%'; // Placeholder value
+  }
 }

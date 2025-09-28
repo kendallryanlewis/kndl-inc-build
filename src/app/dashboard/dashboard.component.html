@@ -170,8 +170,14 @@
                         </div>
                     </div>
                     <div class="d-flex ms-3 my-auto icons ps-4">
-                        <button class="icon-button large me-2">
-                            <i class="fas fa-search"></i>
+                        <button class="icon-button large me-2" (click)="toggleStripeEnvironment()"
+                            [title]="getStripeEnvironmentTooltip()" [class.stripe-test-mode]="isStripeTestMode"
+                            [class.stripe-live-mode]="!isStripeTestMode">
+                            <i class="fas" [class]="getStripeEnvironmentIcon()"></i>
+                            <span class="stripe-mode-badge" [class.test-mode]="isStripeTestMode"
+                                [class.live-mode]="!isStripeTestMode">
+                                {{ isStripeTestMode ? 'TEST' : 'LIVE' }}
+                            </span>
                         </button>
                         <button class="icon-button large" (click)="toggleDarkMode()">
                             <i class="fas" [class]="isDarkMode ? 'fa-sun' : 'fa-moon'"></i>

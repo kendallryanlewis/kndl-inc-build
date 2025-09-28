@@ -378,6 +378,7 @@ app-tab-viewer>* {
     cursor: pointer;
     transition: 0.25s ease;
     flex-shrink: 0;
+    position: relative;
 
     &.large {
         width: 42px;
@@ -393,6 +394,77 @@ app-tab-viewer>* {
     &:focus {
         background-color: #7e7e7e;
         box-shadow: 0 0 0 4px #d2b48c, 0 0 0 5px #d2b48c;
+    }
+
+    // Stripe environment toggle styles
+    &.stripe-test-mode {
+        border-color: #28a745;
+        color: #28a745;
+
+        &:hover {
+            background-color: #28a745;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.3);
+        }
+
+        .stripe-mode-badge {
+            background-color: #28a745;
+        }
+    }
+
+    &.stripe-live-mode {
+        border-color: #dc3545;
+        color: #dc3545;
+        animation: pulse-danger 2s infinite;
+
+        &:hover {
+            background-color: #dc3545;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.3);
+        }
+
+        .stripe-mode-badge {
+            background-color: #dc3545;
+            animation: pulse-danger 2s infinite;
+        }
+    }
+
+    .stripe-mode-badge {
+        position: absolute;
+        bottom: -8px;
+        right: -8px;
+        font-size: 8px;
+        font-weight: 600;
+        padding: 1px 4px;
+        border-radius: 8px;
+        color: white;
+        line-height: 1;
+        min-width: 20px;
+        text-align: center;
+        letter-spacing: 0.5px;
+
+        &.test-mode {
+            background-color: #28a745;
+        }
+
+        &.live-mode {
+            background-color: #dc3545;
+        }
+    }
+}
+
+// Pulse animation for live mode warning
+@keyframes pulse-danger {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
     }
 }
 

@@ -116,10 +116,10 @@ export class OverviewComponent implements OnInit {
 
     try {
       const firestore = getFirestore();
-      
+
       // First, get the current user's data including attached sites
       const userDoc = await getDoc(doc(firestore, 'users', this.user.id));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data() as User;
         this.user = { ...this.user, ...userData };
@@ -127,7 +127,7 @@ export class OverviewComponent implements OnInit {
         if (this.user.attachedSites && this.user.attachedSites.length > 0) {
           // Load company data for attached sites
           await this.loadCompanyData();
-          
+
           // Load billing transactions for these companies
           await this.loadBillingTransactions();
         } else {
@@ -177,7 +177,7 @@ export class OverviewComponent implements OnInit {
 
     const firestore = getFirestore();
     const companyIds = this.userCompanies.map(company => company.id);
-    
+
     try {
       // Query billing/transactions collection for companies
       const transactionsRef = collection(firestore, 'billing', 'transactions', 'records');
@@ -190,7 +190,7 @@ export class OverviewComponent implements OnInit {
       );
 
       const transactionDocs = await getDocs(transactionsQuery);
-      
+
       this.billingTransactions = transactionDocs.docs.map(doc => {
         const data = doc.data();
         return {
@@ -211,11 +211,11 @@ export class OverviewComponent implements OnInit {
 
       // Convert billing transactions to transfers format
       this.convertBillingToTransfers();
-      
+
       console.log('Loaded billing transactions:', this.billingTransactions);
     } catch (error) {
       console.error('Error loading billing transactions:', error);
-      
+
       // If the billing collection doesn't exist, try to generate from company billing info
       this.generateTransfersFromCompanyBilling();
     }
@@ -287,10 +287,10 @@ export class OverviewComponent implements OnInit {
    */
   formatDate(date: Date): string {
     if (!date) return 'N/A';
-    return date.toLocaleDateString('en-US', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: '2-digit' 
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: '2-digit'
     });
   }
 
@@ -306,12 +306,12 @@ export class OverviewComponent implements OnInit {
   loadCustomerData() {
     // Create a mock user with a realistic ID for Firebase queries
     this.createMockUser();
-    
+
     // Generate mock data for demo purposes
     this.loadMockProjects();
     this.loadMockActivities();
     this.loadMockServices();
-    
+
     this.isLoading = false;
   }
 
@@ -344,7 +344,7 @@ export class OverviewComponent implements OnInit {
           notes: 'Main client account'
         },
         {
-          companyId: 'company-2', 
+          companyId: 'company-2',
           companyName: 'Digital Marketing Pro',
           dateAttached: new Date('2025-02-10'),
           role: 'Client',
