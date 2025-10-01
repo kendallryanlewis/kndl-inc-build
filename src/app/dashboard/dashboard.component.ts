@@ -1,6 +1,5 @@
 import { ChangeDetectorRef, Component, OnChanges, SimpleChanges, HostListener, OnDestroy, OnInit, Renderer2, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { UserServiceService } from '../services/user-service.service';
 import { StripeService } from 'src/app/services/stripe.service';
 import { User } from '../models/User';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -50,7 +49,6 @@ export class DashboardComponent implements OnDestroy, OnChanges, OnInit {
   private destroy$ = new Subject<void>();
 
   constructor(
-    private userService: UserServiceService,
     public stripeService: StripeService,
     private cdr: ChangeDetectorRef,
     private renderer: Renderer2,

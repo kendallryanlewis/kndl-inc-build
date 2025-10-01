@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ComponentCommunicationService } from '../../services/component-communication.service';
-import { UserServiceService } from '../../services/user-service.service';
 import { User, UserPlatform, Company, BillingInfo, AttachedSite } from '../../models/User';
 import { getFirestore, doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 
@@ -83,7 +82,6 @@ export class OverviewComponent implements OnInit {
 
   constructor(
     private communicationService: ComponentCommunicationService,
-    private userService: UserServiceService
   ) { }
 
   ngOnInit() {

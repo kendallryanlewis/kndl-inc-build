@@ -1,18 +1,24 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
+import { StripeService, StripeProduct, StripePrice } from '../../../../services/stripe.service';
+import { forkJoin } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
 
 interface ServicePlan {
-  id: string;
+  id?: string; // Optional for new plans
+  stripeProductId?: string; // Stripe Product ID
+  stripePriceId?: string; // Stripe Price ID
   name: string;
   description: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
+  monthlyPrice: number; // This will be the one-time price
   features: string[];
   status: 'Active' | 'Inactive' | 'Deprecated';
-  lastModified: string;
+  lastModified?: string;
   isPopular?: boolean;
   totalSubscriptions?: number;
   monthlyRevenue?: number;
+  isArchived?: boolean;
 }
 
 @Component({
@@ -23,59 +29,71 @@ interface ServicePlan {
 export class ServicePlansEditorComponent implements OnInit {
   @Output() dataChange = new EventEmitter<any>();
 
-  servicePlans: ServicePlan[] = [];
+  // Input from parent admin-landing-editor
+  @Input() oneTimeProducts: any[] = [];
+  @Input() isLoading: boolean = false;
+
   showServicePlanModal: boolean = false;
   showDeleteModal: boolean = false;
   selectedServicePlan: ServicePlan | null = null;
   deletingPlan: ServicePlan | null = null;
-  private servicePlansCollection = 'servicePlans';
+  syncingWithStripe: boolean = false;
+  successMessage: string = '';
+  errorMessage: string = '';
+  showingArchivedPlans: boolean = false;
+  filteredServicePlans: ServicePlan[] = [];
 
-  ngOnInit(): void {
-    this.loadServicePlansFromDb();
+  // Development mode check
+  get isTestMode(): boolean {
+    return !environment.production && !environment.useRealFirebaseFunctions;
   }
 
-  async loadServicePlansFromDb() {
-    try {
-      const db = getFirestore();
-      const querySnapshot = await getDocs(collection(db, this.servicePlansCollection));
-      this.servicePlans = querySnapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          name: data['name'] || '',
-          description: data['description'] || '',
-          monthlyPrice: data['monthlyPrice'] || 0,
-          yearlyPrice: data['yearlyPrice'] || 0,
-          features: data['features'] || [],
-          status: data['status'] || 'Active',
-          isPopular: data['isPopular'] || false,
-          totalSubscriptions: data['totalSubscriptions'] || 0,
-          monthlyRevenue: data['monthlyRevenue'] || 0,
-          lastModified: data['lastModified'] || new Date().toISOString().split('T')[0]
-        };
-      }) as ServicePlan[];
-      console.log('Loaded service plans:', this.servicePlans);
+  constructor(private stripeService: StripeService) { }
 
-      // Emit data change for change tracking
-      this.dataChange.emit({
-        type: 'servicePlans',
-        data: this.servicePlans
-      });
-    } catch (error) {
-      console.error('Error loading service plans:', error);
+  ngOnInit(): void {
+    this.filterSubscriptionPlans();
+  }
+
+  // Method to get the toggle button text
+  get toggleButtonText(): string {
+    return this.showingArchivedPlans ? 'Hide Archived Services' : 'Show All Services';
+  }
+  // Toggle between showing all plans and only active (non-archived) plans
+  toggleArchivedPlans(): void {
+    this.showingArchivedPlans = !this.showingArchivedPlans;
+    this.filterSubscriptionPlans();
+  }
+
+  // Filter subscription plans based on archive status
+  private filterSubscriptionPlans(): void {
+    if (this.showingArchivedPlans) {
+      // Show all plans (including archived)
+      this.filteredServicePlans = this.oneTimeProducts;
+    } else {
+      // Show only non-archived plans
+      this.filteredServicePlans = this.oneTimeProducts.filter(plan => !plan.isArchived);
     }
   }
 
-  openServicePlanModal(servicePlan?: ServicePlan): void {
+  // Method to get the current filter status
+  get currentFilterStatus(): string {
+    const activeCount = this.oneTimeProducts.filter(plan => !plan.isArchived).length;
+    const totalCount = this.oneTimeProducts.length;
+    const archivedCount = totalCount - activeCount;
+
+    return this.showingArchivedPlans
+      ? `Showing all ${totalCount} plans (${archivedCount} archived)`
+      : `Showing ${activeCount} active plans`;
+  }
+
+  openServicePlanModal = (servicePlan?: ServicePlan): void => {
     if (servicePlan) {
       this.selectedServicePlan = { ...servicePlan };
     } else {
       this.selectedServicePlan = {
-        id: '',
         name: '',
         description: '',
         monthlyPrice: 0,
-        yearlyPrice: 0,
         features: [''],
         status: 'Active',
         lastModified: new Date().toISOString().split('T')[0],
@@ -85,6 +103,8 @@ export class ServicePlansEditorComponent implements OnInit {
       };
     }
     this.showServicePlanModal = true;
+    this.successMessage = '';
+    this.errorMessage = '';
   }
 
   closeServicePlanModal(): void {
@@ -92,34 +112,135 @@ export class ServicePlansEditorComponent implements OnInit {
     this.selectedServicePlan = null;
   }
 
-  async saveServicePlan(): Promise<void> {
+  async saveServicePlan() {
     if (!this.selectedServicePlan) return;
 
-    try {
-      const db = getFirestore();
-      const now = new Date().toISOString().split('T')[0];
-      const servicePlanData = {
-        ...this.selectedServicePlan,
-        lastModified: now
-      };
+    this.syncingWithStripe = true;
+    this.errorMessage = '';
+    this.successMessage = '';
 
-      if (this.selectedServicePlan.id) {
-        // Update existing service plan
-        await updateDoc(doc(db, this.servicePlansCollection, this.selectedServicePlan.id), servicePlanData);
-        console.log('Service plan updated:', this.selectedServicePlan.id);
-      } else {
-        // Create new service plan
-        const docRef = await addDoc(collection(db, this.servicePlansCollection), {
-          ...servicePlanData,
-          id: undefined // Remove id field for new documents
-        });
-        console.log('Service plan created with ID:', docRef.id);
+    try {
+      // Validate price amount - Stripe's maximum is $999,999.99 (99,999,999 cents)
+      const maxPrice = 999999.99;
+      if (this.selectedServicePlan.monthlyPrice > maxPrice) {
+        this.errorMessage = `Price cannot exceed $${maxPrice.toLocaleString()}. Please enter a smaller amount.`;
+        this.syncingWithStripe = false;
+        return;
       }
 
-      this.closeServicePlanModal();
-      await this.loadServicePlansFromDb();
+      const unitAmount = Math.round(this.selectedServicePlan.monthlyPrice * 100);
+
+      const servicePlanData = {
+        name: this.selectedServicePlan.name,
+        description: this.selectedServicePlan.description,
+        unitAmount: unitAmount,
+        currency: 'usd',
+        metadata: {
+          type: 'service-plan',
+          category: 'service-plan', // Additional identifier
+          isAddOn: 'false', // Explicitly mark as not an add-on
+          paymentType: 'one-time', // Explicitly mark as one-time payment
+          features: JSON.stringify(this.selectedServicePlan.features),
+          status: this.selectedServicePlan.status,
+          isPopular: this.selectedServicePlan.isPopular?.toString() || 'false',
+          totalSubscriptions: this.selectedServicePlan.totalSubscriptions?.toString() || '0',
+          monthlyRevenue: this.selectedServicePlan.monthlyRevenue?.toString() || '0',
+          lastModified: new Date().toISOString().split('T')[0]
+        }
+      };
+
+      if (this.selectedServicePlan.stripeProductId) {
+        // Update existing product and price
+        const updateProductData = {
+          name: servicePlanData.name,
+          description: servicePlanData.description,
+          active: this.selectedServicePlan.status === 'Active',
+          metadata: servicePlanData.metadata
+        };
+
+        await this.stripeService.updateProduct(this.selectedServicePlan.stripeProductId, updateProductData).toPromise();
+
+        // Note: Stripe doesn't allow updating price amounts, so we'd need to create a new price if amount changed
+        // For now, we'll just update the product metadata
+        this.successMessage = 'Service plan updated successfully in Stripe!';
+
+        // Close modal and reload data on success
+        this.closeServicePlanModal();
+      } else {
+        const productResult = await this.stripeService.createProduct({
+          name: servicePlanData.name,
+          description: servicePlanData.description,
+          active: this.selectedServicePlan.status === 'Active',
+          metadata: servicePlanData.metadata
+        }).toPromise();
+        // Handle both possible result structures: direct product or wrapped in data
+        const product = (productResult as any)?.data || productResult;
+        if (product && product.id) {
+          // Create a one-time price for the product
+          const priceData = {
+            productId: product.id,
+            unitAmount: servicePlanData.unitAmount,
+            currency: servicePlanData.currency,
+            nickname: `${servicePlanData.name} - One-time Payment`
+            // Note: No recurring property means one-time payment
+            // Note: Environment is automatically added by StripeService
+          };
+          // Add a timestamp for timing
+          const startTime = Date.now();
+
+          try {
+            const priceResult = await this.stripeService.createPrice(priceData).toPromise();
+            const endTime = Date.now();
+
+            // Handle wrapped response format from Firebase Functions
+            const price = (priceResult as any)?.data || priceResult;
+            if (price && price.id) {
+              this.successMessage = 'Service plan created successfully in Stripe!';
+
+              // Close modal and reload data on success
+              this.closeServicePlanModal();
+
+              // Add a small delay to ensure Stripe has processed the new data  
+              setTimeout(async () => {
+                // Force reload of products and prices from Stripe
+                await this.stripeService.initializeProductsAndPrices();
+                this.filterSubscriptionPlans();
+              }, 500);
+            } else {
+              console.error('❌ Price creation returned unexpected result:', priceResult);
+              console.error('❌ Extracted price object:', price);
+              this.errorMessage = 'Product created but failed to create price. Please try again.';
+            }
+          } catch (priceError: any) {
+
+            // Log the full error structure
+            if (priceError) {
+              console.error('❌ Full error structure:', JSON.stringify(priceError, null, 2));
+            }
+
+            let errorMsg = 'Product created but price creation failed';
+            if (priceError?.error?.message) {
+              errorMsg += `: ${priceError.error.message}`;
+              console.error('❌ Stripe error message:', priceError.error.message);
+            } else if (priceError?.message) {
+              errorMsg += `: ${priceError.message}`;
+              console.error('❌ General error message:', priceError.message);
+            } else {
+              errorMsg += `: ${JSON.stringify(priceError)}`;
+            }
+
+            this.errorMessage = errorMsg;
+          }
+        } else {
+          this.errorMessage = 'Failed to create product in Stripe. Please try again.';
+        }
+      }
+
     } catch (error) {
-      console.error('Error saving service plan:', error);
+      console.error('Error saving service plan to Stripe:', error);
+      this.errorMessage = `Error saving service plan: ${error}`;
+    } finally {
+      this.syncingWithStripe = false;
     }
   }
 
@@ -133,40 +254,192 @@ export class ServicePlansEditorComponent implements OnInit {
     this.deletingPlan = null;
   }
 
-  async deleteServicePlan(): Promise<void> {
-    if (!this.deletingPlan) return;
+  async deleteServicePlan() {
+    if (!this.deletingPlan?.stripeProductId) return;
 
     try {
-      const db = getFirestore();
-      await deleteDoc(doc(db, this.servicePlansCollection, this.deletingPlan.id));
-      console.log('Service plan deleted:', this.deletingPlan.id);
+      // Archive the product in Stripe (safer than deletion)
+      await this.stripeService.archiveProduct(this.deletingPlan.stripeProductId).toPromise();
+      this.filterSubscriptionPlans();
       this.closeDeleteModal();
-      await this.loadServicePlansFromDb();
     } catch (error) {
-      console.error('Error deleting service plan:', error);
+      console.error('Error archiving service plan in Stripe:', error);
     }
   }
 
-  async toggleServicePlanStatus(plan: ServicePlan): Promise<void> {
-    try {
-      const db = getFirestore();
-      const newStatus = plan.status === 'Active' ? 'Inactive' : 'Active';
-      const updatedPlan = {
-        ...plan,
-        status: newStatus,
-        lastModified: new Date().toISOString().split('T')[0]
-      };
+  async toggleServicePlanStatus(plan: ServicePlan) {
+    // Handle archive/unarchive functionality based on current status
+    if (plan.isArchived) {
+      this.recycleServicePlan(plan);
+    } else {
+      this.archiveServicePlan(plan);
+    }
+    this.filterSubscriptionPlans();
+  }
 
-      await updateDoc(doc(db, this.servicePlansCollection, plan.id), {
-        status: newStatus,
-        lastModified: updatedPlan.lastModified
+  // Get custom actions for service plan cards
+  getServicePlanActions(plan: ServicePlan): any[] {
+    if (plan.isArchived) {
+      // For archived items: show recycle button only
+      return [
+        {
+          action: 'recycle',
+          label: 'Restore',
+          icon: 'fa-recycle',
+          class: 'bg-info bg-opacity-25 text-info border-info border',
+          disabled: false
+        }
+      ];
+    } else {
+      // For active items: show archive button only  
+      return [
+        {
+          action: 'archive',
+          label: 'Archive',
+          icon: 'fa-archive',
+          class: 'bg-danger bg-opacity-25 text-danger border-danger border',
+          disabled: false
+        }
+      ];
+    }
+  }
+  // Handle custom action clicks
+  onCustomAction(event: { action: string, product: any }): void {
+    const { action, product } = event;
+    const plan = product as ServicePlan;
+
+    switch (action) {
+      case 'archive':
+        this.archiveServicePlan(plan);
+        break;
+      case 'recycle':
+        this.recycleServicePlan(plan);
+        break;
+      case 'delete':
+        this.confirmDeleteServicePlan(plan);
+        break;
+      case 'toggleStatus':
+        this.toggleServicePlanStatus(plan);
+        break;
+      default:
+        console.warn('Unknown action:', action);
+    }
+  }
+
+  // Archive service plan with data sanitization and direct Stripe update
+  async archiveServicePlan(plan: ServicePlan): Promise<void> {
+    if (!plan.stripeProductId) return;
+
+    try {
+      // Sanitize data
+      const cleanFeatures = this.sanitizeArrayField(plan.features, 'features', []);
+      const newStatus = 'Deprecated';
+
+      await this.stripeService.updateProduct(plan.stripeProductId, {
+        active: false,
+        metadata: {
+          type: 'service-plan',
+          features: JSON.stringify(cleanFeatures),
+          status: newStatus,
+          isPopular: plan.isPopular?.toString() || 'false',
+          totalSubscriptions: plan.totalSubscriptions?.toString() || '0',
+          monthlyRevenue: plan.monthlyRevenue?.toString() || '0',
+          lastModified: new Date().toISOString().split('T')[0]
+        }
+      }).toPromise();
+
+      // Refresh the products list
+      setTimeout(async () => {
+        await this.stripeService.initializeProductsAndPrices();
+        // The parent component will automatically update the data
+        this.filterSubscriptionPlans();
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Error archiving service plan:', error);
+      this.errorMessage = 'Failed to archive service plan. Please try again.';
+    }
+  }
+
+  // Restore archived service plan with data sanitization and direct Stripe update
+  async recycleServicePlan(plan: ServicePlan): Promise<void> {
+    if (!plan.stripeProductId) return;
+
+    try {
+      console.log('♻️ Recycling service plan:', plan.name);
+
+      // Sanitize data
+      const cleanFeatures = this.sanitizeArrayField(plan.features, 'features', ['Enhanced service features']);
+      const newStatus = 'Active';
+
+      await this.stripeService.updateProduct(plan.stripeProductId, {
+        active: true,
+        metadata: {
+          type: 'service-plan',
+          features: JSON.stringify(cleanFeatures),
+          status: newStatus,
+          isPopular: plan.isPopular?.toString() || 'false',
+          totalSubscriptions: plan.totalSubscriptions?.toString() || '0',
+          monthlyRevenue: plan.monthlyRevenue?.toString() || '0',
+          lastModified: new Date().toISOString().split('T')[0]
+        }
+      }).toPromise();
+
+      // Refresh the products list
+      setTimeout(async () => {
+        await this.stripeService.initializeProductsAndPrices();
+        // The parent component will automatically update the data
+        this.filterSubscriptionPlans();
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Error restoring service plan:', error);
+      this.errorMessage = 'Failed to restore service plan. Please try again.';
+    }
+  }
+
+  // Utility method to sanitize array fields (similar to other editors)
+  private sanitizeArrayField(value: any, fieldName: string, defaultValue: string[] = []): string[] {
+    console.log(`🔧 Sanitizing ${fieldName}:`, typeof value, value?.toString().substring(0, 100) + '...');
+
+    if (Array.isArray(value)) {
+      // Filter out corrupted elements
+      const cleanArray = value.filter(item => {
+        if (typeof item === 'string') {
+          // Check for corruption patterns
+          if (item.includes('\\\\') || item.includes('["[') || item.includes('[\"[') || item.length > 100) {
+            return false;
+          }
+          return item.trim().length > 0;
+        }
+        return false;
       });
 
-      console.log(`Service plan ${plan.name} status changed to ${newStatus}`);
-      await this.loadServicePlansFromDb();
-    } catch (error) {
-      console.error('Error toggling service plan status:', error);
+      return cleanArray.length > 0 ? cleanArray : defaultValue;
     }
+
+    if (typeof value === 'string') {
+      // Check for severe corruption patterns
+      if (value.includes('\\\\\\\\') || value.includes('["[') || value.includes('[\"[') ||
+        value.includes('\\\\\\\"') || value.length > 500) {
+        return defaultValue;
+      }
+
+      // Attempt parsing for simple JSON
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(item => typeof item === 'string' && item.length < 100);
+        }
+      } catch (e) {
+        // If not JSON, treat as single string
+        if (value.length < 100 && !value.startsWith('[')) {
+          return [value];
+        }
+      }
+    }
+
+    return defaultValue;
   }
 
   // Feature management methods
@@ -217,5 +490,11 @@ export class ServicePlansEditorComponent implements OnInit {
       default:
         return 'bi-question-circle-fill';
     }
+  }
+
+  openStripeProduct(stripeProductId: string): void {
+    const mode = this.stripeService.isLiveMode() ? 'live' : 'test';
+    const url = `https://dashboard.stripe.com/${mode}/products/${stripeProductId}`;
+    window.open(url, '_blank');
   }
 }

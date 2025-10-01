@@ -1,0 +1,88 @@
+<div class="row">
+    <div class="col-md-8">
+        <!-- Recent Activity -->
+        <div class="content-card p-3 border bg-light mb-3 stat-card">
+            <h6 class="mb-3 fw-medium">Recent Activity</h6>
+            <div class="activity-list">
+                <div class="activity-item d-flex align-items-center p-2 mb-2 border-bottom"
+                    *ngFor="let activity of getRecentActivity(selectedCompany)">
+                    <div class="activity-icon me-2 rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
+                        style="width: 24px; height: 24px;">
+                        <i [class]="activity.icon" style="font-size: 0.75rem;"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="activity-text small">{{ activity.description }}</div>
+                        <div class="activity-date text-muted" style="font-size: 0.75rem;">{{
+                            formatDate(activity.date) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Site Performance -->
+        <div class="content-card p-3 border bg-light stat-card">
+            <h6 class="mb-3 fw-medium">Site Performance</h6>
+            <div class="performance-metrics row g-2">
+                <div class="col-4">
+                    <div class="metric-item text-center p-2 border">
+                        <div class="metric-value small fw-bold">99.9%</div>
+                        <div class="metric-label text-muted" style="font-size: 0.75rem;">
+                            Uptime</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="metric-item text-center p-2 border">
+                        <div class="metric-value small fw-bold">1.2s</div>
+                        <div class="metric-label text-muted" style="font-size: 0.75rem;">
+                            Load Time</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="metric-item text-center p-2 border">
+                        <div class="metric-value small fw-bold">{{
+                            selectedCompany.monthlyPageViews || 0 | number }}</div>
+                        <div class="metric-label text-muted" style="font-size: 0.75rem;">
+                            Page Views</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Company Information -->
+        <div class="content-card p-3 border bg-light stat-card">
+            <h6 class="mb-3 fw-medium">Company Information</h6>
+            <div class="info-list">
+                <div class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="small text-muted">Status</span>
+                    <span class="status-badge px-2 py-1 rounded-pill small fw-medium" [ngClass]="{
+                                  'bg-success bg-opacity-20 text-success': selectedCompany.status === 'active',
+                                  'bg-warning bg-opacity-20 text-warning': selectedCompany.status === 'pending',
+                                  'bg-danger bg-opacity-20 text-danger': selectedCompany.status === 'suspended',
+                                  'bg-secondary bg-opacity-20 text-secondary': selectedCompany.status === 'inactive'
+                              }">
+                        {{ selectedCompany.status | titlecase }}
+                    </span>
+                </div>
+                <div class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="small text-muted">Plan</span>
+                    <span class="small fw-medium">{{ selectedCompany.subscriptionPlan |
+                        titlecase }}</span>
+                </div>
+                <div class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="small text-muted">Next Billing</span>
+                    <span class="small">{{ formatDate(selectedCompany.nextBilling) }}</span>
+                </div>
+                <div class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="small text-muted">Created</span>
+                    <span class="small">{{ formatDate(selectedCompany.createdDate) }}</span>
+                </div>
+                <div class="info-item d-flex justify-content-between align-items-center py-2">
+                    <span class="small text-muted">Contact</span>
+                    <span class="small">{{ selectedCompany.contactEmail }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

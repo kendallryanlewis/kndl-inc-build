@@ -47,6 +47,7 @@ export interface Company {
     billing?: BillingInfo;
     links?: CompanyLink[];
     status: 'Active' | 'Inactive' | 'Suspended';
+    stripeCustomerId?: string;
     dateCreated?: Date;
     dateUpdated?: Date;
 }

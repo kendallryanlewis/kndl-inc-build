@@ -1,143 +1,158 @@
-<div class="content-header justify-content-between d-flex">
-    <div>
-        <app-generic-h2-title [title]="'Add-ons Management'" [icon]="'fa-puzzle-piece'"
-            [subTitle]="'Manage available add-ons and extras'"></app-generic-h2-title>
+<div class="addons-editor">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <app-generic-h2-title [title]="'Add-ons Manager'" [icon]="'fa fa-puzzle-piece'"
+            [subTitle]="'Manage your add-on products effectively'">
+        </app-generic-h2-title>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" (click)="toggleArchivedPlans()">
+                <i class="fa" [ngClass]="showingArchivedPlans ? 'fa-eye-slash' : 'fa-eye'"></i>
+                {{ toggleButtonText }}
+            </button>
+            <app-generic-button [title]="'Add New Addon'" [action]="createNewAddon" [icon]="'fa fa-plus-circle'">
+            </app-generic-button>
+        </div>
     </div>
-    <div class="d-flex gap-2 h-100 my-auto">
-        <button class="admin-tab bg-blue my-auto" (click)="createNewAddon()">
-            <i class="fa fa-plus-circle"></i> Add New
-        </button>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading add-on products...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading add-on products...</p>
     </div>
-</div>
 
-<!-- Add-ons Grid -->
-<div class="addons-grid">
-    <div class="addon-card stat-card" *ngFor="let addon of addons"
-        [ngClass]="{'inactive': addon.status === 'Inactive'}">
-        <div class="addon-header">
-            <div class="addon-info">
-                <h4>{{ addon.name }}</h4>
-                <span class="addon-category">{{ addon.category }}</span>
-            </div>
-            <div class="addon-status">
-                <span class="status-badge" [ngClass]="getStatusBadgeClass(addon.status)">{{ addon.status }}</span>
-            </div>
+    <!-- Addon Products Grid -->
+    <div *ngIf="!isLoading" class="row">
+        <div class="col-md-4 mb-4" *ngFor="let addon of filteredAddonProducts">
+            <app-subscription-card [product]="addon" [cardType]="'addon'" [showActions]="true" [showEdit]="true"
+                [showDelete]="false" [customActions]="getAddonActions(addon)" (editClicked)="onEditAddon(addon)"
+                (customActionClicked)="onCustomAction($event)">
+            </app-subscription-card>
         </div>
+    </div>
 
-        <div class="addon-description">
-            <p>{{ addon.description }}</p>
-        </div>
-
-        <div class="addon-pricing">
-            <div class="pricing-options">
-                <div class="price-option" *ngIf="addon.oneTimePrice > 0">
-                    <span class="price-type">One-time</span>
-                    <span class="price-amount">{{ formatCurrency(addon.oneTimePrice) }}</span>
-                </div>
-                <div class="price-option" *ngIf="addon.monthlyPrice > 0">
-                    <span class="price-type">Monthly</span>
-                    <span class="price-amount">{{ formatCurrency(addon.monthlyPrice) }}/mo</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="addon-stats">
-            <div class="stat-item">
-                <span class="stat-value">{{ addon.totalSubscriptions || 0 }}</span>
-                <span class="stat-label">Active Subscriptions</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-value">{{ formatCurrency(addon.monthlyRevenue || 0) }}</span>
-                <span class="stat-label">Monthly Revenue</span>
-            </div>
-        </div>
-
-        <div class="addon-actions">
-            <button class="btn-edit" (click)="editAddon(addon)" title="Edit Add-on">
-                <i class="fa fa-edit"></i>
-            </button>
-            <button class="btn-toggle" (click)="toggleAddonStatus(addon)"
-                [title]="addon.status === 'Active' ? 'Deactivate' : 'Activate'">
-                <i class="fa" [ngClass]="addon.status === 'Active' ? 'fa-pause' : 'fa-play'"></i>
-            </button>
-            <button class="btn-delete" (click)="deleteAddon(addon)" title="Delete Add-on">
-                <i class="fa fa-trash"></i>
-            </button>
-        </div>
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && filteredAddonProducts.length === 0" class="text-center py-5">
+        <i class="fas fa-puzzle-piece fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No add-on products found</h4>
+        <p class="text-muted">Add-on products will appear here when they are loaded from Stripe.</p>
     </div>
 </div>
 
-<!-- Add-on Modal -->
-<div class="modal-overlay" *ngIf="showAddonModal" (click)="closeAddonModal()">
-    <div class="modal-content addon-modal" (click)="$event.stopPropagation()">
+<!-- Addon Modal -->
+<div class="modal-backdrop" *ngIf="showAddonModal" (click)="closeAddonModal()">
+    <div class="user-modal-container" (click)="$event.stopPropagation()">
         <div class="modal-header">
-            <h3>{{ selectedAddon?.id ? 'Edit Add-on' : 'Create New Add-on' }}</h3>
-            <button class="modal-close" (click)="closeAddonModal()">
+            <h2 class="modal-title">
+                <i class="fa fa-puzzle-piece"></i>
+                {{ selectedAddon?.stripeProductId ? 'Edit Add-on' : 'Create New Add-on' }}
+            </h2>
+            <button type="button" class="close-btn" (click)="closeAddonModal()" aria-label="Close">
                 <i class="fa fa-times"></i>
             </button>
         </div>
 
-        <div class="addon-form" *ngIf="selectedAddon">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="addonName">Add-on Name</label>
-                    <input type="text" id="addonName" [(ngModel)]="selectedAddon.name" placeholder="Enter add-on name"
-                        class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="addonCategory">Category</label>
-                    <select id="addonCategory" [(ngModel)]="selectedAddon.category" class="form-control">
-                        <option value="SEO">SEO Tools</option>
-                        <option value="Analytics">Analytics</option>
-                        <option value="Security">Security</option>
-                        <option value="Performance">Performance</option>
-                        <option value="Content">Content Management</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Support">Support</option>
-                    </select>
-                </div>
+        <div class="modal-body" *ngIf="selectedAddon">
+            <!-- Success/Error Messages -->
+            <div class="alert alert-success" *ngIf="successMessage">
+                <i class="fa fa-check-circle"></i>
+                {{ successMessage }}
+            </div>
+            <div class="alert alert-danger" *ngIf="errorMessage">
+                <i class="fa fa-exclamation-circle"></i>
+                {{ errorMessage }}
+            </div>
+
+            <!-- Basic Information -->
+            <div class="form-group">
+                <label for="addonName" class="form-label">Add-on Name *</label>
+                <input type="text" id="addonName" class="form-control" [(ngModel)]="selectedAddon.name" name="addonName"
+                    placeholder="Enter add-on name" required>
             </div>
 
             <div class="form-group">
-                <label for="addonDescription">Description</label>
-                <textarea id="addonDescription" [(ngModel)]="selectedAddon.description"
-                    placeholder="Describe what this add-on provides" class="form-control" rows="3"></textarea>
+                <label for="addonDescription" class="form-label">Description *</label>
+                <textarea id="addonDescription" class="form-control" rows="3" [(ngModel)]="selectedAddon.description"
+                    name="addonDescription" placeholder="Describe what this add-on provides..." required></textarea>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="oneTimePrice">One-time Price ($)</label>
-                    <input type="number" id="oneTimePrice" [(ngModel)]="selectedAddon.oneTimePrice" placeholder="0.00"
-                        class="form-control" min="0" step="0.01">
+            <!-- Pricing -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="addonPrice" class="form-label">Price *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" id="addonPrice" class="form-control" [(ngModel)]="selectedAddon.price"
+                                name="addonPrice" placeholder="0.00" step="0.01" min="0" required>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="monthlyPrice">Monthly Price ($)</label>
-                    <input type="number" id="monthlyPrice" [(ngModel)]="selectedAddon.monthlyPrice" placeholder="0.00"
-                        class="form-control" min="0" step="0.01">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="addonCurrency" class="form-label">Currency</label>
+                        <select id="addonCurrency" class="form-control" [(ngModel)]="selectedAddon.currency"
+                            name="addonCurrency">
+                            <option value="usd">USD ($)</option>
+                            <option value="eur">EUR (€)</option>
+                            <option value="gbp">GBP (£)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="addonStatus">Status</label>
-                    <select id="addonStatus" [(ngModel)]="selectedAddon.status" class="form-control">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-            </div>
-
+            <!-- Features -->
             <div class="form-group">
-                <label>
-                    <input type="checkbox" [(ngModel)]="selectedAddon.featured">
-                    Featured add-on (show prominently)
-                </label>
+                <label class="form-label">Features</label>
+                <div class="features-container">
+                    <div class="feature-item d-flex align-items-center mb-2"
+                        *ngFor="let feature of selectedAddon.features; let i = index; trackBy: trackFeature">
+                        <div class="flex-grow-1 me-2">
+                            <input type="text" class="form-control" [(ngModel)]="selectedAddon.features[i]"
+                                [name]="'feature' + i" placeholder="Enter feature description">
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeFeature(i)"
+                            [disabled]="selectedAddon.features.length <= 1" title="Remove feature">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" (click)="addFeature()">
+                        <i class="fa fa-plus"></i> Add Feature
+                    </button>
+                </div>
             </div>
 
-            <div class="modal-actions">
-                <button class="btn-secondary" (click)="closeAddonModal()">Cancel</button>
-                <button class="btn-primary" (click)="saveAddon()">
-                    {{ selectedAddon.id ? 'Save Changes' : 'Create Add-on' }}
+            <!-- Settings -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input type="checkbox" id="isRecurring" class="form-check-input"
+                            [(ngModel)]="selectedAddon.isRecurring" name="isRecurring">
+                        <label for="isRecurring" class="form-check-label">
+                            <strong>Recurring billing</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input type="checkbox" id="isPopular" class="form-check-input"
+                            [(ngModel)]="selectedAddon.isPopular" name="isPopular">
+                        <label for="isPopular" class="form-check-label">
+                            <strong>Popular add-on</strong>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeAddonModal()" [disabled]="isSaving">
+                    <i class="fa fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="saveAddon()" [disabled]="isSaving">
+                    <i class="fa fa-spinner fa-spin" *ngIf="isSaving"></i>
+                    <i class="fa" [ngClass]="selectedAddon.stripeProductId ? 'fa-save' : 'fa-plus'"
+                        *ngIf="!isSaving"></i>
+                    {{ isSaving ? 'Saving...' : (selectedAddon.stripeProductId ? 'Update Add-on' : 'Create Add-on') }}
                 </button>
             </div>
         </div>

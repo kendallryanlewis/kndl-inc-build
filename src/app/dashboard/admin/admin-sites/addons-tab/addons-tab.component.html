@@ -1,0 +1,348 @@
+<!-- Stripe Add-ons Section -->
+<div class="addons-section mb-4" *ngIf="addonProducts && addonProducts.length > 0">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-medium">
+            <i class="fa fa-puzzle-piece me-2"></i>
+            Available Add-ons
+        </h5>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-4 col-md-6" *ngFor="let addon of addonProducts">
+            <div class="content-card addon-card p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-medium text-primary mb-1">{{ addon.name }}</h6>
+                    <span class="badge bg-light text-dark small">Add-on</span>
+                </div>
+
+                <p class="text-muted small mb-3" *ngIf="addon.description">
+                    {{ addon.description }}
+                </p>
+
+                <!-- Features -->
+                <div class="mb-3" *ngIf="addon.features && addon.features.length > 0">
+                    <div class="small text-muted mb-1">Features:</div>
+                    <ul class="list-unstyled small">
+                        <li *ngFor="let feature of addon.features" class="d-flex align-items-center mb-1">
+                            <i class="fa fa-check text-success me-2"></i>
+                            {{ feature }}
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Pricing -->
+                <div class="pricing-info mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-medium">
+                            ${{ addon.price.unit_amount ? (addon.price.unit_amount / 100).toFixed(2) : '0.00' }}
+                        </span>
+                        <span class="small text-muted">
+                            {{ addon.price.recurring?.interval || 'one-time' }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Compatibility -->
+                <div class="mb-3" *ngIf="addon.compatibility && addon.compatibility.length > 0">
+                    <div class="small text-muted mb-1">Compatible with:</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span *ngFor="let comp of addon.compatibility" class="badge bg-secondary small">
+                            {{ comp }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button class="btn btn-outline-primary btn-sm w-100" (click)="onCreateAddonSubscription(addon)"
+                    [disabled]="isCreatingSubscription">
+                    <i class="fa fa-plus me-1"></i>
+                    Add to Customer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Customer Services (Always Visible) -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="content-card p-3 border bg-light">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-medium">
+                    <i class="fa fa-puzzle-piece me-2"></i>
+                    Active Services for {{ selectedCompany.name }}
+                </h6>
+                <button class="btn btn-primary btn-sm" (click)="onOpenAddAddonModal()"
+                    [disabled]="!selectedCompany.stripeCustomerId">
+                    <i class="fa fa-plus me-1"></i>
+                    Add Service
+                </button>
+            </div>
+
+            <div *ngIf="addonLoading" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading services...</span>
+                </div>
+            </div>
+
+            <div *ngIf="!addonLoading && currentCustomerAddons.length === 0" class="text-center py-3 text-muted">
+                <i class="fa fa-puzzle-piece fa-2x mb-2 text-muted"></i>
+                <p class="mb-0">No services assigned</p>
+                <small>Click "Add Service" to assign services to this customer</small>
+            </div>
+
+            <div *ngIf="!addonLoading && currentCustomerAddons.length > 0">
+                <div class="service-item d-flex justify-content-between align-items-center p-2 mb-2 border-bottom"
+                    *ngFor="let addon of currentCustomerAddons">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                            <i class="{{getCategoryIcon(addon.category)}} me-2 text-muted"></i>
+                            <div>
+                                <div class="fw-medium">{{ addon.name }}</div>
+                                <div class="small text-muted">{{ addon.description }}</div>
+                            </div>
+                        </div>
+                        <div class="small mt-1">
+                            <span class="badge bg-success me-2">{{ addon.status }}</span>
+                            <span class="text-muted">Qty: {{ addon.quantity }}</span>
+                            <span class="text-primary ms-2">{{ formatCurrency(addon.monthlyPrice) }}/month</span>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-outline-danger btn-sm" (click)="onRemoveAddonFromCustomer(addon)"
+                            title="Remove service">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="service-summary mt-3 p-2 bg-light border rounded">
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-medium">Total Monthly Service Cost:</span>
+                        <span class="fw-bold text-primary">{{ formatCurrency(getAddonTotalCost()) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Service Stats -->
+    <div class="col-md-6">
+        <div class="content-card p-3 border bg-light">
+            <h6 class="mb-3 fw-medium">
+                <i class="fa fa-chart-pie me-2"></i>
+                Service Overview
+            </h6>
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
+                        <div class="h4 mb-0 text-primary">{{ getActiveServicesCount() }}</div>
+                        <small class="text-muted">Available Services</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                        <div class="h4 mb-0 text-success">{{ formatCurrency(getTotalServicesRevenue()) }}</div>
+                        <small class="text-muted">Monthly Revenue</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Categories -->
+            <div class="mt-3">
+                <small class="text-muted d-block mb-2">Service Categories:</small>
+                <div class="d-flex flex-wrap gap-1">
+                    <span *ngFor="let category of serviceCategories"
+                        class="badge bg-secondary d-flex align-items-center">
+                        <i class="{{category.icon}} me-1"></i>
+                        {{ category.label }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Management Content -->
+<div class="service-management-content">
+
+    <!-- Service Templates View -->
+    <div *ngIf="serviceManagementView === 'templates'" class="service-templates">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Service Templates</h6>
+            <small class="text-muted">{{ serviceTemplates.length }} templates available</small>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4" *ngFor="let template of serviceTemplates">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="{{getCategoryIcon(template.category)}} me-2 text-primary"></i>
+                                <h6 class="card-title mb-0">{{ template.name }}</h6>
+                            </div>
+                            <span class="badge" [class.bg-success]="template.isActive"
+                                [class.bg-secondary]="!template.isActive">
+                                {{ template.isActive ? 'Active' : 'Inactive' }}
+                            </span>
+                        </div>
+                        <p class="card-text small text-muted">{{ template.description }}</p>
+                        <div class="mb-2">
+                            <span class="fw-bold text-primary">{{ formatCurrency(template.basePrice) }}</span>
+                            <span class="small text-muted">/month</span>
+                            <span *ngIf="template.setupFee" class="small text-muted">
+                                + {{ formatCurrency(template.setupFee) }} setup
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Features:</small>
+                            <ul class="list-unstyled small">
+                                <li *ngFor="let feature of template.features.slice(0, 3)">
+                                    <i class="fa fa-check text-success me-1"></i>
+                                    {{ feature }}
+                                </li>
+                                <li *ngIf="template.features.length > 3" class="text-muted">
+                                    +{{ template.features.length - 3 }} more features
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <button class="btn btn-outline-primary btn-sm flex-grow-1"
+                            (click)="onOpenServiceTemplateModal(template)">
+                            <i class="fa fa-edit me-1"></i>Edit
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" (click)="onDeleteServiceTemplate(template)">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Assignment History View -->
+    <div *ngIf="serviceManagementView === 'assignments'" class="service-assignments">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Service Assignment History</h6>
+            <small class="text-muted">{{ serviceAssignmentHistory.length }} assignments tracked</small>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Company</th>
+                        <th>Service</th>
+                        <th>Action</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let assignment of serviceAssignmentHistory.slice(0, 20)">
+                        <td>{{ assignment.assignedDate | date:'short' }}</td>
+                        <td>{{ getCompanyNameById(assignment.companyId) }}</td>
+                        <td>{{ getServiceNameById(assignment.addonId) }}</td>
+                        <td>
+                            <span class="badge bg-primary">Assigned</span>
+                        </td>
+                        <td>
+                            <span class="badge" [class.bg-success]="assignment.status === 'active'"
+                                [class.bg-warning]="assignment.status === 'paused'"
+                                [class.bg-danger]="assignment.status === 'cancelled'">
+                                {{ assignment.status }}
+                            </span>
+                        </td>
+                        <td class="small text-muted">{{ assignment.notes || '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Service Analytics View -->
+    <div *ngIf="serviceManagementView === 'analytics'" class="service-analytics">
+        <div class="row g-3 mb-4">
+            <!-- Summary Cards -->
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-primary">{{ formatCurrency(getTotalServiceRevenue()) }}</h4>
+                        <small class="text-muted">Total Monthly Revenue</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-success">{{ getTotalActiveServices() }}</h4>
+                        <small class="text-muted">Active Services</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center" *ngIf="getMostPopularService() as popular">
+                            <i class="fa fa-trophy text-warning fa-2x me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Most Popular Service</h6>
+                                <div class="fw-medium">{{ popular.addonName }}</div>
+                                <small class="text-muted">{{ popular.totalCustomers }} customers</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Usage Table -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Service Usage Statistics</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Category</th>
+                                <th>Customers</th>
+                                <th>Avg. Price</th>
+                                <th>Monthly Revenue</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let stat of serviceUsageStats">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="{{getCategoryIcon(stat.category)}} me-2 text-muted"></i>
+                                        {{ stat.addonName }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ getCategoryLabel(stat.category) }}</span>
+                                </td>
+                                <td>{{ stat.totalCustomers }}</td>
+                                <td>{{ formatCurrency(stat.averagePrice) }}</td>
+                                <td class="fw-medium">{{ formatCurrency(stat.monthlyRevenue) }}</td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar"
+                                            [style.width.%]="(stat.monthlyRevenue / getTotalServiceRevenue()) * 100">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

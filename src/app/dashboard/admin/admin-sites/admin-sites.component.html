@@ -3,17 +3,21 @@
     <div class="h-100 d-flex flex-column">
         <!-- Header -->
         <div class="header-section d-flex justify-content-between align-items-center mb-3">
-            <app-generic-h2-title [title]="'Admin Sites'" [icon]="'fa-building'"
-                [subTitle]="'Manage company sites, billing, and subscriptions.'"></app-generic-h2-title>
-            <button class="admin-tab bg-blue" (click)="showAddCompanyModal = true">
-                <i class="fa fa-plus me-2"></i>
-                Add Company
-            </button>
+            <div class="d-flex align-items-center">
+                <app-generic-h2-title [title]="'Admin Sites'" [icon]="'fa-building'"
+                    [subTitle]="'Manage company sites, billing, and subscriptions.'"></app-generic-h2-title>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="admin-tab bg-blue" (click)="showAddCompanyModal = true">
+                    <i class="fa fa-plus me-2"></i>
+                    Add Company
+                </button>
+            </div>
         </div>
 
         <div class="row w-100 h-100 g-2">
             <!-- Companies List -->
-            <div class="companies-container h-100" [ngClass]="selectedCompany ? 'col-4 shadow' : 'col-12'">
+            <div class="companies-container h-100" [ngClass]="selectedCompany ? 'col-4' : 'col-12'">
                 <div class="companies-grid h-100 d-flex flex-column">
 
                     <!-- Search -->
@@ -81,43 +85,43 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
                                 <div class="company-avatar me-3">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white fw-bold"
-                                        style="width: 40px; height: 40px;">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-outline-secondary border border-3 border-secondary text-white fw-bold"
+                                        style="width: 50px; height: 50px;">
                                         {{ getCompanyInitials(selectedCompany.name) }}
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="mb-1 fw-medium fs-5">{{ selectedCompany.name }}</h3>
+                                    <h1 class="mb-1 fw-medium text-tan">{{ selectedCompany.name }}</h1>
                                     <div class="text-muted small">{{ selectedCompany.domain }}</div>
                                 </div>
                             </div>
                             <button class="btn btn-outline-secondary btn-sm" (click)="closeDetails()">
-                                <i class="fa fa-times"></i>
+                                <i class="fa fa-times text-danger"></i>
                             </button>
                         </div>
 
                         <!-- Stats -->
                         <div class="stats-row mt-3 row g-2">
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                            <div class="col-md-2">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold">${{ selectedCompany.monthlyAmount }}</div>
                                     <div class="text-muted small">Monthly</div>
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                            <div class="col-md-2">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold">{{ selectedCompany.userCount }}</div>
                                     <div class="text-muted small">Users</div>
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                            <div class="col-md-2">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold">{{ selectedCompany.subscriptionPlan }}</div>
                                     <div class="text-muted small">Plan</div>
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                            <div class="col-md-2">
+                                <div class="text-center p-2 bg-light border stat-cardrounded">
                                     <div class="fw-bold" [ngClass]="{
                                         'text-success': selectedCompany.status === 'active',
                                         'text-warning': selectedCompany.status === 'pending',
@@ -127,23 +131,45 @@
                                     <div class="text-muted small">Status</div>
                                 </div>
                             </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-2 bg-light border stat-card">
+                                    <div class="fw-bold d-flex align-items-center justify-content-center gap-1"
+                                        [ngClass]="{
+                                        'text-success': selectedCompany.stripeCustomerId,
+                                        'text-warning': !selectedCompany.stripeCustomerId && selectedCompany.stripeSyncStatus === 'pending',
+                                        'text-danger': selectedCompany.stripeSyncStatus === 'error',
+                                        'text-muted': !selectedCompany.stripeCustomerId
+                                    }">
+                                        <i class="fa" [ngClass]="{
+                                            'fa-check-circle': selectedCompany.stripeCustomerId,
+                                            'fa-clock': !selectedCompany.stripeCustomerId && selectedCompany.stripeSyncStatus === 'pending',
+                                            'fa-exclamation-triangle': selectedCompany.stripeSyncStatus === 'error',
+                                            'fa-times-circle': !selectedCompany.stripeCustomerId
+                                        }"></i>
+                                        <span class="small">{{ selectedCompany.stripeCustomerId ? 'Stripe Synced' :
+                                            'Not
+                                            Synced' }}</span>
+                                    </div>
+                                    <div class="text-muted small">Billing Status</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Tabs Navigation -->
-                    <!-- Tabs Navigation -->
-                    <div class="tabs-nav px-3 py-2 border-bottom stat-card bg-blue text-tan">
+                    <div class="tabs-nav px-3 py-2 border-bottom stat-card text-tan bg-secondary-subtle">
                         <nav class="d-flex gap-1">
                             <button *ngFor="let tab of availableTabs"
-                                class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium d-flex align-items-center gap-2"
-                                [class.bg-primary]="isTabActive(tab.id)" [class.text-white]="isTabActive(tab.id)"
-                                [class.text-muted]="!isTabActive(tab.id)" (click)="setActiveTab(tab.id)"
-                                [attr.aria-selected]="isTabActive(tab.id)" role="tab">
+                                class="nav-btn px-3 py-1 border-0 small fw-medium d-flex align-items-center gap-2"
+                                [class.bg-blue]="isTabActive(tab.id)" [class.bg-transparent]="!isTabActive(tab.id)"
+                                [class.text-muted]="!isTabActive(tab.id)" [class.text-white]="isTabActive(tab.id)"
+                                (click)="setActiveTab(tab.id)" [attr.aria-selected]="isTabActive(tab.id)" role="tab">
                                 <i class="fa" [class]="tab.icon"></i>
                                 {{ tab.label }}
                             </button>
                         </nav>
-                    </div> <!-- Tab Content -->
+                    </div>
+                    <!-- Tab Content -->
                     <div class="tab-content flex-grow-1 overflow-auto p-3">
                         <!-- Tab Navigation Controls -->
                         <div class="tab-controls d-flex justify-content-between align-items-center mb-3">
@@ -167,355 +193,516 @@
 
                         <!-- Overview Tab -->
                         <div *ngIf="isTabActive('overview')">
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <!-- Recent Activity -->
-                                    <div class="content-card p-3 border bg-light mb-3">
-                                        <h6 class="mb-3 fw-medium">Recent Activity</h6>
-                                        <div class="activity-list">
-                                            <div class="activity-item d-flex align-items-center p-2 mb-2 border-bottom"
-                                                *ngFor="let activity of getRecentActivity(selectedCompany)">
-                                                <div class="activity-icon me-2 rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
-                                                    style="width: 24px; height: 24px;">
-                                                    <i [class]="activity.icon" style="font-size: 0.75rem;"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="activity-text small">{{ activity.description }}</div>
-                                                    <div class="activity-date text-muted" style="font-size: 0.75rem;">{{
-                                                        formatDate(activity.date) }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Site Performance -->
-                                    <div class="content-card p-3 border bg-light">
-                                        <h6 class="mb-3 fw-medium">Site Performance</h6>
-                                        <div class="performance-metrics row g-2">
-                                            <div class="col-4">
-                                                <div class="metric-item text-center p-2 border">
-                                                    <div class="metric-value small fw-bold">99.9%</div>
-                                                    <div class="metric-label text-muted" style="font-size: 0.75rem;">
-                                                        Uptime</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-4">
-                                                <div class="metric-item text-center p-2 border">
-                                                    <div class="metric-value small fw-bold">1.2s</div>
-                                                    <div class="metric-label text-muted" style="font-size: 0.75rem;">
-                                                        Load Time</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-4">
-                                                <div class="metric-item text-center p-2 border">
-                                                    <div class="metric-value small fw-bold">{{
-                                                        selectedCompany.monthlyPageViews || 0 | number }}</div>
-                                                    <div class="metric-label text-muted" style="font-size: 0.75rem;">
-                                                        Page Views</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <!-- Company Information -->
-                                    <div class="content-card p-3 border bg-light">
-                                        <h6 class="mb-3 fw-medium">Company Information</h6>
-                                        <div class="info-list">
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                                <span class="small text-muted">Status</span>
-                                                <span class="status-badge px-2 py-1 rounded-pill small fw-medium"
-                                                    [ngClass]="{
-                                                          'bg-success bg-opacity-20 text-success': selectedCompany.status === 'active',
-                                                          'bg-warning bg-opacity-20 text-warning': selectedCompany.status === 'pending',
-                                                          'bg-danger bg-opacity-20 text-danger': selectedCompany.status === 'suspended',
-                                                          'bg-secondary bg-opacity-20 text-secondary': selectedCompany.status === 'inactive'
-                                                      }">
-                                                    {{ selectedCompany.status | titlecase }}
-                                                </span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                                <span class="small text-muted">Plan</span>
-                                                <span class="small fw-medium">{{ selectedCompany.subscriptionPlan |
-                                                    titlecase }}</span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                                <span class="small text-muted">Next Billing</span>
-                                                <span class="small">{{ formatDate(selectedCompany.nextBilling) }}</span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                                <span class="small text-muted">Created</span>
-                                                <span class="small">{{ formatDate(selectedCompany.createdDate) }}</span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2">
-                                                <span class="small text-muted">Contact</span>
-                                                <span class="small">{{ selectedCompany.contactEmail }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <app-overview-tab [selectedCompany]="selectedCompany"></app-overview-tab>
                         </div>
 
                         <!-- Billing Tab -->
                         <div *ngIf="isTabActive('billing')">
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <!-- Billing History -->
-                                    <div class="content-card p-3 border bg-light">
-                                        <h6 class="mb-3 fw-medium">Billing History</h6>
-                                        <div class="billing-list">
-                                            <div
-                                                class="billing-item d-flex justify-content-between align-items-center p-2 mb-2 border-bottom">
-                                                <div class="flex-grow-1">
-                                                    <div class="invoice-date small">{{
-                                                        formatDate(selectedCompany.nextBilling) }}</div>
-                                                    <div class="invoice-description text-muted"
-                                                        style="font-size: 0.75rem;">Monthly Subscription</div>
-                                                </div>
-                                                <div class="text-end">
-                                                    <div class="invoice-amount small fw-medium">${{
-                                                        selectedCompany.monthlyAmount }}</div>
-                                                    <div class="invoice-status text-success"
-                                                        style="font-size: 0.75rem;">Paid</div>
-                                                </div>
-                                            </div>
-                                            <div
-                                                class="billing-item d-flex justify-content-between align-items-center p-2 mb-2 border-bottom">
-                                                <div class="flex-grow-1">
-                                                    <div class="invoice-date small">{{
-                                                        formatDate(selectedCompany.createdDate) }}</div>
-                                                    <div class="invoice-description text-muted"
-                                                        style="font-size: 0.75rem;">Setup Fee</div>
-                                                </div>
-                                                <div class="text-end">
-                                                    <div class="invoice-amount small fw-medium">$0.00</div>
-                                                    <div class="invoice-status text-success"
-                                                        style="font-size: 0.75rem;">Paid</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <!-- Payment Info -->
-                                    <div class="content-card p-3 border bg-light">
-                                        <h6 class="mb-3 fw-medium">Payment Information</h6>
-                                        <div class="payment-details">
-                                            <div class="payment-method mb-3">
-                                                <div class="small text-muted">Payment Method</div>
-                                                <div class="small">Credit Card</div>
-                                            </div>
-                                            <div class="billing-cycle mb-3">
-                                                <div class="small text-muted">Billing Cycle</div>
-                                                <div class="small">Monthly</div>
-                                            </div>
-                                            <div class="auto-renewal">
-                                                <div class="small text-muted">Auto Renewal</div>
-                                                <div class="small">{{ selectedCompany.autoRenewal ? 'Enabled' :
-                                                    'Disabled' }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <app-billing-tab [selectedCompany]="selectedCompany"
+                                [stripeCustomerData]="stripeCustomerData"
+                                [stripeSubscriptionsData]="stripeSubscriptionsData"
+                                [stripePaymentMethodsData]="stripePaymentMethodsData"
+                                [stripeInvoicesData]="stripeInvoicesData"
+                                [stripeOverviewLoading]="stripeOverviewLoading" [stripeLoading]="stripeLoading"
+                                [stripeSyncErrors]="stripeSyncErrors"
+                                (loadStripeOverviewData)="loadStripeOverviewData($event)"
+                                (syncCompanyWithStripe)="syncCompanyWithStripe($event)"
+                                (debugCurrentCustomer)="debugCurrentCustomer()"
+                                (logAllStripeCustomers)="logAllStripeCustomers()"
+                                (refreshCompanyData)="refreshCompanyData()"
+                                (clearStripeSyncErrors)="stripeSyncErrors = []"
+                                (addPaymentMethod)="onAddPaymentMethod($event)"
+                                (setDefaultPaymentMethod)="onSetDefaultPaymentMethod($event)"
+                                (removePaymentMethod)="onRemovePaymentMethod($event)">
+                            </app-billing-tab>
                         </div>
 
                         <!-- Subscription Tab -->
                         <div *ngIf="isTabActive('subscription')">
-                            <div class="content-card p-3 border bg-light">
-                                <h6 class="mb-3 fw-medium">Subscription Details</h6>
-                                <div class="subscription-info row g-3">
-                                    <div class="col-md-6">
-                                        <div class="subscription-item mb-3">
-                                            <div class="small text-muted">Current Plan</div>
-                                            <div class="fw-medium">{{ selectedCompany.subscriptionPlan | titlecase }}
-                                            </div>
-                                        </div>
-                                        <div class="subscription-item mb-3">
-                                            <div class="small text-muted">Monthly Amount</div>
-                                            <div class="fw-medium">${{ selectedCompany.monthlyAmount }}</div>
-                                        </div>
-                                        <div class="subscription-item mb-3">
-                                            <div class="small text-muted">Start Date</div>
-                                            <div>{{ formatDate(selectedCompany.createdDate) }}</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="subscription-item mb-3">
-                                            <div class="small text-muted">Next Billing Date</div>
-                                            <div>{{ formatDate(selectedCompany.nextBilling) }}</div>
-                                        </div>
-                                        <div class="subscription-item mb-3">
-                                            <div class="small text-muted">Usage</div>
-                                            <div>{{ selectedCompany.userCount || 0 }} users</div>
-                                        </div>
-                                        <div class="subscription-item mb-3">
-                                            <div class="small text-muted">Features</div>
-                                            <div>
-                                                <span *ngIf="selectedCompany.subscriptionPlan === 'basic'">5 Pages,
-                                                    Basic Support</span>
-                                                <span *ngIf="selectedCompany.subscriptionPlan === 'professional'">25
-                                                    Pages, Priority Support</span>
-                                                <span
-                                                    *ngIf="selectedCompany.subscriptionPlan === 'enterprise'">Unlimited
-                                                    Pages, 24/7 Support</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <app-subscription-tab [selectedCompany]="selectedCompany" [stripeLoading]="stripeLoading"
+                                [stripeSubscriptionsData]="stripeSubscriptionsData"
+                                (createStripeSubscriptionForCompany)="createStripeSubscriptionForCompany($event.company, $event.priceId)"
+                                (cancelStripeSubscription)="cancelStripeSubscription($event.company, $event.immediately)"
+                                (changeStripeSubscription)="changeStripeSubscription($event.company, $event.newPriceId)"
+                                (syncCompanyWithStripe)="syncCompanyWithStripe($event)"
+                                (getStripeCustomerData)="getStripeCustomerData($event)"
+                                (refreshSubscriptions)="loadCustomerSubscriptions($event)">
+                            </app-subscription-tab>
+                        </div>
+
+                        <!-- Enhanced Add-ons & Services Tab -->
+                        <div *ngIf="isTabActive('addons')">
+                            <app-addons-tab [selectedCompany]="selectedCompany" [addonLoading]="addonLoading"
+                                [serviceTemplates]="serviceTemplates" [serviceManagementView]="serviceManagementView"
+                                (openServiceTemplateModal)="openServiceTemplateModal()"
+                                (openAddAddonModal)="openAddAddonModal()"
+                                (deleteServiceTemplate)="deleteServiceTemplate($event)">
+                            </app-addons-tab>
                         </div>
 
                         <!-- Settings Tab -->
                         <div *ngIf="isTabActive('settings')">
-                            <div class="content-card p-3 border bg-light">
-                                <h6 class="mb-3 fw-medium">
-                                    <i class="fa fa-cog me-2"></i>
-                                    Company Settings
-                                </h6>
-                                <form #settingsForm="ngForm" (ngSubmit)="saveCompanySettings()">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label class="small text-muted">Company Name <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedCompany.name" name="companyName" required
-                                                    #companyName="ngModel" (blur)="updateCompanyName(companyName.value)"
-                                                    placeholder="Enter company name">
-                                                <div *ngIf="companyName.invalid && companyName.touched"
-                                                    class="text-danger small">
-                                                    Company name is required
-                                                </div>
-                                            </div>
-                                            <div class="form-group mb-3">
-                                                <label class="small text-muted">Domain <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedCompany.domain" name="domain" required
-                                                    #domain="ngModel" (blur)="updateCompanyDomain(domain.value)"
-                                                    placeholder="example.com">
-                                                <div *ngIf="domain.invalid && domain.touched" class="text-danger small">
-                                                    Domain is required
-                                                </div>
-                                            </div>
-                                            <div class="form-group mb-3">
-                                                <label class="small text-muted">Contact Email <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="email" class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedCompany.contactEmail" name="email" required
-                                                    email #email="ngModel" (blur)="updateCompanyEmail(email.value)"
-                                                    placeholder="admin@company.com">
-                                                <div *ngIf="email.invalid && email.touched" class="text-danger small">
-                                                    <span *ngIf="email.errors?.['required']">Email is required</span>
-                                                    <span *ngIf="email.errors?.['email']">Please enter a valid
-                                                        email</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label class="small text-muted">Phone</label>
-                                                <input type="tel" class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedCompany.phone" name="phone" #phone="ngModel"
-                                                    (blur)="updateCompanyPhone(phone.value)"
-                                                    placeholder="+1 (555) 123-4567">
-                                            </div>
-                                            <div class="form-group mb-3">
-                                                <label class="small text-muted">Status</label>
-                                                <select class="form-control form-control-sm"
-                                                    [(ngModel)]="selectedCompany.status" name="status" #status="ngModel"
-                                                    (change)="updateCompanyStatus(status.value)">
-                                                    <option value="active">Active</option>
-                                                    <option value="pending">Pending</option>
-                                                    <option value="suspended">Suspended</option>
-                                                    <option value="inactive">Inactive</option>
-                                                </select>
-                                                <small class="text-muted">
-                                                    Current status:
-                                                    <span class="badge rounded-pill ms-1" [ngClass]="{
-                                                        'bg-success': selectedCompany.status === 'active',
-                                                        'bg-warning': selectedCompany.status === 'pending',
-                                                        'bg-danger': selectedCompany.status === 'suspended',
-                                                        'bg-secondary': selectedCompany.status === 'inactive'
-                                                    }">
-                                                        {{ selectedCompany.status | titlecase }}
-                                                    </span>
-                                                </small>
-                                            </div>
-                                            <div class="form-group mb-3">
-                                                <div class="d-flex gap-2">
-                                                    <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm flex-grow-1"
-                                                        (click)="cancelSettingsChanges()">
-                                                        <i class="fa fa-times me-1"></i>
-                                                        Cancel
-                                                    </button>
-                                                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1"
-                                                        [disabled]="settingsForm.invalid">
-                                                        <i class="fa fa-save me-1"></i>
-                                                        Save Changes
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
+                            <app-settings-tab [selectedCompany]="selectedCompany"
+                                (updateCompanyName)="updateCompanyName($event)"
+                                (updateCompanyDomain)="updateCompanyDomain($event)"
+                                (updateCompanyEmail)="updateCompanyEmail($event)"
+                                (updateCompanyPhone)="updateCompanyPhone($event)"
+                                (updateCompanyStatus)="updateCompanyStatus($event)"
+                                (saveCompanySettings)="saveCompanySettings()"
+                                (cancelSettingsChanges)="cancelSettingsChanges()">
+                            </app-settings-tab>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Add Company Modal -->
-        <div class="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
-            style="z-index: 1050;" *ngIf="showAddCompanyModal" (click)="closeModal()">
-            <div class="modal-content bg-white rounded p-4 shadow" style="max-width: 400px; width: 90%;"
-                (click)="$event.stopPropagation()">
-                <div class="modal-header d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0 fw-medium">Add Company</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="closeModal()">
-                        <i class="fa fa-times"></i>
-                    </button>
-                </div>
-                <form (ngSubmit)="addNewCompany()">
-                    <div class="mb-3">
-                        <input type="text" class="form-control form-control-sm" placeholder="Company Name"
-                            [(ngModel)]="newCompany.name" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <input type="text" class="form-control form-control-sm" placeholder="Domain"
-                            [(ngModel)]="newCompany.domain" name="domain" required>
-                    </div>
-                    <div class="mb-3">
-                        <input type="email" class="form-control form-control-sm" placeholder="Email"
-                            [(ngModel)]="newCompany.contactEmail" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <select class="form-control form-control-sm" [(ngModel)]="newCompany.subscriptionPlan"
-                            name="plan">
-                            <option value="basic">Basic - $29/mo</option>
-                            <option value="professional">Pro - $79/mo</option>
-                            <option value="enterprise">Enterprise - $199/mo</option>
-                        </select>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1"
-                            (click)="showAddCompanyModal = false">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Add</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 </section>
+
+<!-- Add Company Modal -->
+<div class="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
+    style="z-index: 1050;" *ngIf="showAddCompanyModal" (click)="closeModal()">
+    <div class="modal-content bg-white rounded p-4 shadow" style="max-width: 400px; width: 90%;"
+        (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-medium">Add Company</h5>
+            <button class="btn btn-outline-secondary btn-sm" (click)="closeModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <form (ngSubmit)="addNewCompany()">
+            <!-- Loading indicator for Stripe integration -->
+            <div *ngIf="stripeLoading" class="text-center mb-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Creating Stripe customer...</span>
+                </div>
+                <div class="small text-muted mt-1">Creating Stripe customer...</div>
+            </div>
+
+            <!-- Error messages -->
+            <div *ngIf="stripeSyncErrors.length > 0" class="alert alert-warning mb-3">
+                <strong>Stripe Integration Errors:</strong>
+                <ul class="mb-0 mt-1">
+                    <li *ngFor="let error of stripeSyncErrors" class="small">{{ error }}</li>
+                </ul>
+            </div>
+
+            <div class="mb-3">
+                <input type="text" class="form-control form-control-sm" placeholder="Company Name"
+                    [(ngModel)]="newCompany.name" name="name" required [disabled]="stripeLoading">
+            </div>
+            <div class="mb-3">
+                <input type="text" class="form-control form-control-sm" placeholder="Domain"
+                    [(ngModel)]="newCompany.domain" name="domain" required [disabled]="stripeLoading">
+            </div>
+            <div class="mb-3">
+                <input type="email" class="form-control form-control-sm" placeholder="Email"
+                    [(ngModel)]="newCompany.contactEmail" name="email" required [disabled]="stripeLoading">
+            </div>
+            <div class="mb-3">
+                <input type="tel" class="form-control form-control-sm" placeholder="Phone (Optional)"
+                    [(ngModel)]="newCompany.phone" name="phone" [disabled]="stripeLoading">
+            </div>
+            <div class="mb-3">
+                <select class="form-control form-control-sm" [(ngModel)]="newCompany.subscriptionPlan" name="plan"
+                    [disabled]="stripeLoading">
+                    <option value="basic">Basic - $29/mo</option>
+                    <option value="professional">Pro - $79/mo</option>
+                    <option value="enterprise">Enterprise - $199/mo</option>
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1"
+                    (click)="showAddCompanyModal = false; stripeSyncErrors = []" [disabled]="stripeLoading">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1" [disabled]="stripeLoading">
+                    <i class="fa fa-plus me-1" *ngIf="!stripeLoading"></i>
+                    <i class="fa fa-spinner fa-spin me-1" *ngIf="stripeLoading"></i>
+                    {{ stripeLoading ? 'Creating...' : 'Add Company' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Addon Modal -->
+<div class="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
+    style="z-index: 1050;" *ngIf="showAddAddonModal" (click)="closeAddAddonModal()">
+    <div class="modal-content bg-white rounded p-4 shadow" style="max-width: 500px; width: 90%;"
+        (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-medium">Add Service to {{ selectedCompany?.name }}</h5>
+            <button class="btn btn-outline-secondary btn-sm" (click)="closeAddAddonModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <form (ngSubmit)="addAddonToCustomer()" #addAddonForm="ngForm">
+            <div class="form-group mb-3">
+                <label for="addonSelect" class="form-label">Select Add-on Service</label>
+                <select id="addonSelect" class="form-select" [(ngModel)]="newAddonAssignment.addonId" name="addonId"
+                    required>
+                    <option value="">Choose a service...</option>
+                    <option *ngFor="let addon of availableAddons" [value]="addon.id">
+                        {{ addon.name }} - {{ formatCurrency(addon.monthlyPrice) }}/month
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group mb-3" *ngIf="newAddonAssignment.addonId">
+                <label for="quantity" class="form-label">Quantity</label>
+                <input type="number" id="quantity" class="form-control" [(ngModel)]="newAddonAssignment.quantity"
+                    name="quantity" min="1" max="10" required>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" id="startDate" class="form-control" [(ngModel)]="newAddonAssignment.startDate"
+                    name="startDate" required>
+            </div>
+
+            <div class="form-check mb-3">
+                <input type="checkbox" id="prorate" class="form-check-input" [(ngModel)]="newAddonAssignment.prorate"
+                    name="prorate">
+                <label for="prorate" class="form-check-label">
+                    Prorate charges for this billing period
+                </label>
+            </div>
+
+            <div class="addon-preview p-3 bg-light border rounded mb-3" *ngIf="newAddonAssignment.addonId">
+                <h6 class="mb-2">Service Preview:</h6>
+                <div class="selected-addon" *ngIf="getAddonById(newAddonAssignment.addonId) as selectedAddon">
+                    <div class="fw-medium">{{ selectedAddon.name }}</div>
+                    <div class="small text-muted">{{ selectedAddon.description }}</div>
+                    <div class="features mt-2">
+                        <small class="text-muted d-block" *ngFor="let feature of selectedAddon.features">
+                            <i class="fa fa-check text-success me-1"></i>{{ feature }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm flex-grow-1" (click)="closeAddAddonModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1"
+                    [disabled]="addonLoading || !newAddonAssignment.addonId">
+                    <i class="fa fa-plus me-1" *ngIf="!addonLoading"></i>
+                    <i class="fa fa-spinner fa-spin me-1" *ngIf="addonLoading"></i>
+                    {{ addonLoading ? 'Adding...' : 'Add Service' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Subscription Modal -->
+<div class="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
+    style="z-index: 1050;" *ngIf="showCreateSubscriptionModal" (click)="closeCreateSubscriptionModal()">
+    <div class="modal-content bg-white rounded p-4 shadow" style="max-width: 500px; width: 90%;"
+        (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-medium">Create Subscription for {{ selectedCompany?.name }}</h5>
+            <button class="btn btn-outline-secondary btn-sm" (click)="closeCreateSubscriptionModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <form (ngSubmit)="createSubscriptionForCustomer()" #subscriptionForm="ngForm">
+            <div class="form-group mb-3">
+                <label for="plan" class="form-label">Subscription Plan</label>
+                <select id="plan" class="form-select" [(ngModel)]="newSubscription.plan" name="plan" required>
+                    <option value="basic">Basic Plan - $29/month</option>
+                    <option value="professional">Professional Plan - $79/month</option>
+                    <option value="enterprise">Enterprise Plan - $199/month</option>
+                </select>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="priceId" class="form-label">Stripe Price ID</label>
+                <input type="text" id="priceId" class="form-control" [(ngModel)]="newSubscription.priceId"
+                    name="priceId" placeholder="price_1234567890" required>
+                <div class="form-text">Enter the Stripe Price ID for this subscription</div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="subscriptionQuantity" class="form-label">Quantity</label>
+                        <input type="number" id="subscriptionQuantity" class="form-control"
+                            [(ngModel)]="newSubscription.quantity" name="quantity" min="1" max="100" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="trialDays" class="form-label">Trial Days</label>
+                        <input type="number" id="trialDays" class="form-control" [(ngModel)]="newSubscription.trialDays"
+                            name="trialDays" min="0" max="30">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="subscriptionStartDate" class="form-label">Start Date</label>
+                <input type="date" id="subscriptionStartDate" class="form-control"
+                    [(ngModel)]="newSubscription.startDate" name="startDate" required>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle me-2"></i>
+                <strong>Note:</strong> This will create a new Stripe subscription and immediately begin billing
+                the customer.
+            </div>
+
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm flex-grow-1"
+                    (click)="closeCreateSubscriptionModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-success btn-sm flex-grow-1"
+                    [disabled]="subscriptionLoading || !newSubscription.priceId">
+                    <i class="fa fa-credit-card me-1" *ngIf="!subscriptionLoading"></i>
+                    <i class="fa fa-spinner fa-spin me-1" *ngIf="subscriptionLoading"></i>
+                    {{ subscriptionLoading ? 'Creating...' : 'Create Subscription' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Service Template Modal -->
+<div class="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
+    style="z-index: 1050;" *ngIf="showServiceTemplateModal" (click)="closeServiceTemplateModal()">
+    <div class="modal-content bg-white rounded p-4 shadow"
+        style="max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;" (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-medium">
+                {{ selectedServiceTemplate?.id ? 'Edit Service Template' : 'Create New Service Template' }}
+            </h5>
+            <button class="btn btn-outline-secondary btn-sm" (click)="closeServiceTemplateModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <form (ngSubmit)="saveServiceTemplate()" #templateForm="ngForm" *ngIf="selectedServiceTemplate">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label for="templateName" class="form-label">Service Name</label>
+                    <input type="text" id="templateName" class="form-control" [(ngModel)]="selectedServiceTemplate.name"
+                        name="templateName" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="templateCategory" class="form-label">Category</label>
+                    <select id="templateCategory" class="form-select" [(ngModel)]="selectedServiceTemplate.category"
+                        name="templateCategory" required>
+                        <option *ngFor="let category of serviceCategories" [value]="category.id">
+                            {{ category.label }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="templateDescription" class="form-label">Description</label>
+                <textarea id="templateDescription" class="form-control" rows="3"
+                    [(ngModel)]="selectedServiceTemplate.description" name="templateDescription" required></textarea>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="templatePrice" class="form-label">Monthly Price ($)</label>
+                    <input type="number" id="templatePrice" class="form-control" step="0.01" min="0"
+                        [(ngModel)]="selectedServiceTemplate.basePrice" name="templatePrice" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="templateSetupFee" class="form-label">Setup Fee ($)</label>
+                    <input type="number" id="templateSetupFee" class="form-control" step="0.01" min="0"
+                        [(ngModel)]="selectedServiceTemplate.setupFee" name="templateSetupFee">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Features</label>
+                <div class="features-list">
+                    <div class="input-group mb-2"
+                        *ngFor="let feature of selectedServiceTemplate.features; let i = index; trackBy: trackFeatureByIndex">
+                        <input type="text" class="form-control" [(ngModel)]="selectedServiceTemplate.features![i]"
+                            [name]="'feature_' + i" placeholder="Enter feature description">
+                        <button type="button" class="btn btn-outline-danger" (click)="removeFeatureFromTemplate(i)"
+                            [disabled]="(selectedServiceTemplate.features?.length || 0) <= 1">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addFeatureToTemplate()">
+                    <i class="fa fa-plus me-1"></i>Add Feature
+                </button>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input type="checkbox" id="isCustomizable" class="form-check-input"
+                            [(ngModel)]="selectedServiceTemplate.isCustomizable" name="isCustomizable">
+                        <label for="isCustomizable" class="form-check-label">Customizable</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input type="checkbox" id="allowCustomPricing" class="form-check-input"
+                            [(ngModel)]="selectedServiceTemplate.allowCustomPricing" name="allowCustomPricing">
+                        <label for="allowCustomPricing" class="form-check-label">Allow Custom Pricing</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input type="checkbox" id="isActive" class="form-check-input"
+                            [(ngModel)]="selectedServiceTemplate.isActive" name="isActive">
+                        <label for="isActive" class="form-check-label">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-secondary flex-grow-1" (click)="closeServiceTemplateModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary flex-grow-1" [disabled]="serviceTemplateLoading">
+                    <i class="fa fa-save me-1" *ngIf="!serviceTemplateLoading"></i>
+                    <i class="fa fa-spinner fa-spin me-1" *ngIf="serviceTemplateLoading"></i>
+                    {{ serviceTemplateLoading ? 'Saving...' : (selectedServiceTemplate.id ? 'Update Template' :
+                    'Create Template') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk Service Operations Modal -->
+<div class="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50"
+    style="z-index: 1050;" *ngIf="showBulkServiceModal" (click)="closeBulkServiceModal()">
+    <div class="modal-content bg-white rounded p-4 shadow"
+        style="max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;" (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-medium">
+                Bulk Service Operations - {{ bulkOperationType === 'add' ? 'Add Services' : 'Remove Services' }}
+            </h5>
+            <button class="btn btn-outline-secondary btn-sm" (click)="closeBulkServiceModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <div class="row g-4">
+            <!-- Company Selection -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Select Companies</h6>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                                (click)="selectAllCompaniesForBulk()">All</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                (click)="deselectAllCompaniesForBulk()">None</button>
+                        </div>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                        <div class="form-check mb-2" *ngFor="let company of filteredCompanies">
+                            <input type="checkbox" class="form-check-input" [id]="'bulk-company-' + company.id"
+                                [checked]="isBulkCompanySelected(company)"
+                                (change)="toggleBulkCompanySelection(company)">
+                            <label class="form-check-label" [for]="'bulk-company-' + company.id">
+                                <div class="d-flex justify-content-between align-items-center w-100">
+                                    <div>
+                                        <div class="fw-medium">{{ company.name }}</div>
+                                        <small class="text-muted">{{ company.domain }}</small>
+                                    </div>
+                                    <span class="badge bg-secondary">{{ company.status }}</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <small class="text-muted">{{ bulkSelectedCompanies.length }} companies selected</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Selection -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="mb-0">Select Services</h6>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                        <div class="form-check mb-2" *ngFor="let service of availableAddons">
+                            <input type="checkbox" class="form-check-input" [id]="'bulk-service-' + service.id"
+                                [checked]="isBulkServiceSelected(service.id)"
+                                (change)="toggleBulkServiceSelection(service.id)">
+                            <label class="form-check-label" [for]="'bulk-service-' + service.id">
+                                <div class="d-flex justify-content-between align-items-center w-100">
+                                    <div>
+                                        <div class="d-flex align-items-center">
+                                            <i
+                                                class="{{getCategoryIcon(service.category || 'custom')}} me-2 text-muted"></i>
+                                            <div>
+                                                <div class="fw-medium">{{ service.name }}</div>
+                                                <small class="text-muted">{{ service.description }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-medium text-primary">{{ formatCurrency(service.monthlyPrice)
+                                            }}</div>
+                                        <small class="text-muted">/month</small>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <small class="text-muted">{{ bulkSelectedServices.length }} services selected</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operation Summary -->
+        <div class="card mt-3" *ngIf="bulkSelectedCompanies.length > 0 && bulkSelectedServices.length > 0">
+            <div class="card-body">
+                <h6 class="card-title">Operation Summary</h6>
+                <p class="mb-2">
+                    <strong>{{ bulkOperationType === 'add' ? 'Add' : 'Remove' }}</strong>
+                    {{ bulkSelectedServices.length }} service(s)
+                    {{ bulkOperationType === 'add' ? 'to' : 'from' }}
+                    {{ bulkSelectedCompanies.length }} company(ies)
+                </p>
+                <div class="alert alert-info" *ngIf="bulkOperationType === 'add'">
+                    <i class="fa fa-info-circle me-2"></i>
+                    This will create new service assignments for the selected companies. Existing services will not
+                    be affected.
+                </div>
+                <div class="alert alert-warning" *ngIf="bulkOperationType === 'remove'">
+                    <i class="fa fa-exclamation-triangle me-2"></i>
+                    This will remove the selected services from all selected companies. This action cannot be
+                    undone.
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer d-flex gap-2">
+            <button type="button" class="btn btn-secondary flex-grow-1" (click)="closeBulkServiceModal()">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-primary flex-grow-1"
+                [disabled]="bulkOperationLoading || bulkSelectedCompanies.length === 0 || bulkSelectedServices.length === 0"
+                (click)="executeBulkServiceOperation()">
+                <i class="fa fa-layer-group me-1" *ngIf="!bulkOperationLoading"></i>
+                <i class="fa fa-spinner fa-spin me-1" *ngIf="bulkOperationLoading"></i>
+                {{ bulkOperationLoading ? 'Processing...' : (bulkOperationType === 'add' ? 'Add Services' : 'Remove
+                Services') }}
+            </button>
+        </div>
+    </div>
+</div>

@@ -2,91 +2,29 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <app-generic-h2-title [title]="'Service Plans Manager'" [icon]="'fa-clipboard-list'"
             [subTitle]="'Create and manage your service plans'"></app-generic-h2-title>
-        <button type="button" class="admin-tab bg-blue my-auto" (click)="openServicePlanModal()">
-            <i class="fa fa-plus-circle me-1"></i>
-            Add Service Plan
-        </button>
+        <div class="d-flex gap-2">
+            <button class=" btn btn-outline-secondary" [class.bg-secondary-subtle]="showingArchivedPlans"
+                (click)="toggleArchivedPlans()">
+                <i class="fa" [ngClass]="showingArchivedPlans ? 'fa-eye-slash' : 'fa-eye'"></i>
+                {{ toggleButtonText }}
+            </button>
+            <app-generic-button [action]="openServicePlanModal" [icon]="'fa fa-plus-circle'"
+                [title]="'Add Service Plan'"></app-generic-button>
+        </div>
     </div>
 
     <!-- Service Plans Grid -->
-    <div class="row" *ngIf="servicePlans.length > 0">
-        <div class="col-lg-4 col-md-6 mb-4" *ngFor="let plan of servicePlans">
-            <div class="service-plan-card h-100 stat-card" [ngClass]="{'inactive': plan.status === 'Inactive'}">
-                <div class="card-header d-flex justify-content-between align-items-start">
-                    <div>
-                        <h4 class="card-title mb-1">{{ plan.name }}</h4>
-                        <span class="badge" [class]="plan.isPopular ? 'bg-warning' : 'bg-secondary'">
-                            {{ plan.isPopular ? 'Popular' : 'Standard' }}
-                        </span>
-                    </div>
-                    <div class="action-buttons d-flex gap-2">
-                        <button class="btn btn-sm btn-primary" (click)="openServicePlanModal(plan)" title="Edit Plan">
-                            <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm" [class]="plan.status === 'Active' ? 'btn-warning' : 'btn-success'"
-                            (click)="toggleServicePlanStatus(plan)"
-                            [title]="plan.status === 'Active' ? 'Pause Plan' : 'Activate Plan'">
-                            <i class="fa" [ngClass]="plan.status === 'Active' ? 'fa-pause' : 'fa-play'"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" (click)="confirmDeleteServicePlan(plan)"
-                            title="Delete Plan">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="pricing mb-3">
-                        <div class="monthly-price">
-                            <strong>{{ formatCurrency(plan.monthlyPrice) }}</strong>/month
-                        </div>
-                    </div>
-
-                    <p class="description text-muted mb-3">{{ plan.description }}</p>
-
-                    <div class="features mb-3">
-                        <h6>Features:</h6>
-                        <ul class="list-unstyled">
-                            <li class="mb-1" *ngFor="let feature of plan.features">
-                                <i class="fa fa-check-circle-fill text-success me-2"></i>
-                                {{ feature }}
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card-stats">
-                    <div class="stats row g-3">
-                        <div class="col-6">
-                            <div class="stat-item">
-                                <div class="stat-value">{{ plan.totalSubscriptions || 0 }}</div>
-                                <div class="stat-label">Subscriptions</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-item">
-                                <div class="stat-value">{{ formatCurrency(plan.monthlyRevenue || 0) }}</div>
-                                <div class="stat-label">Revenue</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="status" [class]="getStatusColor(plan.status)">
-                            <i [class]="getStatusIcon(plan.status)"></i>
-                            {{ plan.status }}
-                        </span>
-                        <small class="text-muted">Updated: {{ plan.lastModified }}</small>
-                    </div>
-                </div>
-            </div>
+    <div class="row" *ngIf="oneTimeProducts.length > 0">
+        <div class="col-lg-4 col-md-6 mb-4" *ngFor="let plan of filteredServicePlans">
+            <app-subscription-card class="w-100" [product]="plan" [cardType]="'onetime'" [showActions]="true"
+                [showEdit]="true" [showDelete]="false" [customActions]="getServicePlanActions(plan)"
+                (editClicked)="openServicePlanModal(plan)" (customActionClicked)="onCustomAction($event)">
+            </app-subscription-card>
         </div>
     </div>
 
     <!-- Empty State -->
-    <div class="empty-state text-center py-5" *ngIf="servicePlans.length === 0">
+    <div class="empty-state text-center py-5" *ngIf="filteredServicePlans.length === 0">
         <i class="fa fa-journals display-1 text-muted mb-3"></i>
         <h3 class="text-muted mb-3">No Service Plans Yet</h3>
         <p class="text-muted mb-4">Create your first service plan to get started with managing your pricing options.</p>
@@ -96,125 +34,188 @@
         </button>
     </div>
 
-    <!-- Service Plan Modal -->
-    <div class="modal fade" [class.show]="showServicePlanModal"
-        [style.display]="showServicePlanModal ? 'block' : 'none'" tabindex="-1" *ngIf="showServicePlanModal">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        {{ selectedServicePlan?.id ? 'Edit Service Plan' : 'Create New Service Plan' }}
-                    </h5>
-                    <button type="button" class="btn-close" (click)="closeServicePlanModal()"></button>
+    <!-- Service Plan Modal - Platform Styled -->
+    <div class="modal-backdrop" *ngIf="showServicePlanModal" (click)="closeServicePlanModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-clipboard-list"></i>
+                    {{ selectedServicePlan?.stripeProductId ? 'Edit Service Plan' : 'Create New Service Plan' }}
+                </h2>
+                <button type="button" class="close-btn" (click)="closeServicePlanModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" *ngIf="selectedServicePlan">
+                <!-- Success Message -->
+                <div class="alert alert-success" *ngIf="successMessage">
+                    <i class="fa fa-check-circle"></i>
+                    {{ successMessage }}
                 </div>
 
-                <div class="modal-body" *ngIf="selectedServicePlan">
-                    <form (ngSubmit)="saveServicePlan()">
-                        <div class="row g-3">
-                            <!-- Basic Information -->
-                            <div class="col-md-8">
-                                <label for="planName" class="form-label">Plan Name</label>
-                                <input type="text" id="planName" class="form-control"
-                                    [(ngModel)]="selectedServicePlan.name" name="name" required>
-                            </div>
+                <!-- Error Message -->
+                <div class="alert alert-danger" *ngIf="errorMessage">
+                    <i class="fa fa-exclamation-circle"></i>
+                    {{ errorMessage }}
+                </div>
 
-                            <div class="col-md-4">
-                                <label for="planStatus" class="form-label">Status</label>
-                                <select id="planStatus" class="form-select" [(ngModel)]="selectedServicePlan.status"
-                                    name="status">
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="Deprecated">Deprecated</option>
-                                </select>
-                            </div>
+                <form class="user-form" (ngSubmit)="saveServicePlan()">
+                    <div class="form-row">
+                        <!-- Basic Information -->
+                        <div class="form-group">
+                            <label for="planName" class="form-label">Plan Name</label>
+                            <input type="text" id="planName" class="form-control" [(ngModel)]="selectedServicePlan.name"
+                                name="name" placeholder="Enter service plan name" required>
+                        </div>
 
-                            <div class="col-12">
-                                <label for="planDescription" class="form-label">Description</label>
-                                <textarea id="planDescription" class="form-control" rows="3"
-                                    [(ngModel)]="selectedServicePlan.description" name="description" required>
-                                </textarea>
-                            </div>
+                        <div class="form-group">
+                            <label for="planStatus" class="form-label">Status</label>
+                            <select id="planStatus" class="form-control" [(ngModel)]="selectedServicePlan.status"
+                                name="status">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Deprecated">Deprecated</option>
+                            </select>
+                        </div>
+                    </div>
 
-                            <!-- Pricing -->
-                            <div class="col-md-6">
-                                <label for="monthlyPrice" class="form-label">Monthly Price ($)</label>
-                                <input type="number" id="monthlyPrice" class="form-control" step="0.01" min="0"
-                                    [(ngModel)]="selectedServicePlan.monthlyPrice" name="monthlyPrice" required>
-                            </div>
+                    <div class="form-group">
+                        <label for="planDescription" class="form-label">Description</label>
+                        <textarea id="planDescription" class="form-control" rows="3"
+                            [(ngModel)]="selectedServicePlan.description" name="description"
+                            placeholder="Enter service plan description" required>
+                        </textarea>
+                    </div>
 
-                            <!-- Features -->
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <label class="form-label mb-0 .feature-text">Features</label>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addFeature()">
-                                        <i class="fa fa-plus"></i> Add Feature
+                    <!-- Pricing -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="monthlyPrice" class="form-label">One-time Price ($)</label>
+                            <input type="number" id="monthlyPrice" class="form-control" step="0.01" min="0"
+                                max="999999.99" [(ngModel)]="selectedServicePlan.monthlyPrice" name="monthlyPrice"
+                                placeholder="0.00" required>
+                            <small class="form-text">This will be charged as a one-time payment in Stripe (max
+                                $999,999.99)</small>
+                        </div>
+                        <div class="form-group d-flex">
+                            <div class="my-auto">
+                                <input class="form-check-input me-2" type="checkbox" id="isPopular"
+                                    [(ngModel)]="selectedServicePlan.isPopular" name="isPopular">
+                                <label class="form-check-label" for="isPopular">
+                                    Mark as Popular Plan
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features -->
+                    <div class="form-group">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <label class="form-label mb-0">Features</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" (click)="addFeature()">
+                                <i class="fa fa-plus"></i> Add Feature
+                            </button>
+                        </div>
+
+                        <div class="features-list">
+                            <div class="input-group mb-2"
+                                *ngFor="let feature of selectedServicePlan.features; let i = index; trackBy: trackFeature">
+                                <input type="text" class="form-control" [(ngModel)]="selectedServicePlan.features[i]"
+                                    [name]="'feature' + i" placeholder="Enter feature description">
+                                <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeFeature(i)"
+                                    [disabled]="selectedServicePlan.features.length <= 1">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stripe Integration Section -->
+                    <div class="form-group" *ngIf="selectedServicePlan?.stripeProductId">
+                        <hr>
+                        <h6 class="mb-3">
+                            <i class="fab fa-stripe me-2"></i>Stripe Integration
+                        </h6>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Stripe Product ID</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control"
+                                        [value]="selectedServicePlan.stripeProductId" readonly>
+                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                        title="View in Stripe Dashboard">
+                                        <i class="fas fa-external-link-alt"></i>
                                     </button>
                                 </div>
-
-                                <div class="features-list">
-                                    <div class="input-group mb-2"
-                                        *ngFor="let feature of selectedServicePlan.features; let i = index; trackBy: trackFeature">
-                                        <input type="text" class="form-control"
-                                            [(ngModel)]="selectedServicePlan.features[i]" [name]="'feature' + i"
-                                            placeholder="Enter feature description">
-                                        <button type="button" class="btn btn-outline-danger" (click)="removeFeature(i)"
-                                            [disabled]="selectedServicePlan.features.length <= 1">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
-
-                            <!-- Additional Options -->
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="isPopular"
-                                        [(ngModel)]="selectedServicePlan.isPopular" name="isPopular">
-                                    <label class="form-check-label" for="isPopular">
-                                        Mark as Popular Plan
-                                    </label>
+                            <div class="form-group" *ngIf="selectedServicePlan.stripePriceId">
+                                <label class="form-label">One-time Price ID</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" [value]="selectedServicePlan.stripePriceId"
+                                        readonly>
+                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                        title="View price in Stripe">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeServicePlanModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" (click)="saveServicePlan()">
-                        {{ selectedServicePlan?.id ? 'Update' : 'Create' }} Plan
-                    </button>
-                </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            This service plan is synced with Stripe as a one-time payment product.
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeServicePlanModal()"
+                    [disabled]="syncingWithStripe">
+                    <i class="fa fa-times"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="saveServicePlan()"
+                    [disabled]="syncingWithStripe">
+                    <i class="fa fa-clipboard-list" *ngIf="!syncingWithStripe"></i>
+                    <i class="fa fa-spinner fa-spin" *ngIf="syncingWithStripe"></i>
+                    {{ syncingWithStripe ? 'Syncing with Stripe...' : (selectedServicePlan?.stripeProductId ? 'Update
+                    Plan' : 'Create Plan') }}
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Backdrop -->
-    <div class="modal-backdrop fade" [class.show]="showServicePlanModal" *ngIf="showServicePlanModal"
-        (click)="closeServicePlanModal()"></div>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'"
-        tabindex="-1" *ngIf="showDeleteModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the service plan <strong>"{{ deletingPlan?.name }}"</strong>?</p>
-                    <p class="text-danger">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
-                    <button type="button" class="btn btn-danger" (click)="deleteServicePlan()">Delete Plan</button>
-                </div>
+    <!-- Delete Confirmation Modal - Platform Styled -->
+    <div class="modal-backdrop" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    Confirm Delete
+                </h2>
+                <button type="button" class="close-btn" (click)="closeDeleteModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to archive the service plan <strong>"{{ deletingPlan?.name }}"</strong>?</p>
+                <p class="text-danger">This will archive the product in Stripe and make it inactive. This action can be
+                    reversed.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">
+                    <i class="fa fa-times"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="deleteServicePlan()"
+                    style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white;">
+                    <i class="fa fa-archive"></i>
+                    Archive Plan
+                </button>
             </div>
         </div>
     </div>
-
-    <!-- Delete Modal Backdrop -->
-    <div class="modal-backdrop fade" [class.show]="showDeleteModal" *ngIf="showDeleteModal"
-        (click)="closeDeleteModal()"></div>
 </div>

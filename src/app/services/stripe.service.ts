@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { BehaviorSubject, Observable, throwError, of, from } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, tap } from 'rxjs/operators';
+import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { initializeApp, getApps } from 'firebase/app';
 import { MockStripeFunctionsService } from './mock-stripe-functions.service';
@@ -48,6 +48,22 @@ export class StripeService {
     public currentEnvironment$ = this.currentEnvironmentSubject.asObservable();
 
     private isLiveModeSubject = new BehaviorSubject<boolean>(false);
+
+    /**
+     * Data Loading Strategy: Use this method for billing operations only
+     * For normal operations, load from Firebase directly
+     */
+    public getCustomerWithBillingData(customerId: string): Observable<any> {
+        return this.getCustomer(customerId);
+    }
+
+    /**
+     * Efficient batch loading for admin dashboard
+     * Only fetches Stripe data when specifically needed
+     */
+    public shouldFetchStripeData(operationType: 'view' | 'billing' | 'admin'): boolean {
+        return operationType === 'billing' || operationType === 'admin';
+    }
     public isLiveMode$ = this.isLiveModeSubject.asObservable();
 
     // Observable subjects for billing data
@@ -97,6 +113,18 @@ export class StripeService {
         private http: HttpClient,
         private mockStripeFunctions: MockStripeFunctionsService
     ) {
+        // Connect to Functions emulator only when using mock functions
+        if (!environment.production && !environment.useRealFirebaseFunctions) {
+            try {
+                connectFunctionsEmulator(this.functions, 'localhost', 5001);
+                console.log('Connected to Firebase Functions emulator');
+            } catch (error) {
+                console.log('Functions emulator connection failed (may already be connected):', error);
+            }
+        } else {
+            console.log('Using real Firebase Functions');
+        }
+
         this.initializeStripe(stripeConfig.defaultEnvironment);
     }
 
@@ -133,14 +161,48 @@ export class StripeService {
                     return this.mockStripeFunctions.getStripePrices(data);
                 case 'createStripeProductWithPrice':
                     return this.mockStripeFunctions.createStripeProductWithPrice(data);
+                case 'getAllStripeCustomers':
+                    // Mock implementation for getAllStripeCustomers
+                    return of({
+                        data: [
+                            {
+                                id: 'cus_mock_1',
+                                email: 'demo@example.com',
+                                name: 'Demo Company',
+                                metadata: { companyName: 'Demo Company' },
+                                created: Date.now() / 1000
+                            },
+                            {
+                                id: 'cus_mock_2',
+                                email: 'test@example.com',
+                                name: 'Test Company',
+                                metadata: { companyName: 'Test Company' },
+                                created: Date.now() / 1000
+                            }
+                        ]
+                    });
                 default:
                     return throwError(() => new Error(`Mock function ${functionName} not implemented`));
             }
         } else {
             const func = httpsCallable(this.functions, functionName);
             return from(func(data)).pipe(
+                tap((result) => {
+                    console.log(`✅ Firebase function ${functionName} successful:`, result);
+                }),
+                map((result) => {
+                    // Firebase callable functions wrap the response in a 'data' property
+                    // So if our function returns { success: true, data: [...] }
+                    // Firebase wraps it as { data: { success: true, data: [...] } }
+                    return result.data || result;
+                }),
                 catchError((error: any) => {
-                    console.error(`Firebase function ${functionName} error:`, error);
+                    console.error(`❌ Firebase function ${functionName} error:`, error);
+                    console.error('Error details:', {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details
+                    });
                     return throwError(() => error);
                 })
             );
@@ -726,32 +788,371 @@ export class StripeService {
         return [];
     }
 
-    createCustomer(data: any): Observable<any> {
-        return of({ id: 'cus_placeholder', email: data.email });
+    // Enhanced customer management methods
+    createCustomer(data: {
+        name: string;
+        email: string;
+        phone?: string;
+        companyId?: string;
+        metadata?: Record<string, string>;
+    }): Observable<any> {
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock data for development
+            return of({
+                id: `cus_${Date.now()}`,
+                email: data.email,
+                name: data.name,
+                phone: data.phone,
+                metadata: {
+                    companyId: data.companyId || '',
+                    ...data.metadata
+                },
+                created: Date.now() / 1000,
+                object: 'customer'
+            });
+        }
+
+        const createCustomerFunction = httpsCallable(this.functions, 'createStripeCustomer');
+        return from(createCustomerFunction({
+            ...data,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     getCustomer(customerId: string): Observable<any> {
-        return of({ id: customerId, email: 'placeholder@example.com' });
+        if (!customerId || customerId === 'undefined' || customerId.trim() === '') {
+            console.error('🚫 STRIPE SERVICE DEBUG: Customer ID is required for getCustomer. Received:', customerId);
+            return of(null);
+        }
+
+        console.log('🔍 STRIPE SERVICE DEBUG: getCustomer called', {
+            customerId,
+            environment: environment.production ? 'PRODUCTION' : 'DEVELOPMENT',
+            useRealStripe: environment.useRealStripe,
+            willUseMock: !environment.production && !environment.useRealStripe
+        });
+
+        if (!environment.production && !environment.useRealStripe) {
+            console.log('📝 STRIPE SERVICE DEBUG: Returning mock data');
+            // Return mock data for development
+            return of({
+                id: customerId,
+                email: 'company@example.com',
+                name: 'Company Name',
+                metadata: { companyId: '1' },
+                created: Date.now() / 1000,
+                object: 'customer'
+            });
+        }
+
+        console.log('🚀 STRIPE SERVICE DEBUG: Making real Stripe API call via Firebase Function');
+        const getCustomerFunction = httpsCallable(this.functions, 'getStripeCustomer');
+        return from(getCustomerFunction({
+            customerId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => {
+                console.log('✅ STRIPE SERVICE DEBUG: API call successful', {
+                    customerId,
+                    resultData: result.data,
+                    customerExists: !!result.data
+                });
+                return result.data;
+            }),
+            catchError((error) => {
+                console.error('❌ STRIPE SERVICE DEBUG: API call failed', {
+                    customerId,
+                    error: error.message,
+                    errorCode: error.code,
+                    errorType: error.type,
+                    fullError: error
+                });
+                return this.handleError(error);
+            })
+        );
+    }
+
+    getAllCustomers(limit: number = 100, startingAfter?: string): Observable<any[]> {
+        console.log('🔍 STRIPE SERVICE DEBUG: getAllCustomers called', {
+            limit,
+            startingAfter,
+            environment: environment.production ? 'production' : 'development',
+            useRealStripe: environment.useRealStripe
+        });
+
+        if (!environment.useRealStripe) {
+            // Return mock data for development
+            const mockCustomers = [
+                {
+                    id: 'cus_mock_1',
+                    email: 'test1@example.com',
+                    name: 'Test Customer 1',
+                    created: Math.floor(Date.now() / 1000) - 86400,
+                    description: 'Mock customer for development'
+                },
+                {
+                    id: 'cus_mock_2',
+                    email: 'test2@example.com',
+                    name: 'Test Customer 2',
+                    created: Math.floor(Date.now() / 1000) - 172800,
+                    description: 'Another mock customer'
+                }
+            ];
+            console.log('🔍 STRIPE SERVICE DEBUG: Returning mock customers', mockCustomers);
+            return of(mockCustomers);
+        }
+
+        const getAllCustomersFunction = httpsCallable(this.functions, 'getAllStripeCustomers');
+        return from(getAllCustomersFunction({
+            limit,
+            startingAfter,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            tap((result: any) => {
+                console.log('🔍 STRIPE SERVICE DEBUG: getAllCustomers API response', {
+                    success: result.data?.success,
+                    customerCount: result.data?.count,
+                    hasMore: result.data?.hasMore
+                });
+            }),
+            map((result: any) => {
+                console.log('✅ STRIPE SERVICE DEBUG: Successfully retrieved customers', {
+                    customerCount: result.data?.data?.length || 0,
+                    customers: result.data?.data
+                });
+                return result.data?.data || [];
+            }),
+            catchError((error) => {
+                console.error('❌ STRIPE SERVICE DEBUG: getAllCustomers failed', {
+                    error: error.message,
+                    errorCode: error.code,
+                    errorType: error.type,
+                    fullError: error
+                });
+                return this.handleError(error);
+            })
+        );
+    }
+
+    updateCustomer(customerId: string, data: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        metadata?: Record<string, string>;
+    }): Observable<any> {
+        if (environment.production === false) {
+            // Return mock data for development
+            return of({
+                id: customerId,
+                ...data,
+                updated: Date.now() / 1000
+            });
+        }
+
+        const updateCustomerFunction = httpsCallable(this.functions, 'updateStripeCustomer');
+        return from(updateCustomerFunction({ customerId, ...data })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
+    }
+
+    deleteCustomer(customerId: string): Observable<any> {
+        if (environment.production === false) {
+            // Return mock success for development
+            return of({ deleted: true, id: customerId });
+        }
+
+        const deleteCustomerFunction = httpsCallable(this.functions, 'deleteStripeCustomer');
+        return from(deleteCustomerFunction({ customerId })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     getSubscriptions(customerId: string): Observable<any[]> {
-        return of([]);
+        if (!customerId || customerId === 'undefined' || customerId.trim() === '') {
+            console.error('🚫 STRIPE SERVICE DEBUG: Customer ID is required for getSubscriptions. Received:', customerId);
+            return of([]);
+        }
+
+        console.log('🔍 STRIPE SERVICE DEBUG: Getting subscriptions for customer:', customerId);
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock subscription data for development
+            return of([
+                {
+                    id: `sub_${Date.now()}`,
+                    customer: customerId,
+                    status: 'active',
+                    current_period_start: Date.now() / 1000,
+                    current_period_end: (Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days
+                    items: {
+                        data: [{
+                            price: {
+                                id: 'price_example',
+                                unit_amount: 7900, // $79.00
+                                currency: 'usd',
+                                recurring: { interval: 'month' }
+                            }
+                        }]
+                    },
+                    metadata: {}
+                }
+            ]);
+        }
+
+        const getSubscriptionsFunction = httpsCallable(this.functions, 'getCustomerSubscriptions');
+        return from(getSubscriptionsFunction({
+            customerId: customerId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => {
+                console.log('🔍 SUBSCRIPTION SERVICE DEBUG: getSubscriptions result:', result);
+                console.log('🔍 SUBSCRIPTION SERVICE DEBUG: result.data:', result.data);
+                console.log('🔍 SUBSCRIPTION SERVICE DEBUG: result.data?.data:', result.data?.data);
+                return result.data?.data || [];
+            }),
+            catchError(this.handleError)
+        );
     }
 
     getPaymentMethods(customerId: string): Observable<any[]> {
-        return of([]);
+        if (!customerId || customerId === 'undefined' || customerId.trim() === '') {
+            console.error('🚫 STRIPE SERVICE DEBUG: Customer ID is required for getPaymentMethods. Received:', customerId);
+            return of([]);
+        }
+
+        console.log('🔍 STRIPE SERVICE DEBUG: Getting payment methods for customer:', customerId);
+
+        const getPaymentMethodsFunction = httpsCallable(this.functions, 'getStripePaymentMethods');
+        return from(getPaymentMethodsFunction({
+            customerId: customerId,
+            environment: this.currentEnvironmentSubject.value
+        })).pipe(
+            map((result: any) => {
+                console.log('Payment methods result:', result);
+                console.log('Result.data:', result?.data);
+                console.log('Result.data.data:', result?.data?.data);
+
+                // Firebase callable functions wrap the response in result.data
+                // Our function returns { data: paymentMethods }, so we need result.data.data
+                const paymentMethods = result?.data?.data || result?.data || [];
+                console.log('Final payment methods array:', paymentMethods);
+
+                return paymentMethods;
+            }),
+            catchError((error) => {
+                console.error('Error getting payment methods:', error);
+                return of([]);
+            })
+        );
     }
 
     getTransactions(customerId: string): Observable<any[]> {
+        if (!customerId || customerId === 'undefined' || customerId.trim() === '') {
+            console.error('🚫 STRIPE SERVICE DEBUG: Customer ID is required for getTransactions. Received:', customerId);
+            return of([]);
+        }
+        
+        console.log('🔍 STRIPE SERVICE DEBUG: Getting transactions for customer:', customerId);
+        // Currently returns empty array - can be implemented later
         return of([]);
     }
 
     getInvoices(customerId: string): Observable<any[]> {
-        return of([]);
+        if (!customerId || customerId === 'undefined' || customerId.trim() === '') {
+            console.error('🚫 STRIPE SERVICE DEBUG: Customer ID is required for getInvoices. Received:', customerId);
+            return of([]);
+        }
+
+        console.log('🔍 STRIPE SERVICE DEBUG: getInvoices called', { customerId });
+
+        const getInvoicesFunction = httpsCallable(this.functions, 'getCustomerInvoices');
+        return from(getInvoicesFunction({
+            customerId: customerId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => {
+                console.log('✅ STRIPE SERVICE DEBUG: getInvoices response', result.data);
+                return Array.isArray(result.data) ? result.data : [];
+            }),
+            catchError(error => {
+                console.error('❌ STRIPE SERVICE DEBUG: getInvoices error', error);
+                return of([]);
+            })
+        );
     }
 
     getBillingAnalytics(customerId: string): Observable<any> {
         return of({});
+    }
+
+    getDefaultPaymentMethod(customerId: string): Observable<any> {
+        console.log('Getting default payment method for customer:', customerId);
+
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock default payment method for development
+            return of({
+                id: `pm_mock_default_${Date.now()}`,
+                type: 'card',
+                card: {
+                    brand: 'visa',
+                    last4: '4242',
+                    exp_month: 12,
+                    exp_year: 2025
+                },
+                customer: customerId,
+                created: Date.now() / 1000,
+                is_default: true
+            });
+        }
+
+        const getDefaultPaymentMethodFunction = httpsCallable(this.functions, 'getDefaultPaymentMethod');
+        return from(getDefaultPaymentMethodFunction({
+            customerId: customerId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => {
+                console.log('🔍 DEFAULT PAYMENT METHOD DEBUG: result:', result);
+                console.log('🔍 DEFAULT PAYMENT METHOD DEBUG: result.data:', result.data);
+                return result.data;
+            }),
+            catchError((error) => {
+                console.error('❌ Error getting default payment method:', error);
+                return of(null); // Return null if no default payment method exists
+            })
+        );
+    }
+
+    hasDefaultPaymentMethod(customerId: string): Observable<boolean> {
+        return this.getDefaultPaymentMethod(customerId).pipe(
+            map((paymentMethod) => !!paymentMethod),
+            catchError(() => of(false))
+        );
+    }
+
+    // Helper method to get customer with their default payment method included
+    getCustomerWithDefaultPaymentMethod(customerId: string): Observable<any> {
+        return this.getCustomer(customerId).pipe(
+            switchMap((customer) => {
+                if (!customer) {
+                    return of(null);
+                }
+
+                return this.getDefaultPaymentMethod(customerId).pipe(
+                    map((defaultPaymentMethod) => ({
+                        ...customer,
+                        defaultPaymentMethod
+                    })),
+                    catchError(() => of({
+                        ...customer,
+                        defaultPaymentMethod: null
+                    }))
+                );
+            })
+        );
     }
 
     createCardElement(): Promise<any> {
@@ -759,35 +1160,203 @@ export class StripeService {
     }
 
     createPaymentMethod(cardElement: any, data: any): Promise<any> {
-        return Promise.resolve({ id: 'pm_placeholder' });
+        // For now, return a placeholder - this needs proper Stripe Elements integration
+        // In production, this would use Stripe.js to create payment methods client-side
+        console.warn('createPaymentMethod is using mock data - implement Stripe Elements integration');
+        return Promise.resolve({ id: 'pm_placeholder_' + Date.now() });
+    }
+
+    createStripePaymentMethod(paymentMethodData: any): Observable<any> {
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock payment method for development
+            return of({
+                id: `pm_mock_${Date.now()}`,
+                type: paymentMethodData.type || 'card',
+                created: Date.now() / 1000,
+                customer: null
+            });
+        }
+
+        const createPaymentMethodFunction = httpsCallable(this.functions, 'createStripePaymentMethod');
+        return from(createPaymentMethodFunction({
+            ...paymentMethodData,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     attachPaymentMethod(paymentMethodId: string, customerId: string): Observable<any> {
-        return of({});
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock response for development
+            return of({
+                id: paymentMethodId,
+                customer: customerId,
+                attached: true
+            });
+        }
+
+        const attachPaymentMethodFunction = httpsCallable(this.functions, 'attachStripePaymentMethod');
+        return from(attachPaymentMethodFunction({
+            paymentMethodId: paymentMethodId,
+            customerId: customerId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     detachPaymentMethod(paymentMethodId: string): Observable<any> {
-        return of({});
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock response for development
+            return of({
+                id: paymentMethodId,
+                detached: true
+            });
+        }
+
+        const detachPaymentMethodFunction = httpsCallable(this.functions, 'detachStripePaymentMethod');
+        return from(detachPaymentMethodFunction({
+            paymentMethodId: paymentMethodId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     setDefaultPaymentMethod(customerId: string, paymentMethodId: string): Observable<any> {
-        return of({});
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock response for development
+            return of({
+                id: customerId,
+                invoice_settings: {
+                    default_payment_method: paymentMethodId
+                }
+            });
+        }
+
+        const setDefaultPaymentMethodFunction = httpsCallable(this.functions, 'setDefaultStripePaymentMethod');
+        return from(setDefaultPaymentMethodFunction({
+            customerId: customerId,
+            paymentMethodId: paymentMethodId,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
-    createSubscription(data: any): Observable<any> {
-        return of({ id: 'sub_placeholder' });
+
+    createSubscription(data: {
+        customerId: string;
+        priceId: string;
+        paymentMethodId?: string;
+        trialPeriodDays?: number;
+        metadata?: Record<string, string>;
+    }): Observable<any> {
+        if (!environment.production && !environment.useRealStripe) {
+            // Return mock subscription for development
+            return of({
+                id: `sub_${Date.now()}`,
+                customer: data.customerId,
+                status: 'active',
+                current_period_start: Date.now() / 1000,
+                current_period_end: (Date.now() / 1000) + (30 * 24 * 60 * 60),
+                items: {
+                    data: [{
+                        price: {
+                            id: data.priceId,
+                            unit_amount: 7900,
+                            currency: 'usd',
+                            recurring: { interval: 'month' }
+                        }
+                    }]
+                },
+                metadata: data.metadata || {}
+            });
+        }
+
+        const createSubscriptionFunction = httpsCallable(this.functions, 'createStripeSubscription');
+        return from(createSubscriptionFunction({
+            ...data,
+            environment: environment.useRealStripe ? 'live' : 'test'
+        })).pipe(
+            map((result: any) => {
+                console.log('=== STRIPE SERVICE DEBUG ===');
+                console.log('Raw Firebase callable result:', result);
+                console.log('result.data:', result.data);
+                console.log('result.data type:', typeof result.data);
+                if (result.data) {
+                    console.log('result.data keys:', Object.keys(result.data));
+                    console.log('result.data.id:', result.data.id);
+                    console.log('result.data stringified:', JSON.stringify(result.data, null, 2));
+                }
+                console.log('=== END STRIPE SERVICE DEBUG ===');
+                return result.data;
+            }),
+            catchError(this.handleError)
+        );
     }
 
-    updateSubscription(subscriptionId: string, data: any): Observable<any> {
-        return of({});
+    updateSubscription(subscriptionId: string, data: {
+        priceId?: string;
+        quantity?: number;
+        metadata?: Record<string, string>;
+        prorationBehavior?: 'create_prorations' | 'none' | 'always_invoice';
+    }): Observable<any> {
+        if (environment.production === false) {
+            // Return mock updated subscription for development
+            return of({
+                id: subscriptionId,
+                ...data,
+                updated: Date.now() / 1000
+            });
+        }
+
+        const updateSubscriptionFunction = httpsCallable(this.functions, 'updateStripeSubscription');
+        return from(updateSubscriptionFunction({ subscriptionId, ...data })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
-    cancelSubscription(subscriptionId: string, atPeriodEnd: boolean): Observable<any> {
-        return of({});
+    cancelSubscription(subscriptionId: string, atPeriodEnd: boolean = true): Observable<any> {
+        if (environment.production === false) {
+            // Return mock cancelled subscription for development
+            return of({
+                id: subscriptionId,
+                status: atPeriodEnd ? 'active' : 'canceled',
+                cancel_at_period_end: atPeriodEnd,
+                canceled_at: atPeriodEnd ? null : Date.now() / 1000
+            });
+        }
+
+        const cancelSubscriptionFunction = httpsCallable(this.functions, 'cancelStripeSubscription');
+        return from(cancelSubscriptionFunction({ subscriptionId, atPeriodEnd })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     reactivateSubscription(subscriptionId: string): Observable<any> {
-        return of({});
+        if (environment.production === false) {
+            // Return mock reactivated subscription for development
+            return of({
+                id: subscriptionId,
+                status: 'active',
+                cancel_at_period_end: false,
+                canceled_at: null
+            });
+        }
+
+        const reactivateSubscriptionFunction = httpsCallable(this.functions, 'reactivateStripeSubscription');
+        return from(reactivateSubscriptionFunction({ subscriptionId })).pipe(
+            map((result: any) => result.data),
+            catchError(this.handleError)
+        );
     }
 
     downloadInvoice(invoiceId: string): Observable<Blob> {
@@ -861,6 +1430,27 @@ export class StripeService {
             return error.message || 'A payment error occurred';
         }
         return error.message || 'An unexpected error occurred';
+    }
+
+    // Get all Stripe customers with pagination
+    getAllStripeCustomers(limit: number = 100, startingAfter?: string): Observable<any> {
+        const functionName = 'getAllStripeCustomers';
+        const data: any = { limit };
+
+        // Only include startingAfter if it has a value
+        if (startingAfter && startingAfter.trim() !== '') {
+            data.startingAfter = startingAfter;
+        }
+
+        return this.callFunction(functionName, data);
+    }
+
+    // Search Stripe customers by email or name
+    searchStripeCustomers(query: string, limit: number = 50): Observable<any> {
+        const functionName = 'searchStripeCustomers';
+        const data = { query, limit };
+
+        return this.callFunction(functionName, data);
     }
 
     // Basic error handling

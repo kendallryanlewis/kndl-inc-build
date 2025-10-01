@@ -1,450 +1,258 @@
 <div class="subscription-plans-editor">
-    <!-- Development Mode Notice -->
-    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert" *ngIf="isUsingMockData">
-        <i class="fas fa-flask me-2"></i>
-        <div>
-            <strong>Development Mode:</strong> Using mock Stripe data.
-            To connect to real Stripe, set <code>useRealFirebaseFunctions: true</code> in <code>environment.ts</code>.
-        </div>
-    </div>
-
     <div class="d-flex justify-content-between align-items-center mb-4">
         <app-generic-h2-title [title]="'Subscription Plans Manager'" [icon]="'fa fa-cogs'"
-            [subTitle]="'Manage your subscription plans effectively'"></app-generic-h2-title>
+            [subTitle]="'Manage your subscription plans effectively'">
+        </app-generic-h2-title>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" (click)="toggleSyncSection()">
-                <i class="fa" [ngClass]="showSyncSection ? 'fa-eye-slash' : 'fa-eye'"></i>
-                {{ showSyncSection ? 'Hide' : 'Show' }} Sync
+            <button class="btn btn-outline-secondary" (click)="toggleArchivedPlans()">
+                <i class="fa" [ngClass]="showingArchivedPlans ? 'fa-eye-slash' : 'fa-eye'"></i>
+                {{ toggleButtonText }}
             </button>
-            <app-generic-button [action]="openPlanModal" [title]="'Add Subscription Plan'"
-                [icon]="'plus-circle'"></app-generic-button>
+            <app-generic-button [action]="openSubscriptionModal" [icon]="'fa fa-plus-circle'"
+                [title]="'Add Subscription Plan'">
+            </app-generic-button>
         </div>
     </div>
 
-    <!-- Stripe Integration Status -->
-    <div class="stripe-sync-section mb-4" *ngIf="showSyncSection">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="fab fa-stripe me-2"></i>
-                    <strong>Stripe Integration</strong>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-light text-primary">
-                        {{ stripeService.isLiveMode() ? 'LIVE' : 'TEST' }} Mode
-                    </span>
-                    <button class="btn btn-light btn-sm" (click)="syncAllPlansWithStripe()"
-                        [disabled]="syncingWithStripe">
-                        <i class="fas fa-sync" [class.fa-spin]="syncingWithStripe"></i>
-                        {{ syncingWithStripe ? 'Syncing...' : 'Sync All' }}
-                    </button>
-                </div>
-            </div>
-            <div class="card-body py-2">
-                <div class="row text-center">
-                    <div class="col-4">
-                        <small class="text-muted">Stripe Products</small>
-                        <div class="fw-bold">{{ stripeProducts.length }}</div>
-                    </div>
-                    <div class="col-4">
-                        <small class="text-muted">Active Prices</small>
-                        <div class="fw-bold">{{ getActivePricesCount() }}</div>
-                    </div>
-                    <div class="col-4">
-                        <small class="text-muted">Synced Plans</small>
-                        <div class="fw-bold text-success">
-                            {{ getSyncedPlansCount() }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Success/Error Messages -->
+    <div class="alert alert-success" *ngIf="successMessage && !showSubscriptionModal">
+        <i class="fa fa-check-circle me-2"></i>
+        {{ successMessage }}
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMessage && !showSubscriptionModal">
+        <i class="fa fa-exclamation-circle me-2"></i>
+        {{ errorMessage }}
     </div>
 
     <!-- Loading State -->
-    <div class="text-center py-5" *ngIf="isLoadingPlans">
-        <div class="spinner-border text-primary me-3" role="status"></div>
-        <h5 class="text-muted">Loading Subscription Plans from Stripe...</h5>
-        <p class="text-muted">Please wait while we fetch your plans.</p>
+    <div *ngIf="isLoading" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading subscription plans...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading subscription plans...</p>
     </div>
 
-    <!-- Plans Grid -->
-    <div class="row" *ngIf="subscriptionPlans.length > 0 && !isLoadingPlans">
-        <div class="col-lg-4 col-md-6 mb-4" *ngFor="let plan of subscriptionPlans">
-            <div class="subscription-plan-card h-100 stat-card" [ngClass]="{'inactive': plan.status === 'Inactive'}">
-                <div class="card-header d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="plan-details mb-3">
-                            <p class="" *ngIf="plan.maxUsers">
-                                <i class="fa fa-people me-2"></i>
-                                Up to {{ plan.maxUsers }} users
-                            </p>
-                            <p class="" *ngIf="plan.storageLimit">
-                                <i class="fa fa-hdd me-2"></i>
-                                {{ plan.storageLimit }} storage
-                            </p>
-                            <p class="">
-                                <i [class]="getSupportLevelIcon(plan.supportLevel)" class="me-2 fa"></i>
-                                {{ plan.supportLevel }} support
-                            </p>
-                            <p class="" *ngIf="plan.trialDays">
-                                <i class="fa fa-calendar-check me-2"></i>
-                                {{ plan.trialDays }}-day trial
-                            </p>
-                        </div>
-                        <div class="d-flex gap-1 mb-2">
-                            <span class="badge" [class]="getCategoryClass(plan.category)">{{ plan.category }}</span>
-                            <span class="badge ms-1" [class]="plan.isPopular ? 'bg-warning text-dark' : 'bg-secondary'"
-                                *ngIf="plan.isPopular || !plan.isPopular">
-                                {{ plan.isPopular ? 'Popular' : 'Standard' }}
-                            </span>
-                            <!-- Stripe sync status badge - all plans are now synced -->
-                            <span class="badge bg-success">
-                                <i class="fab fa-stripe me-1"></i>Synced
-                            </span>
-                        </div>
-                    </div>
-                    <div class="action-buttons d-flex flex-column gap-1">
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-primary" (click)="openPlanModal(plan)" title="Edit Plan">
-                                <i class="fa fa-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm"
-                                [class]="plan.status === 'Active' ? 'btn-warning' : 'btn-success'"
-                                (click)="togglePlanStatus(plan)"
-                                [title]="plan.status === 'Active' ? 'Pause Plan' : 'Activate Plan'">
-                                <i class="fa" [ngClass]="plan.status === 'Active' ? 'fa-pause' : 'fa-play'"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" (click)="openDeleteModal(plan)"
-                                [disabled]="isDeleting">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <h4 class="card-title mb-1">{{ plan.name }}</h4>
-                    <div class="pricing mb-3">
-                        <div class="monthly-price">
-                            <strong>{{ formatCurrency(plan.monthlyPrice) }}</strong>/month
-                        </div>
-                    </div>
-                    <p class="description text-muted mb-3">{{ plan.description }}</p>
-                    <div class="features mb-3" *ngIf="plan.features.length > 0 && plan.features[0]">
-                        <h6 class="feature-text">Features:</h6>
-                        <ul class="list-unstyled">
-                            <li class="mb-1" *ngFor="let feature of plan.features.slice(0, 3)">
-                                <span *ngIf="feature">
-                                    <i class="fa fa-check-circle-fill text-success me-2"></i>
-                                    {{ feature }}
-                                </span>
-                            </li>
-                            <li *ngIf="plan.features.length > 3" class="text-muted">
-                                +{{ plan.features.length - 3 }} more features
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card-stats" *ngIf="plan.maxUsers || plan.storageLimit">
-                    <div class="stats row text-center">
-                        <div class="col-6" *ngIf="plan.maxUsers">
-                            <div class="stat-item">
-                                <div class="stat-number">{{ plan.maxUsers }}</div>
-                                <div class="stat-label">Max Users</div>
-                            </div>
-                        </div>
-                        <div class="col-6" *ngIf="plan.storageLimit">
-                            <div class="stat-item">
-                                <div class="stat-number">{{ plan.storageLimit }}</div>
-                                <div class="stat-label">Storage</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge" [class]="getStatusBadgeClass(plan.status)">{{ plan.status }}</span>
-                        <small class="text-muted">Updated: {{ formatDate(plan.lastModified) }}</small>
-                    </div>
-
-                    <!-- Stripe details -->
-                    <!-- Stripe details - always show since all plans are in Stripe -->
-                    <div class="stripe-details">
-                        <hr class="my-2">
-                        <div class="small text-muted">
-                            <div class="d-flex justify-content-between">
-                                <span>Stripe Product ID:</span>
-                                <div class="d-flex align-items-center">
-                                    <code class="small">{{ plan.stripeProductId.substring(0, 12) }}...</code>
-                                    <button class="bg-transparent border-0 btn-sm ms-1 p-0 text-black-50"
-                                        (click)="openStripeProduct(plan.stripeProductId!)"
-                                        title="View in Stripe Dashboard">
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between" *ngIf="plan.stripeMonthlyPriceId">
-                                <span>Price ID:</span>
-                                <code class="small">{{ plan.stripeMonthlyPriceId.substring(0, 12) }}...</code>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <span>Last Modified:</span>
-                                <span>{{ formatDate(plan.lastModified) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Subscription Plans Grid -->
+    <div *ngIf="!isLoading" class="row">
+        <div class="col-md-4 mb-4" *ngFor="let plan of filteredSubscriptionPlans">
+            <app-subscription-card [product]="plan" [cardType]="'subscription'" [showActions]="true" [showEdit]="true"
+                [showDelete]="false" [customActions]="getSubscriptionActions(plan)" (editClicked)="onEditPlan(plan)"
+                (customActionClicked)="onCustomAction($event)">
+            </app-subscription-card>
         </div>
     </div>
+
     <!-- Empty State -->
-    <div class="empty-state text-center py-5" *ngIf="subscriptionPlans.length === 0 && !isLoadingPlans">
-        <i class="fa fa-credit-card display-1 text-muted mb-3"></i>
-        <h3 class="text-muted mb-3">No Subscription Plans Yet</h3>
-        <p class="text-muted mb-4">Create your first subscription plan to start offering services to customers.</p>
-        <button type="button" class="btn btn-primary" (click)="openPlanModal()">
-            <i class="fa fa-plus-circle m-auto"></i>
+    <div *ngIf="!isLoading && filteredSubscriptionPlans.length === 0" class="text-center py-5">
+        <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No subscription plans found</h4>
+        <p class="text-muted">Create your first subscription plan to get started.</p>
+        <button type="button" class="btn btn-primary" (click)="openSubscriptionModal()">
+            <i class="fa fa-plus-circle me-2"></i>
             Create First Plan
         </button>
     </div>
 </div>
 
-<!-- Plan Modal -->
-<div class="modal fade" [ngClass]="{'show': showPlanModal, 'd-block': showPlanModal, 'd-none': !showPlanModal}"
-    [style.display]="showPlanModal ? 'block' : 'none'" tabindex="-1" [attr.aria-hidden]="!showPlanModal"
-    *ngIf="showPlanModal">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    {{ selectedPlan?.stripeProductId ? 'Edit Subscription Plan' : 'Create New Subscription Plan' }}
-                </h5>
-                <button type="button" class="btn-close" (click)="closePlanModal()"></button>
+<!-- Subscription Plan Modal -->
+<div class="modal-backdrop" *ngIf="showSubscriptionModal" (click)="closeSubscriptionModal()">
+    <div class="user-modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="fa fa-cogs"></i>
+                {{ selectedPlan?.stripeProductId ? 'Edit Subscription Plan' : 'Create New Subscription Plan' }}
+            </h2>
+            <button type="button" class="close-btn" (click)="closeSubscriptionModal()" aria-label="Close">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body" *ngIf="selectedPlan">
+            <!-- Success/Error Messages -->
+            <div class="alert alert-success" *ngIf="successMessage">
+                <i class="fa fa-check-circle"></i>
+                {{ successMessage }}
+            </div>
+            <div class="alert alert-danger" *ngIf="errorMessage">
+                <i class="fa fa-exclamation-circle"></i>
+                {{ errorMessage }}
             </div>
 
-            <div class="modal-body" *ngIf="selectedPlan">
-                <!-- Success Message -->
-                <div class="alert alert-success alert-dismissible fade show" role="alert" *ngIf="successMessage">
-                    <i class="fas fa-check-circle me-2"></i>
-                    {{ successMessage }}
-                    <button type="button" class="btn-close" (click)="successMessage = null"></button>
+            <form class="user-form" (ngSubmit)="saveSubscription()">
+                <!-- Basic Information -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="planName" class="form-label">Plan Name *</label>
+                        <input type="text" id="planName" class="form-control" [(ngModel)]="selectedPlan.name"
+                            name="name" placeholder="Enter subscription plan name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="planType" class="form-label">Plan Type</label>
+                        <select id="planType" class="form-control" [(ngModel)]="selectedPlan.planType" name="planType">
+                            <option value="Starter">Starter</option>
+                            <option value="Business">Business</option>
+                            <option value="Enterprise">Enterprise</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Error Message -->
-                <div class="alert alert-danger alert-dismissible fade show" role="alert" *ngIf="errorMessage">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    {{ errorMessage }}
-                    <button type="button" class="btn-close" (click)="errorMessage = null"></button>
+                <div class="form-group">
+                    <label for="planDescription" class="form-label">Description *</label>
+                    <textarea id="planDescription" class="form-control" rows="3" [(ngModel)]="selectedPlan.description"
+                        name="description" placeholder="Enter subscription plan description" required>
+                    </textarea>
                 </div>
 
-                <form (ngSubmit)="savePlan()">
-                    <!-- Hidden field to preserve the ID -->
-                    <input type="hidden" [(ngModel)]="selectedPlan.stripeProductId" name="stripeProductId">
+                <!-- Pricing -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="monthlyPrice" class="form-label">Monthly Price ($) *</label>
+                        <input type="number" id="monthlyPrice" class="form-control" step="0.01" min="0" max="999999.99"
+                            [(ngModel)]="selectedPlan.monthlyPrice" name="monthlyPrice" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="yearlyPrice" class="form-label">Yearly Price ($)</label>
+                        <input type="number" id="yearlyPrice" class="form-control" step="0.01" min="0" max="999999.99"
+                            [(ngModel)]="selectedPlan.yearlyPrice" name="yearlyPrice" placeholder="0.00">
+                    </div>
+                </div>
 
-                    <div class="row g-3">
-                        <!-- Basic Information -->
-                        <div class="col-md-8">
-                            <label for="planName" class="form-label">Plan Name</label>
-                            <input type="text" id="planName" class="form-control" [(ngModel)]="selectedPlan.name"
-                                name="name" required>
-                        </div>
+                <!-- Plan Details -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxUsers" class="form-label">Max Users</label>
+                        <input type="text" id="maxUsers" class="form-control" [value]="maxUsersDisplay" name="maxUsers"
+                            placeholder="Unlimited" readonly>
+                        <small class="form-text text-muted">All plans include unlimited users</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="supportLevel" class="form-label">Support Level</label>
+                        <select id="supportLevel" class="form-control" [(ngModel)]="selectedPlan.supportLevel"
+                            name="supportLevel">
+                            <option value="Basic">Basic</option>
+                            <option value="Priority">Priority</option>
+                            <option value="Premium">Premium</option>
+                        </select>
+                    </div>
+                </div>
 
-                        <div class="col-md-4">
-                            <label for="planCategory" class="form-label">Category</label>
-                            <select id="planCategory" class="form-select" [(ngModel)]="selectedPlan.category"
-                                name="category">
-                                <option value="Starter">Starter</option>
-                                <option value="Business">Business</option>
-                                <option value="Enterprise">Enterprise</option>
-                            </select>
-                        </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="storageLimit" class="form-label">Storage Limit</label>
+                        <input type="text" id="storageLimit" name="storageLimit" [(ngModel)]="selectedPlan.storageLimit"
+                            placeholder="e.g., 10GB, 100GB, Unlimited" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="trialDays" class="form-label">Trial Days</label>
+                        <input type="number" id="trialDays" name="trialDays" [(ngModel)]="selectedPlan.trialDays"
+                            placeholder="0" class="form-control" min="0" max="365">
+                    </div>
+                </div>
 
-                        <div class="col-12">
-                            <label for="planDescription" class="form-label">Description</label>
-                            <textarea id="planDescription" class="form-control" rows="3"
-                                [(ngModel)]="selectedPlan.description" name="description" required>
-                            </textarea>
-                        </div>
-
-                        <!-- Pricing -->
-                        <div class="col-md-6">
-                            <label for="monthlyPrice" class="form-label">Monthly Price ($)</label>
-                            <input type="number" id="monthlyPrice" class="form-control" step="0.01" min="0"
-                                max="999999.99" [(ngModel)]="selectedPlan.monthlyPrice" name="monthlyPrice" required
-                                title="Maximum price allowed is $999,999.99 (Stripe limit)">
-                            <div class="form-text text-muted">Maximum: $999,999.99</div>
-                        </div>
-
-                        <!-- Plan Details -->
-                        <div class="col-md-4">
-                            <label for="maxUsers" class="form-label">Max Users (optional)</label>
-                            <input type="number" id="maxUsers" class="form-control" min="1"
-                                [(ngModel)]="selectedPlan.maxUsers" name="maxUsers">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="storageLimit" class="form-label">Storage Limit</label>
-                            <input type="text" id="storageLimit" class="form-control"
-                                [(ngModel)]="selectedPlan.storageLimit" name="storageLimit"
-                                placeholder="e.g. 10GB, 1TB">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="trialDays" class="form-label">Trial Days (optional)</label>
-                            <input type="number" id="trialDays" class="form-control" min="0"
-                                [(ngModel)]="selectedPlan.trialDays" name="trialDays">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="supportLevel" class="form-label">Support Level</label>
-                            <select id="supportLevel" class="form-select" [(ngModel)]="selectedPlan.supportLevel"
-                                name="supportLevel">
-                                <option value="Basic">Basic</option>
-                                <option value="Priority">Priority</option>
-                                <option value="Premium">Premium</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="planStatus" class="form-label">Status</label>
-                            <select id="planStatus" class="form-select" [(ngModel)]="selectedPlan.status" name="status">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Deprecated">Deprecated</option>
-                            </select>
-                        </div>
-
-                        <!-- Features -->
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <label class="form-label mb-0">Features</label>
-                                <button type="button" class="btn btn-sm btn-outline-primary" (click)="addFeature()">
-                                    <i class="fa fa-plus"></i> Add Feature
-                                </button>
-                            </div>
-
-                            <div class="features-list">
-                                <div class="input-group mb-2"
-                                    *ngFor="let feature of selectedPlan.features; let i = index; trackBy: trackFeature">
-                                    <input type="text" class="form-control" [(ngModel)]="selectedPlan.features[i]"
-                                        [name]="'feature' + i" placeholder="Enter feature description">
-                                    <button type="button" class="btn btn-outline-danger" (click)="removeFeature(i)"
-                                        [disabled]="selectedPlan.features.length <= 1">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Additional Options -->
-                        <div class="col-12">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="isPopular"
-                                    [(ngModel)]="selectedPlan.isPopular" name="isPopular">
-                                <label class="form-check-label" for="isPopular">
-                                    Mark as Popular Plan
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Stripe Integration Section -->
-                        <div class="col-12" *ngIf="selectedPlan?.stripeProductId">
-                            <hr>
-                            <h6 class="mb-3">
-                                <i class="fab fa-stripe me-2"></i>Stripe Integration
-                            </h6>
-
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Stripe Product ID</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" [value]="selectedPlan.stripeProductId"
-                                            readonly>
-                                        <button class="btn btn-outline-secondary" type="button"
-                                            (click)="openStripeProduct(selectedPlan.stripeProductId!)"
-                                            title="View in Stripe Dashboard">
-                                            <i class="fas fa-external-link-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6" *ngIf="selectedPlan.stripeMonthlyPriceId">
-                                    <label class="form-label">Monthly Price ID</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control"
-                                            [value]="selectedPlan.stripeMonthlyPriceId" readonly>
-                                        <button class="btn btn-outline-secondary" type="button"
-                                            title="View price in Stripe">
-                                            <i class="fas fa-external-link-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="col-12">
-                                    <div class="alert alert-info small">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        This plan is synced with Stripe. Changes will be reflected in your Stripe
-                                        dashboard.
-                                    </div>
-                                </div>
-                            </div>
+                <!-- Features -->
+                <div class="form-group">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="mb-0">Features</label>
+                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="addFeature()">
+                            <i class="fa fa-plus"></i> Add Feature
+                        </button>
+                    </div>
+                    <div class="features-list">
+                        <div class="feature-item d-flex mb-2"
+                            *ngFor="let feature of selectedPlan.features; let i = index; trackBy: trackFeature">
+                            <input type="text" [name]="'feature' + i" [(ngModel)]="selectedPlan.features[i]"
+                                placeholder="Enter feature description" class="form-control me-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFeature(i)"
+                                [disabled]="selectedPlan.features.length <= 1">
+                                <i class="fa fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                </form>
-            </div>
+                </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closePlanModal()"
-                    [disabled]="syncingWithStripe">
-                    Cancel
-                </button>
-                <button type="button" class="btn btn-outline-primary" (click)="savePlan()"
-                    [disabled]="syncingWithStripe">
-                    <i class="fas fa-save me-1" *ngIf="!syncingWithStripe"></i>
-                    <i class="fas fa-spinner fa-spin me-1" *ngIf="syncingWithStripe"></i>
-                    {{ syncingWithStripe ? 'Saving...' : (selectedPlan?.stripeProductId ? 'Update' : 'Create') + ' Plan
-                    Only' }}
-                </button>
-                <button type="button" class="btn btn-primary" (click)="savePlanWithStripeSync()"
-                    [disabled]="syncingWithStripe">
-                    <i class="fas fa-sync me-1" [class.fa-spin]="syncingWithStripe"></i>
-                    {{ syncingWithStripe ? 'Syncing with Stripe...' :
-                    (selectedPlan?.stripeProductId ? 'Update' : 'Create') + ' & Sync with Stripe' }}
-                </button>
-            </div>
+                <!-- Status and Popular -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="planStatus" class="form-label">Status</label>
+                        <select id="planStatus" name="planStatus" [(ngModel)]="selectedPlan.status"
+                            class="form-control">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Deprecated">Deprecated</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="isPopular" name="isPopular"
+                                [(ngModel)]="selectedPlan.isPopular">
+                            <label class="form-check-label" for="isPopular">
+                                Mark as Popular Plan
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stripe Integration Info -->
+                <div class="form-group" *ngIf="selectedPlan?.stripeProductId">
+                    <hr>
+                    <h6 class="mb-3">
+                        <i class="fab fa-stripe me-2"></i>Stripe Integration
+                    </h6>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This plan is synced with Stripe Product ID: <strong>{{selectedPlan.stripeProductId}}</strong>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeSubscriptionModal()"
+                [disabled]="syncingWithStripe">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-primary" (click)="saveSubscription()" [disabled]="syncingWithStripe">
+                <i class="fa fa-spinner fa-spin me-1" *ngIf="syncingWithStripe"></i>
+                {{ syncingWithStripe ? 'Saving...' : (selectedPlan?.stripeProductId ? 'Update Plan' : 'Create Plan') }}
+            </button>
         </div>
     </div>
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal fade" [ngClass]="{'show': showDeleteModal, 'd-block': showDeleteModal, 'd-none': !showDeleteModal}"
-    [style.display]="showDeleteModal ? 'block' : 'none'" tabindex="-1" [attr.aria-hidden]="!showDeleteModal"
-    *ngIf="showDeleteModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+<div class="modal-backdrop" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="user-modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="fa fa-exclamation-triangle text-warning"></i>
+                Confirm Delete
+            </h2>
+            <button type="button" class="close-btn" (click)="closeDeleteModal()" aria-label="Close">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Error Messages in Delete Modal -->
+            <div class="alert alert-danger" *ngIf="errorMessage">
+                <i class="fa fa-exclamation-circle me-2"></i>
+                {{ errorMessage }}
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the subscription plan <strong>"{{ deletingPlan?.name }}"</strong>?
-                </p>
-                <p class="text-danger">This action cannot be undone.</p>
+
+            <p>Are you sure you want to delete the subscription plan <strong>"{{ deletingPlan?.name }}"</strong>?</p>
+            <div class="alert alert-warning">
+                <i class="fa fa-exclamation-triangle me-2"></i>
+                This action cannot be undone. The plan will be permanently removed.
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" (click)="deletePlan()">Delete Plan</button>
-            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="syncingWithStripe">
+                <i class="fa fa-times"></i>
+                Cancel
+            </button>
+            <button type="button" class="btn btn-danger" (click)="deleteSubscription()" [disabled]="syncingWithStripe">
+                <i class="fa" [ngClass]="syncingWithStripe ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                <span class="ms-1">{{ syncingWithStripe ? 'Deleting...' : 'Delete Plan' }}</span>
+            </button>
         </div>
     </div>
 </div>
-
-<!-- Modal Backdrops -->
-<div class="modal-backdrop fade" [ngClass]="{'show': showPlanModal, 'd-block': showPlanModal, 'd-none': !showPlanModal}"
-    *ngIf="showPlanModal" (click)="closePlanModal()"></div>
-<div class="modal-backdrop fade"
-    [ngClass]="{'show': showDeleteModal, 'd-block': showDeleteModal, 'd-none': !showDeleteModal}"
-    *ngIf="showDeleteModal" (click)="closeDeleteModal()"></div>

@@ -106,13 +106,15 @@
     <app-kndl-call-to-action *ngSwitchCase="'Call to Action'" [content]="callToActionData" [editMode]="true"
         (dataChange)="onCallToActionDataChange($event)"></app-kndl-call-to-action>
 
-    <app-subscription-editor *ngSwitchCase="'Subscriptions'"
-        (dataChange)="onSubscriptionDataChange($event)"></app-subscription-editor>
+    <!-- Stripe products -->
+    <app-subscription-editor *ngSwitchCase="'Subscriptions'" (dataChange)="onSubscriptionDataChange($event)"
+        [subscriptionPlans]="subscriptionPlans" [isLoading]="isLoadingStripeProducts"></app-subscription-editor>
 
-    <app-addons-editor *ngSwitchCase="'Add-Ons'" (dataChange)="onAddonEditorDataChange($event)"></app-addons-editor>
+    <app-service-plans-editor *ngSwitchCase="'Service Plans'" (dataChange)="onServicePlansDataChange($event)"
+        [oneTimeProducts]="oneTimeProducts" [isLoading]="isLoadingStripeProducts"></app-service-plans-editor>
 
-    <app-service-plans-editor *ngSwitchCase="'Service Plans'"
-        (dataChange)="onServicePlansDataChange($event)"></app-service-plans-editor>
+    <app-addons-editor *ngSwitchCase="'Add-Ons'" (dataChange)="onAddonDataChange($event)"
+        [addonProducts]="addonProducts" [isLoading]="isLoadingStripeProducts"></app-addons-editor>
 
     <!-- Default case - show Home when subTab is empty, undefined, or doesn't match any case -->
     <ng-container *ngSwitchDefault>

@@ -147,4 +147,110 @@
             }
         }
     }
+
+    // Stripe Products Section Styles
+    .stripe-products-section {
+        .product-stats {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subscription-plan-card {
+            border: 1px solid #e3e6f0;
+            transition: all 0.3s ease;
+
+            &:hover {
+                box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+                transform: translateY(-2px);
+            }
+
+            &.border-warning {
+                border-width: 2px;
+                position: relative;
+
+                &::before {
+                    content: "⭐ Popular";
+                    position: absolute;
+                    top: -10px;
+                    right: 15px;
+                    background: #ffc107;
+                    color: #000;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                }
+            }
+
+            .plan-pricing {
+                .h4 {
+                    color: #5a5c69;
+                    font-weight: 700;
+                }
+            }
+        }
+
+        .addon-card {
+            border: 1px solid #e3e6f0;
+            transition: all 0.3s ease;
+            border-left: 4px solid #36b9cc;
+
+            &:hover {
+                box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+                transform: translateY(-2px);
+            }
+
+            .addon-pricing {
+                .h4 {
+                    color: #36b9cc;
+                    font-weight: 700;
+                }
+            }
+
+            .addon-type {
+                .badge {
+                    font-size: 0.7rem;
+                }
+            }
+        }
+
+        .service-card {
+            border: 1px solid #e3e6f0;
+            transition: all 0.3s ease;
+            border-left: 4px solid #1cc88a;
+
+            &:hover {
+                box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+                transform: translateY(-2px);
+            }
+
+            .service-pricing {
+                .h4 {
+                    color: #1cc88a;
+                    font-weight: 700;
+                }
+            }
+
+            .service-type {
+                .badge {
+                    font-size: 0.7rem;
+                }
+            }
+        }
+
+        .card-footer {
+            font-size: 0.8rem;
+            background-color: #f8f9fc !important;
+
+            small {
+                font-family: 'Courier New', monospace;
+            }
+        }
+
+        // Empty state styling
+        .fa-3x {
+            opacity: 0.3;
+        }
+    }
 }

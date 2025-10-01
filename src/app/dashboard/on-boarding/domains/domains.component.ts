@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { GodaddyDomainService, DomainAvailabilityResult } from '../../../services/godaddy-domain.service';
 import { MultiRegistrarDomainService, MultiRegistrarResult, RegistrarDomainResult } from '../../../services/multi-registrar-domain.service';
 import { ComponentCommunicationService } from '../../../services/component-communication.service';
 
@@ -57,7 +56,6 @@ export class DomainsComponent implements OnInit {
   businessName: string = '';
 
   constructor(
-    private godaddyService: GodaddyDomainService,
     private multiRegistrarService: MultiRegistrarDomainService,
     private communicationService: ComponentCommunicationService
   ) { }
@@ -454,24 +452,6 @@ export class DomainsComponent implements OnInit {
   /**
    * Enhance domain result with additional information
    */
-  private enhanceDomainResult(result: DomainAvailabilityResult): DomainSuggestion {
-    const tld = result.domain.split('.').pop()?.toLowerCase() || '';
-    const domainInfo = this.getDomainInfo(tld);
-
-    return {
-      domain: result.domain,
-      available: result.available,
-      price: result.price || 15.99,
-      currency: result.currency || 'USD',
-      tld: tld,
-      description: domainInfo.description,
-      category: domainInfo.category,
-      renewalPrice: domainInfo.renewalPrice || result.price || 15.99,
-      features: domainInfo.features,
-      purchaseUrl: this.getPurchaseUrl(result.domain),
-      registrars: this.getRegistrarOptions(result.domain, result.price || 15.99)
-    };
-  }
 
   /**
    * Get detailed information about a TLD

@@ -58,6 +58,12 @@ import { AdminTaskComponent } from './dashboard/admin/admin-task/admin-task.comp
 import { AdminWikiComponent } from './dashboard/admin/admin-wiki/admin-wiki.component';
 import { RemoveDashesAndCapitalizePipe } from './pipes/remove-dashes-and-capitalize.pipe';
 import { AdminSitesComponent } from './dashboard/admin/admin-sites/admin-sites.component';
+import { OverviewTabComponent } from './dashboard/admin/admin-sites/overview-tab/overview-tab.component';
+import { BillingTabComponent } from './dashboard/admin/admin-sites/billing-tab/billing-tab.component';
+import { SubscriptionTabComponent } from './dashboard/admin/admin-sites/subscription-tab/subscription-tab.component';
+import { AddonsTabComponent } from './dashboard/admin/admin-sites/addons-tab/addons-tab.component';
+import { SettingsTabComponent } from './dashboard/admin/admin-sites/settings-tab/settings-tab.component';
+
 import './firebase-init';
 import { EditableTextComponent } from './dashboard/admin/components/editable-text.component';
 import { AdminLandingEditorComponent } from "./dashboard/admin/admin-landing-editor/admin-landing-editor.component";
@@ -73,6 +79,7 @@ import { QuillModule } from 'ngx-quill';
 import { EditorModule } from "@progress/kendo-angular-editor";
 import { BillingManagementComponent } from './dashboard/billing-management/billing-management.component';
 import { GenericButtonComponent } from './reusable/generic-button/generic-button.component';
+import { SubscriptionCardComponent } from './reusable/subscription-card/subscription-card.component';
 
 @NgModule({
   declarations: [
@@ -128,6 +135,11 @@ import { GenericButtonComponent } from './reusable/generic-button/generic-button
     AdminWikiComponent,
     RemoveDashesAndCapitalizePipe,
     AdminSitesComponent,
+    OverviewTabComponent,
+    BillingTabComponent,
+    SubscriptionTabComponent,
+    AddonsTabComponent,
+    SettingsTabComponent,
     EditableTextComponent,
     AdminLandingEditorComponent,
     LandingEditorComponent,
@@ -139,7 +151,8 @@ import { GenericButtonComponent } from './reusable/generic-button/generic-button
     AdminWikiNewComponent,
     AdminWikiListComponent,
     BillingManagementComponent,
-    GenericButtonComponent
+    GenericButtonComponent,
+    SubscriptionCardComponent
   ],
   imports: [
     EditorModule,

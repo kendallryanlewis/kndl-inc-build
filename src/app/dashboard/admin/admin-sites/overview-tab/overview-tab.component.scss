@@ -1,0 +1,34 @@
+/* Overview Tab Specific Styles */
+.content-card {
+    border-radius: 6px;
+}
+
+.activity-item {
+    transition: background-color 0.2s ease;
+}
+
+.activity-item:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.metric-item {
+    transition: transform 0.2s ease;
+    border-radius: 4px;
+}
+
+.metric-item:hover {
+    transform: translateY(-2px);
+}
+
+.info-item {
+    transition: background-color 0.2s ease;
+}
+
+.info-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.status-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+}

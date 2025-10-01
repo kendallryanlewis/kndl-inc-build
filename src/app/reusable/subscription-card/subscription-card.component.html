@@ -1,0 +1,106 @@
+<div class="subscription-plan-card h-100 stat-card" [ngClass]="getCardClass()">
+    <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+            <div class="mb-2">
+                <div class="plan-details" *ngFor="let detail of getProductDetails()">
+                    <p class="">
+                        <i class="fa {{ detail.icon }} me-2"></i>
+                        {{ detail.text }}
+                    </p>
+                </div><!-- Stripe sync status badge for products with Stripe integration -->
+                <span class="badge bg-success" *ngIf="hasStripeIntegration()">
+                    <i class="fab fa-stripe me-1"></i>Synced
+                </span>
+            </div>
+            <!--<div class="d-flex gap-1 mb-2">
+                <span class="badge" [class]="getCategoryClass(getProductCategory())">{{ getProductCategory() }}</span>
+                <span class="badge ms-1" [class]="getPopularityClass()" *ngIf="showPopularityBadge()">
+                    {{ getPopularityText() }}
+                </span>
+            </div>-->
+        </div>
+        <div class="action-buttons d-flex flex-column gap-1" *ngIf="showActions">
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-primary" *ngIf="showEdit" (click)="onEdit()"
+                    title="Edit {{ getProductTypeLabel() }}">
+                    <i class="fa fa-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" *ngIf="showDelete" (click)="onDelete()">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <!-- Custom actions -->
+                <button class="btn btn-sm" [class]="action.class" (click)="onCustomAction(action.action)"
+                    [title]="action.label" [disabled]="action.disabled" *ngFor="let action of customActions">
+                    <i class="fa {{ action.icon }}"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <h4 class="card-title mb-1">{{ product.name }}</h4>
+        <div class="pricing mb-3">
+            <div class="monthly-price">
+                <strong>{{ getPriceDisplay() }}</strong>
+            </div>
+        </div>
+        <p class="description text-muted mb-3">{{ product.description }}</p>
+        <div class="features mb-3" *ngIf="getFeatures().length > 0">
+            <h6 class="feature-text">Features:</h6>
+            <ul class="list-unstyled">
+                <li class="mb-1" *ngFor="let feature of getFeatures().slice(0, 3)">
+                    <span *ngIf="feature">
+                        <i class="fa fa-check-circle-fill text-success me-2"></i>
+                        {{ feature }}
+                    </span>
+                </li>
+                <li *ngIf="getFeatures().length > 3" class="text-muted">
+                    +{{ getFeatures().length - 3 }} more features
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card-stats" *ngIf="getProductDetails().length > 0">
+        <div class="stats row text-center">
+            <div class="col" *ngFor="let detail of getProductDetails().slice(0, 2)">
+                <div class="stat-item">
+                    <div class="stat-number">{{ getDetailValue(detail.text) }}</div>
+                    <div class="stat-label">{{ getDetailLabel(detail.text) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-tan" [class]="getStatusBadgeClass(product.status)">{{ product.status }}</span>
+            <small class="text-muted">Updated: {{ formatDate(product.lastModified) }}</small>
+        </div>
+
+        <!-- Stripe details for products with Stripe integration -->
+        <div class="stripe-details" *ngIf="hasStripeIntegration()">
+            <hr class="my-2">
+            <div class="small text-muted">
+                <div class="d-flex justify-content-between">
+                    <span>Stripe Product ID:</span>
+                    <div class="d-flex align-items-center">
+                        <code class="small">{{ getStripeProductId() }}</code>
+                        <button class="bg-transparent border-0 btn-sm ms-1 p-0 text-black-50" (click)="onViewStripe()"
+                            title="View in Stripe Dashboard">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between" *ngIf="getStripePriceId()">
+                    <span>Price ID:</span>
+                    <code class="small">{{ getStripePriceId() }}</code>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Last Modified:</span>
+                    <span>{{ formatDate(product.lastModified) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

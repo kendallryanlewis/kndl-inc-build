@@ -137,8 +137,12 @@ export class BillingManagementComponent implements OnInit, OnDestroy {
         this.stripeService.createCustomer({
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
-            userId: firebaseUser.uid,
-            phone: user.phone || undefined
+            phone: user.phone || undefined,
+            metadata: {
+                userId: firebaseUser.uid,
+                firstName: user.firstName,
+                lastName: user.lastName
+            }
         }).subscribe({
             next: async (customer) => {
                 this.currentCustomer = customer;
@@ -300,8 +304,11 @@ export class BillingManagementComponent implements OnInit, OnDestroy {
                 customerId: this.currentCustomer.id,
                 priceId: this.selectedPackage.stripePriceId,
                 paymentMethodId: defaultPaymentMethod.id,
-                packageType: this.selectedPackage.id,
-                companyId: this.currentUser?.companyId
+                metadata: {
+                    packageType: this.selectedPackage.id,
+                    companyId: this.currentUser?.companyId || '',
+                    packageName: this.selectedPackage.name
+                }
             }).subscribe({
                 next: (subscription) => {
                     this.showSelectPackageModal = false;
