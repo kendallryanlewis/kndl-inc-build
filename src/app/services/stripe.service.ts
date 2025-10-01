@@ -133,6 +133,24 @@ export class StripeService {
         return !environment.production && !environment.useRealFirebaseFunctions;
     }
 
+    // Helper method to get the correct Stripe environment
+    private getStripeEnvironment(): 'test' | 'live' {
+        // Development: Always use test mode even with real Stripe
+        // Production: Use live mode
+        const stripeEnv = environment.production ? 'live' : 'test';
+        
+        // Debug logging to confirm environment
+        console.log('🔧 STRIPE ENVIRONMENT CONFIG:', {
+            production: environment.production,
+            useRealStripe: environment.useRealStripe,
+            useRealFirebaseFunctions: environment.useRealFirebaseFunctions,
+            stripeEnvironment: stripeEnv,
+            willUseMocks: this.useMockFunctions
+        });
+        
+        return stripeEnv;
+    }
+
     // Helper method to call Firebase Functions (real or mock)
     private callFunction(functionName: string, data: any): Observable<any> {
         if (this.useMockFunctions) {
@@ -815,7 +833,7 @@ export class StripeService {
         const createCustomerFunction = httpsCallable(this.functions, 'createStripeCustomer');
         return from(createCustomerFunction({
             ...data,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => result.data),
             catchError(this.handleError)
@@ -852,7 +870,7 @@ export class StripeService {
         const getCustomerFunction = httpsCallable(this.functions, 'getStripeCustomer');
         return from(getCustomerFunction({
             customerId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => {
                 console.log('✅ STRIPE SERVICE DEBUG: API call successful', {
@@ -909,7 +927,7 @@ export class StripeService {
         return from(getAllCustomersFunction({
             limit,
             startingAfter,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             tap((result: any) => {
                 console.log('🔍 STRIPE SERVICE DEBUG: getAllCustomers API response', {
@@ -1006,7 +1024,7 @@ export class StripeService {
         const getSubscriptionsFunction = httpsCallable(this.functions, 'getCustomerSubscriptions');
         return from(getSubscriptionsFunction({
             customerId: customerId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => {
                 console.log('🔍 SUBSCRIPTION SERVICE DEBUG: getSubscriptions result:', result);
@@ -1072,7 +1090,7 @@ export class StripeService {
         const getInvoicesFunction = httpsCallable(this.functions, 'getCustomerInvoices');
         return from(getInvoicesFunction({
             customerId: customerId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => {
                 console.log('✅ STRIPE SERVICE DEBUG: getInvoices response', result.data);
@@ -1112,7 +1130,7 @@ export class StripeService {
         const getDefaultPaymentMethodFunction = httpsCallable(this.functions, 'getDefaultPaymentMethod');
         return from(getDefaultPaymentMethodFunction({
             customerId: customerId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => {
                 console.log('🔍 DEFAULT PAYMENT METHOD DEBUG: result:', result);
@@ -1180,7 +1198,7 @@ export class StripeService {
         const createPaymentMethodFunction = httpsCallable(this.functions, 'createStripePaymentMethod');
         return from(createPaymentMethodFunction({
             ...paymentMethodData,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => result.data),
             catchError(this.handleError)
@@ -1201,7 +1219,7 @@ export class StripeService {
         return from(attachPaymentMethodFunction({
             paymentMethodId: paymentMethodId,
             customerId: customerId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => result.data),
             catchError(this.handleError)
@@ -1220,7 +1238,7 @@ export class StripeService {
         const detachPaymentMethodFunction = httpsCallable(this.functions, 'detachStripePaymentMethod');
         return from(detachPaymentMethodFunction({
             paymentMethodId: paymentMethodId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => result.data),
             catchError(this.handleError)
@@ -1242,7 +1260,7 @@ export class StripeService {
         return from(setDefaultPaymentMethodFunction({
             customerId: customerId,
             paymentMethodId: paymentMethodId,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => result.data),
             catchError(this.handleError)
@@ -1282,7 +1300,7 @@ export class StripeService {
         const createSubscriptionFunction = httpsCallable(this.functions, 'createStripeSubscription');
         return from(createSubscriptionFunction({
             ...data,
-            environment: environment.useRealStripe ? 'live' : 'test'
+            environment: this.getStripeEnvironment()
         })).pipe(
             map((result: any) => {
                 console.log('=== STRIPE SERVICE DEBUG ===');

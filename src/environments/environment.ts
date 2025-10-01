@@ -1,6 +1,6 @@
 export const environment = {
     production: false,
-    useRealFirebaseFunctions: false, // Set to true when Firebase Functions are deployed
-    useRealStripe: false, // Set to true to use real Stripe API in development
+    useRealFirebaseFunctions: true, // Use deployed Firebase Functions (not emulator)
+    useRealStripe: true, // Use real Stripe API in TEST mode for development
 
 };

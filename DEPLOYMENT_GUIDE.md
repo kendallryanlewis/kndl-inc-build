@@ -33,12 +33,32 @@ firebase deploy --only functions:getStripePaymentMethods
 firebase deploy --only functions --force
 ```
 
-## 🔧 Recent Critical Fixes Applied
+## 🔧 Environment Configuration
 
-1. **Node.js 22 Upgrade**: Updated `functions/package.json` engines
-2. **Data Handling Fix**: Fixed nested `data.data` structure in Firebase callable functions
-3. **CORS Configuration**: Proper CORS setup for localhost development
-4. **Environment Handling**: Improved environment variable management
+### Development (Real Stripe Test Mode)
+```typescript
+// src/environments/environment.ts
+export const environment = {
+    production: false,
+    useRealFirebaseFunctions: true,  // Use deployed functions (not emulator)
+    useRealStripe: true,            // Use real Stripe in TEST mode
+};
+```
+
+### Production (Real Stripe Live Mode)
+```typescript
+// src/environments/environment.prod.ts
+export const environment = {
+    production: true,
+    useRealFirebaseFunctions: true,  // Use deployed functions
+    useRealStripe: true,            // Use real Stripe in LIVE mode
+};
+```
+
+### Environment Behavior
+- **Development**: Real Firebase functions + Real Stripe **TEST** mode
+- **Production**: Real Firebase functions + Real Stripe **LIVE** mode
+- **No more mock data**: All environments use real Stripe APIs
 
 ## 🛡️ Security Notes
 
