@@ -456,7 +456,7 @@ exports.getCustomerSubscriptions = functions.https.onCall(async (data, context) 
         }
 
         console.log(`🔍 Getting subscriptions for customer ${customerId} in ${environment} mode`);
-        
+
         // Debug API key
         const keyEnv = environment === 'live' ? process.env.STRIPE_LIVE_SECRET_KEY : process.env.STRIPE_TEST_SECRET_KEY;
         console.log(`🔑 Using API key: ${keyEnv?.substring(0, 25)}...`);

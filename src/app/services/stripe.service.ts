@@ -1055,7 +1055,7 @@ export class StripeService {
             console.error('🚫 STRIPE SERVICE DEBUG: Customer ID is required for getTransactions. Received:', customerId);
             return of([]);
         }
-        
+
         console.log('🔍 STRIPE SERVICE DEBUG: Getting transactions for customer:', customerId);
         // Currently returns empty array - can be implemented later
         return of([]);
