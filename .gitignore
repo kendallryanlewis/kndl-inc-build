@@ -7,3 +7,4 @@ tmp/
 temp/
 *.log
 functions/.env
+functions/.env*
