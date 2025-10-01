@@ -6,5 +6,15 @@ node_modules
 tmp/
 temp/
 *.log
+
+# Environment files (secrets)
 functions/.env
-functions/.env*
+functions/.env.local
+functions/.env.production
+functions/.env.development
+# BUT allow .env.example templates
+!functions/.env.example
+
+# Backup directories (local only)
+backups/
+emergency-backup-*/
