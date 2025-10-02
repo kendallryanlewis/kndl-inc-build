@@ -23,7 +23,7 @@
     <app-admin-wiki (childTabs)="setChildTabs($any($event))" [subTab]="subTab"
         (subTabChange)="onSetSubTab($any($event))" *ngSwitchCase="'adminWiki'"></app-admin-wiki>
     <app-admin-stripe class="h-100" (childTabs)="setChildTabs($any($event))" [subTab]="subTab"
-        *ngSwitchCase="'adminStripe'"></app-admin-stripe>
+        (subTabChange)="onSetSubTab($any($event))" *ngSwitchCase="'adminStripe'"></app-admin-stripe>
 
     <!--Admin Landing Editor Options-->
     <app-admin-landing-editor (childTabs)="setChildTabs($any($event))" *ngSwitchCase="'adminLandingEditor'"

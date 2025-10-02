@@ -1,5 +1,5 @@
 <div class="admin-stripe-container">
-    <div class="stripe-header">
+    <!--<div class="stripe-header">
         <h1>Admin Stripe Management</h1>
         <div class="environment-info">
             <span class="env-badge" [class.live-mode]="stripeData.isLiveMode">
@@ -14,7 +14,7 @@
                 Refresh
             </button>
         </div>
-    </div>
+    </div>-->
 
     <div *ngIf="isLoading" class="loading-container">
         <div class="spinner"></div>
@@ -96,69 +96,21 @@
                 </div>
                 <p class="section-description">Manage products with recurring billing and subscription plans</p>
 
-                <div *ngFor="let product of getSubscriptionProducts()" class="product-card subscription-product">
-                    <div class="product-header">
-                        <div class="product-title-section">
-                            <h3>{{ product.name }}</h3>
-                            <span class="product-status" [class.active]="product.active">
-                                {{ product.active ? 'Active' : 'Inactive' }}
-                            </span>
-                        </div>
-                        <div class="product-actions">
-                            <button class="btn-icon btn-edit" (click)="openEditProductModal(product)"
-                                title="Edit Product">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-archive" (click)="archiveProduct(product.id, product.name)"
-                                [disabled]="!product.active || isDeletingProduct" title="Archive Product">
-                                <i class="fas fa-archive"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="product-details">
-                        <p *ngIf="product.description" class="product-description">{{ product.description }}</p>
-
-                        <div class="product-meta">
-                            <span>ID: {{ product.id }}</span>
-                            <span>Created: {{ formatDate(product.created) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="product-prices">
-                        <div class="prices-header">
-                            <h4>Prices:</h4>
-                            <button class="btn-add-price" (click)="openAddPriceModal(product)"
-                                [disabled]="!product.active">
-                                <i class="fas fa-plus"></i> Add Price
-                            </button>
-                        </div>
-                        <div *ngFor="let price of getPricesForProduct(product.id)" class="price-item">
-                            <div class="price-info">
-                                <span class="price-amount">{{ formatCurrency(price.unit_amount, price.currency)
-                                    }}</span>
-                                <span *ngIf="price.recurring" class="price-recurring">
-                                    / {{ price.recurring.interval }}
-                                </span>
-                                <span *ngIf="!price.recurring" class="price-onetime">one-time</span>
-                            </div>
-                            <div class="price-meta">
-                                <span [class.active]="price.active">{{ price.active ? 'Active' : 'Inactive' }}</span>
-                                <span *ngIf="price.nickname">{{ price.nickname }}</span>
-                                <button class="btn-icon-small btn-archive-price" (click)="archivePrice(price.id, price)"
-                                    [disabled]="!price.active" title="Archive Price">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div *ngIf="hasNoPricesForProduct(product.id)" class="no-prices">
-                            No prices found
-                        </div>
+                <!-- Subscription Products Grid -->
+                <div class="row">
+                    <div class="col-md-4 mb-4" *ngFor="let product of getSubscriptionProducts()">
+                        <app-subscription-card [product]="convertToCardProduct(product)" [cardType]="'subscription'"
+                            [showActions]="true" [showEdit]="true" [showDelete]="false"
+                            [customActions]="getProductActions(product)" (editClicked)="openEditProductModal(product)"
+                            (customActionClicked)="onProductAction($event, product)">
+                        </app-subscription-card>
                     </div>
                 </div>
 
-                <div *ngIf="getSubscriptionProducts().length === 0" class="no-data">
-                    No subscription products found
+                <div *ngIf="getSubscriptionProducts().length === 0" class="text-center py-5">
+                    <i class="fas fa-sync-alt fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No subscription products found</h4>
+                    <p class="text-muted">Subscription products will appear here when created.</p>
                 </div>
             </div>
         </div>
@@ -173,65 +125,21 @@
                 </div>
                 <p class="section-description">Manage services and products with one-time pricing</p>
 
-                <div *ngFor="let product of getOneTimeProducts()" class="product-card onetime-product">
-                    <div class="product-header">
-                        <div class="product-title-section">
-                            <h3>{{ product.name }}</h3>
-                            <span class="product-status" [class.active]="product.active">
-                                {{ product.active ? 'Active' : 'Inactive' }}
-                            </span>
-                        </div>
-                        <div class="product-actions">
-                            <button class="btn-icon btn-edit" (click)="openEditProductModal(product)"
-                                title="Edit Product">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-archive" (click)="archiveProduct(product.id, product.name)"
-                                [disabled]="!product.active || isDeletingProduct" title="Archive Product">
-                                <i class="fas fa-archive"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="product-details">
-                        <p *ngIf="product.description" class="product-description">{{ product.description }}</p>
-
-                        <div class="product-meta">
-                            <span>ID: {{ product.id }}</span>
-                            <span>Created: {{ formatDate(product.created) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="product-prices">
-                        <div class="prices-header">
-                            <h4>Prices:</h4>
-                            <button class="btn-add-price" (click)="openAddPriceModal(product)"
-                                [disabled]="!product.active">
-                                <i class="fas fa-plus"></i> Add Price
-                            </button>
-                        </div>
-                        <div *ngFor="let price of getPricesForProduct(product.id)" class="price-item">
-                            <div class="price-info">
-                                <span class="price-amount">{{ formatCurrency(price.unit_amount, price.currency)
-                                    }}</span>
-                                <span *ngIf="!price.recurring" class="price-onetime">one-time</span>
-                            </div>
-                            <div class="price-meta">
-                                <span [class.active]="price.active">{{ price.active ? 'Active' : 'Inactive' }}</span>
-                                <button class="btn-icon-small btn-archive-price" (click)="archivePrice(price.id, price)"
-                                    [disabled]="!price.active" title="Archive Price">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div *ngIf="hasNoPricesForProduct(product.id)" class="no-prices">
-                            No prices found
-                        </div>
+                <!-- Services/One-Time Products Grid -->
+                <div class="row">
+                    <div class="col-md-4 mb-4" *ngFor="let product of getOneTimeProducts()">
+                        <app-subscription-card [product]="convertToCardProduct(product)" [cardType]="'service'"
+                            [showActions]="true" [showEdit]="true" [showDelete]="false"
+                            [customActions]="getProductActions(product)" (editClicked)="openEditProductModal(product)"
+                            (customActionClicked)="onProductAction($event, product)">
+                        </app-subscription-card>
                     </div>
                 </div>
 
-                <div *ngIf="getOneTimeProducts().length === 0" class="no-data">
-                    No service products found
+                <div *ngIf="getOneTimeProducts().length === 0" class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No service products found</h4>
+                    <p class="text-muted">One-time service products will appear here when created.</p>
                 </div>
             </div>
         </div>

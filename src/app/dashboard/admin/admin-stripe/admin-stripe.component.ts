@@ -41,7 +41,7 @@ export class AdminStripeComponent implements OnInit {
     @Input() subTab: string = 'overview';
     @Output() childTabs = new EventEmitter<string[]>();
     @Output() subTabChange = new EventEmitter<string>();
-    sectionIds: string[] = ['overview', 'customers', 'subscriptions', 'services', 'connection'];
+    sectionIds: string[] = ['overview', 'customers', 'subscriptions', 'services', 'connection', '|', 'refresh'];
     private previousSubTab: string = '';
 
     // Loading states
@@ -171,9 +171,13 @@ export class AdminStripeComponent implements OnInit {
     }
 
     ngOnChanges(): void {
-        if (this.subTab !== this.previousSubTab) {
+        if (this.subTab !== this.previousSubTab && this.subTab != 'refresh') {
             this.activeTab = this.subTab as any;
             this.previousSubTab = this.subTab;
+        } else if (this.subTab === 'refresh') {
+            this.refreshData();
+            this.activeTab = this.previousSubTab as any; // Revert back to previous tab
+            this.subTabChange.emit(this.previousSubTab);
         }
     }
 
@@ -1237,5 +1241,71 @@ export class AdminStripeComponent implements OnInit {
                 alert(`✅ Price archived successfully!`);
             }
         });
+    }
+
+    // ==================== SUBSCRIPTION CARD INTEGRATION ====================
+
+    /**
+     * Convert Stripe product to subscription-card compatible format
+     */
+    convertToCardProduct(stripeProduct: any): any {
+        const prices = this.getPricesForProduct(stripeProduct.id);
+        const primaryPrice = prices.find(p => p.active) || prices[0];
+        
+        return {
+            id: stripeProduct.id,
+            stripeProductId: stripeProduct.id,
+            stripePriceId: primaryPrice?.id,
+            name: stripeProduct.name,
+            description: stripeProduct.description || '',
+            price: primaryPrice ? (primaryPrice.unit_amount / 100) : 0,
+            currency: primaryPrice?.currency || 'usd',
+            status: stripeProduct.active ? 'Active' : 'Inactive',
+            lastModified: stripeProduct.created ? new Date(stripeProduct.created * 1000).toISOString() : new Date().toISOString(),
+            features: [],
+            // Include price details for display
+            _prices: prices,
+            _stripeData: stripeProduct
+        };
+    }
+
+    /**
+     * Get custom actions for product cards
+     */
+    getProductActions(product: any): Array<{icon: string, label: string, class: string, action: string, disabled?: boolean}> {
+        const actions = [
+            {
+                icon: 'fa-plus',
+                label: 'Add Price',
+                class: 'btn-success',
+                action: 'add-price',
+                disabled: !product.active
+            },
+            {
+                icon: 'fa-archive',
+                label: 'Archive Product',
+                class: 'btn-warning',
+                action: 'archive',
+                disabled: !product.active || this.isDeletingProduct
+            }
+        ];
+
+        return actions;
+    }
+
+    /**
+     * Handle custom action clicks from subscription cards
+     */
+    onProductAction(event: {action: string, product: any}, product: any) {
+        switch(event.action) {
+            case 'add-price':
+                this.openAddPriceModal(product._stripeData || product);
+                break;
+            case 'archive':
+                this.archiveProduct(product.id, product.name);
+                break;
+            default:
+                console.log('Unknown action:', event.action);
+        }
     }
 }
