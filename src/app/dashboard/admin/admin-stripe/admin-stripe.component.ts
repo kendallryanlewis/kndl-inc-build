@@ -239,7 +239,12 @@ export class AdminStripeComponent implements OnInit {
             timeout(10000),
             catchError(err => {
                 console.error('❌ Connection test failed:', err);
-                this.errors.push(`Connection test failed: ${err.message}`);
+                // Only add error if we don't have cached data
+                if (this.cachedProducts.length === 0) {
+                    this.errors.push(`Connection test failed: ${err.message}`);
+                } else {
+                    console.log('💾 Suppressing connection error - have cached data');
+                }
                 return of({ error: err.message });
             })
         ).subscribe({
@@ -250,7 +255,12 @@ export class AdminStripeComponent implements OnInit {
             },
             error: (error) => {
                 console.error('❌ Connection test error:', error);
-                this.errors.push(`Connection test timeout or error: ${error.message}`);
+                // Only add error if we don't have cached data
+                if (this.cachedProducts.length === 0) {
+                    this.errors.push(`Connection test timeout or error: ${error.message}`);
+                } else {
+                    console.log('💾 Suppressing connection error - have cached data');
+                }
                 this.loadProducts(); // Continue anyway
             }
         });
@@ -262,12 +272,13 @@ export class AdminStripeComponent implements OnInit {
             timeout(30000),
             catchError(err => {
                 console.error('❌ Products load failed:', err);
-                this.errors.push(`Failed to load products: ${err.message}`);
                 // Use cached data if available
                 if (this.cachedProducts.length > 0) {
-                    console.log('💾 Using cached products as fallback');
+                    console.log('💾 Using cached products as fallback (suppressing error)');
                     return of(this.cachedProducts);
                 }
+                // Only add error if we don't have cached data
+                this.errors.push(`Failed to load products: ${err.message}`);
                 return of([]);
             })
         ).subscribe({
@@ -284,11 +295,12 @@ export class AdminStripeComponent implements OnInit {
             },
             error: (error) => {
                 console.error('❌ Products load error:', error);
-                this.errors.push(`Products timeout or error: ${error.message}`);
                 // Use cached data as fallback
                 if (this.cachedProducts.length > 0) {
                     this.stripeData.products = this.cachedProducts;
-                    console.log('💾 Using cached products');
+                    console.log('💾 Using cached products (suppressing error)');
+                } else {
+                    this.errors.push(`Products timeout or error: ${error.message}`);
                 }
                 this.loadPrices();
             }
@@ -301,12 +313,13 @@ export class AdminStripeComponent implements OnInit {
             timeout(30000),
             catchError(err => {
                 console.error('❌ Prices load failed:', err);
-                this.errors.push(`Failed to load prices: ${err.message}`);
                 // Use cached data if available
                 if (this.cachedPrices.length > 0) {
-                    console.log('💾 Using cached prices as fallback');
+                    console.log('💾 Using cached prices as fallback (suppressing error)');
                     return of(this.cachedPrices);
                 }
+                // Only add error if we don't have cached data
+                this.errors.push(`Failed to load prices: ${err.message}`);
                 return of([]);
             })
         ).subscribe({
@@ -323,11 +336,12 @@ export class AdminStripeComponent implements OnInit {
             },
             error: (error) => {
                 console.error('❌ Prices load error:', error);
-                this.errors.push(`Prices timeout or error: ${error.message}`);
                 // Use cached data as fallback
                 if (this.cachedPrices.length > 0) {
                     this.stripeData.prices = this.cachedPrices;
-                    console.log('💾 Using cached prices');
+                    console.log('💾 Using cached prices (suppressing error)');
+                } else {
+                    this.errors.push(`Prices timeout or error: ${error.message}`);
                 }
                 this.loadCustomers();
             }
@@ -340,12 +354,13 @@ export class AdminStripeComponent implements OnInit {
             timeout(15000),
             catchError(err => {
                 console.error('❌ Customers load failed:', err);
-                this.errors.push(`Failed to load customers: ${err.message}`);
                 // Use cached data if available
                 if (this.cachedCustomers.length > 0) {
-                    console.log('💾 Using cached customers as fallback');
+                    console.log('💾 Using cached customers as fallback (suppressing error)');
                     return of(this.cachedCustomers);
                 }
+                // Only add error if we don't have cached data
+                this.errors.push(`Failed to load customers: ${err.message}`);
                 return of([]);
             })
         ).subscribe({
@@ -362,11 +377,12 @@ export class AdminStripeComponent implements OnInit {
             },
             error: (error) => {
                 console.error('❌ Customers load error:', error);
-                this.errors.push(`Customers timeout or error: ${error.message}`);
                 // Use cached data as fallback
                 if (this.cachedCustomers.length > 0) {
                     this.stripeData.customers = this.cachedCustomers;
-                    console.log('💾 Using cached customers');
+                    console.log('💾 Using cached customers (suppressing error)');
+                } else {
+                    this.errors.push(`Customers timeout or error: ${error.message}`);
                 }
                 this.finishLoading();
             }
