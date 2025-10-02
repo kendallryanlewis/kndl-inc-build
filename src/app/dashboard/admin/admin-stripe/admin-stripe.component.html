@@ -230,186 +230,245 @@
                     Loading...
                 </div>
 
-                <div *ngIf="!isLoadingCustomerDetails" class="customer-details-grid">
-                    <!-- Recurring Subscriptions -->
-                    <div class="details-card subscription-card">
-                        <div class="card-header-with-action">
-                            <h3>
-                                <i class="fas fa-sync-alt"></i>
-                                Recurring Subscriptions ({{ getCustomerRecurringSubscriptions().length }})
-                            </h3>
-                            <button class="btn btn-add-small"
-                                (click)="openAddSubscriptionModal(selectedCustomer.customer.id)">
-                                Add
-                            </button>
-                        </div>
-                        <div *ngFor="let sub of getCustomerRecurringSubscriptions()"
-                            class="subscription-item recurring-subscription">
-                            <div class="subscription-header">
-                                <div class="subscription-title">
-                                    <span class="product-name">{{ getSubscriptionProductName(sub) }}</span>
-                                    <span class="subscription-id">{{ sub.id }}</span>
-                                </div>
-                                <span class="badge" [ngClass]="getStatusBadgeClass(sub.status)">{{ sub.status }}</span>
-                            </div>
-                            <div class="subscription-details">
-                                <div *ngIf="sub.current_period_start">
-                                    <strong>Current Period:</strong> {{ formatDate(sub.current_period_start) }} - {{
-                                    formatDate(sub.current_period_end) }}
-                                </div>
-                                <div *ngIf="sub.items?.data?.[0]?.price">
-                                    <strong>Amount:</strong> {{ formatCurrency(sub.items.data[0].price.unit_amount,
-                                    sub.items.data[0].price.currency) }}
-                                    <span *ngIf="sub.items.data[0].price.recurring">
-                                        / {{ sub.items.data[0].price.recurring.interval }}
-                                    </span>
-                                </div>
-                                <div *ngIf="sub.plan?.amount && !sub.items?.data?.[0]?.price">
-                                    <strong>Amount:</strong> {{ formatCurrency(sub.plan.amount, sub.currency || 'usd')
-                                    }}
-                                    <span *ngIf="sub.plan.interval">/ {{ sub.plan.interval }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div *ngIf="getCustomerRecurringSubscriptions().length === 0" class="no-data-small">
-                            No recurring subscriptions
-                        </div>
-                    </div>
-
-                    <!-- One-Time Services -->
-                    <div class="details-card service-card">
-                        <div class="card-header-with-action">
-                            <h3>
-                                <i class="fas fa-shopping-cart"></i>
-                                One-Time Services ({{ getCustomerOneTimeServices().length }})
-                            </h3>
-                        </div>
-                        <div *ngFor="let service of getCustomerOneTimeServices()"
-                            class="subscription-item onetime-service">
-                            <div class="subscription-header">
-                                <div class="subscription-title">
-                                    <span class="product-name">{{ getSubscriptionProductName(service) }}</span>
-                                    <span class="subscription-id">{{ service.id }}</span>
-                                </div>
-                                <span class="badge" [ngClass]="getStatusBadgeClass(service.status)">{{ service.status
-                                    }}</span>
-                            </div>
-                            <div class="subscription-details">
-                                <div *ngIf="service.created">
-                                    <strong>Created:</strong> {{ formatDate(service.created) }}
-                                </div>
-                                <div *ngIf="service.items?.data?.[0]?.price">
-                                    <strong>Amount:</strong> {{ formatCurrency(service.items.data[0].price.unit_amount,
-                                    service.items.data[0].price.currency) }}
-                                    <span class="onetime-badge">one-time</span>
-                                </div>
-                                <div *ngIf="service.plan?.amount && !service.items?.data?.[0]?.price">
-                                    <strong>Amount:</strong> {{ formatCurrency(service.plan.amount, service.currency ||
-                                    'usd') }}
-                                </div>
-                            </div>
-                        </div>
-                        <div *ngIf="getCustomerOneTimeServices().length === 0" class="no-data-small">
-                            No one-time services
-                        </div>
-                    </div>
-
-                    <div class="details-card">
-                        <div class="card-header-with-action">
-                            <h3>Payment Methods ({{ selectedCustomer.paymentMethods.length }})</h3>
-                            <button class="btn btn-add-small"
-                                (click)="openAddPaymentMethodModal(selectedCustomer.customer.id)">
-                                Add
-                            </button>
-                        </div>
-                        <div *ngFor="let pm of selectedCustomer.paymentMethods" class="payment-method-item">
-                            <div class="payment-method-header">
-                                <div class="payment-method-info">
-                                    <span class="payment-type">{{ pm.type }}</span>
-                                    <span *ngIf="pm.card" class="card-brand">{{ pm.card.brand }} {{ pm.card.last4
-                                        }}</span>
-                                    <span
-                                        *ngIf="pm.id === selectedCustomer.customer.invoice_settings?.default_payment_method"
-                                        class="default-badge">
-                                        Default
-                                    </span>
-                                </div>
-                                <button
-                                    *ngIf="pm.id !== selectedCustomer.customer.invoice_settings?.default_payment_method"
-                                    class="btn btn-set-default"
-                                    (click)="setDefaultPaymentMethod(selectedCustomer.customer.id, pm.id)"
-                                    [disabled]="isSettingDefaultPayment">
-                                    Set Default
+                <div *ngIf="!isLoadingCustomerDetails" class="row">
+                    <!-- Main Content Column (col-8) -->
+                    <div class="col-lg-8">
+                        <!-- Recurring Subscriptions -->
+                        <div class="details-card subscription-card mb-4 stat-card">
+                            <div class="card-header-with-action">
+                                <h3>
+                                    <i class="fas fa-sync-alt"></i>
+                                    Recurring Subscriptions ({{ getCustomerRecurringSubscriptions().length }})
+                                </h3>
+                                <button class="btn btn-add-small"
+                                    (click)="openAddSubscriptionModal(selectedCustomer.customer.id)">
+                                    Add
                                 </button>
                             </div>
-                        </div>
-                        <div *ngIf="selectedCustomer.paymentMethods.length === 0" class="no-data-small">
-                            No payment methods
-                        </div>
-                    </div>
-
-                    <div class="details-card invoices-section">
-                        <div class="section-header">
-                            <h3>Invoices ({{ selectedCustomer.invoices.length }})</h3>
-                            <div class="invoice-controls">
-                                <select [(ngModel)]="invoiceFilter" (change)="setInvoiceFilter(invoiceFilter)"
-                                    class="filter-select">
-                                    <option value="all">All</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="unpaid">Unpaid</option>
-                                    <option value="overdue">Overdue</option>
-                                </select>
-                                <select [(ngModel)]="invoiceSortBy" (change)="setInvoiceSort(invoiceSortBy)"
-                                    class="sort-select">
-                                    <option value="date">Date</option>
-                                    <option value="amount">Amount</option>
-                                    <option value="status">Status</option>
-                                </select>
+                            <div *ngFor="let sub of getCustomerRecurringSubscriptions()"
+                                class="subscription-item recurring-subscription">
+                                <div class="subscription-header">
+                                    <div class="subscription-title">
+                                        <span class="product-name">{{ getSubscriptionProductName(sub) }}</span>
+                                        <span class="subscription-id">{{ sub.id }}</span>
+                                    </div>
+                                    <span class="badge" [ngClass]="getStatusBadgeClass(sub.status)">{{ sub.status
+                                        }}</span>
+                                </div>
+                                <div class="subscription-details">
+                                    <div *ngIf="sub.current_period_start">
+                                        <strong>Current Period:</strong> {{ formatDate(sub.current_period_start) }} - {{
+                                        formatDate(sub.current_period_end) }}
+                                    </div>
+                                    <div *ngIf="sub.items?.data?.[0]?.price">
+                                        <strong>Amount:</strong> {{ formatCurrency(sub.items.data[0].price.unit_amount,
+                                        sub.items.data[0].price.currency) }}
+                                        <span *ngIf="sub.items.data[0].price.recurring">
+                                            / {{ sub.items.data[0].price.recurring.interval }}
+                                        </span>
+                                    </div>
+                                    <div *ngIf="sub.plan?.amount && !sub.items?.data?.[0]?.price">
+                                        <strong>Amount:</strong> {{ formatCurrency(sub.plan.amount, sub.currency ||
+                                        'usd')
+                                        }}
+                                        <span *ngIf="sub.plan.interval">/ {{ sub.plan.interval }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div *ngIf="getCustomerRecurringSubscriptions().length === 0" class="no-data-small">
+                                No recurring subscriptions
                             </div>
                         </div>
 
-                        <div class="invoices-list">
-                            <div *ngFor="let invoice of getFilteredInvoices()" class="invoice-item"
-                                [class.overdue]="isInvoiceOverdue(invoice)">
-                                <div class="invoice-main">
-                                    <div class="invoice-header">
-                                        <span class="invoice-icon">{{ getInvoiceStatusIcon(invoice.status) }}</span>
-                                        <div class="invoice-info">
-                                            <strong>{{ invoice.number || invoice.id }}</strong>
-                                            <span>{{ formatDate(invoice.created) }}</span>
-                                        </div>
-                                        <span class="badge" [ngClass]="getStatusBadgeClass(invoice.status)">{{
-                                            invoice.status }}</span>
+                        <!-- One-Time Services -->
+                        <div class="details-card service-card mb-4 stat-card">
+                            <div class="card-header-with-action">
+                                <h3>
+                                    <i class="fas fa-shopping-cart"></i>
+                                    One-Time Services ({{ getCustomerOneTimeServices().length }})
+                                </h3>
+                            </div>
+                            <div *ngFor="let service of getCustomerOneTimeServices()"
+                                class="subscription-item onetime-service">
+                                <div class="subscription-header">
+                                    <div class="subscription-title">
+                                        <span class="product-name">{{ getSubscriptionProductName(service) }}</span>
+                                        <span class="subscription-id">{{ service.id }}</span>
                                     </div>
-                                    <div class="invoice-details">
-                                        <div class="invoice-amount">
-                                            <strong>{{ formatCurrency(invoice.total, invoice.currency) }}</strong>
-                                        </div>
+                                    <span class="badge" [ngClass]="getStatusBadgeClass(service.status)">{{
+                                        service.status
+                                        }}</span>
+                                </div>
+                                <div class="subscription-details">
+                                    <div *ngIf="service.created">
+                                        <strong>Created:</strong> {{ formatDate(service.created) }}
+                                    </div>
+                                    <div *ngIf="service.items?.data?.[0]?.price">
+                                        <strong>Amount:</strong> {{
+                                        formatCurrency(service.items.data[0].price.unit_amount,
+                                        service.items.data[0].price.currency) }}
+                                        <span class="onetime-badge">one-time</span>
+                                    </div>
+                                    <div *ngIf="service.plan?.amount && !service.items?.data?.[0]?.price">
+                                        <strong>Amount:</strong> {{ formatCurrency(service.plan.amount, service.currency
+                                        ||
+                                        'usd') }}
                                     </div>
                                 </div>
-                                <div class="invoice-actions">
-                                    <button class="btn-small" (click)="viewInvoiceDetails(invoice)">Details</button>
-                                    <button class="btn-small" (click)="downloadInvoice(invoice)"
-                                        *ngIf="invoice.invoice_pdf || invoice.hosted_invoice_url">Download</button>
-                                </div>
+                            </div>
+                            <div *ngIf="getCustomerOneTimeServices().length === 0" class="no-data-small">
+                                No one-time services
                             </div>
                         </div>
 
-                        <div *ngIf="getFilteredInvoices().length === 0" class="no-data-small">
-                            No invoices
+                        <!-- Invoices Section -->
+                        <div class="details-card invoices-section stat-card">
+                            <div class="section-header">
+                                <h3>Invoices ({{ selectedCustomer.invoices.length }})</h3>
+                                <div class="invoice-controls">
+                                    <select [(ngModel)]="invoiceFilter" (change)="setInvoiceFilter(invoiceFilter)"
+                                        class="filter-select">
+                                        <option value="all">All</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="unpaid">Unpaid</option>
+                                        <option value="overdue">Overdue</option>
+                                    </select>
+                                    <select [(ngModel)]="invoiceSortBy" (change)="setInvoiceSort(invoiceSortBy)"
+                                        class="sort-select">
+                                        <option value="date">Date</option>
+                                        <option value="amount">Amount</option>
+                                        <option value="status">Status</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="invoices-list">
+                                <div *ngFor="let invoice of getFilteredInvoices()" class="invoice-item"
+                                    [class.overdue]="isInvoiceOverdue(invoice)">
+                                    <div class="invoice-main">
+                                        <div class="invoice-header">
+                                            <span class="invoice-icon">{{ getInvoiceStatusIcon(invoice.status) }}</span>
+                                            <div class="invoice-info">
+                                                <strong>{{ invoice.number || invoice.id }}</strong>
+                                                <span>{{ formatDate(invoice.created) }}</span>
+                                            </div>
+                                            <span class="badge" [ngClass]="getStatusBadgeClass(invoice.status)">{{
+                                                invoice.status }}</span>
+                                        </div>
+                                        <div class="invoice-details">
+                                            <div class="invoice-amount">
+                                                <strong>{{ formatCurrency(invoice.total, invoice.currency) }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="invoice-actions">
+                                        <button class="btn-small" (click)="viewInvoiceDetails(invoice)">Details</button>
+                                        <button class="btn-small" (click)="downloadInvoice(invoice)"
+                                            *ngIf="invoice.invoice_pdf || invoice.hosted_invoice_url">Download</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="getFilteredInvoices().length === 0" class="no-data-small">
+                                No invoices
+                            </div>
                         </div>
                     </div>
 
-                    <div class="details-card">
-                        <h3>Recent Activity ({{ selectedCustomer.recentActivity.length }})</h3>
-                        <div class="activity-timeline">
-                            <div *ngFor="let activity of selectedCustomer.recentActivity.slice(0, 10)"
-                                class="activity-item">
-                                <div class="activity-icon">{{ activity.icon }}</div>
-                                <div class="activity-content">
-                                    <strong>{{ activity.title }}</strong>
-                                    <div>{{ activity.description }}</div>
-                                    <span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
+                    <!-- Sidebar Column (col-4) -->
+                    <div class="col-lg-4">
+                        <!-- Default Credit Card Display -->
+                        <div *ngIf="selectedCustomer.paymentMethods.length > 0"
+                            class="credit-card-display mb-4 stat-card">
+                            <ng-container *ngFor="let pm of selectedCustomer.paymentMethods">
+                                <div *ngIf="pm.id === selectedCustomer.customer.invoice_settings?.default_payment_method"
+                                    class="credit-card" [ngClass]="'card-' + (pm.card?.brand || 'default')">
+                                    <div class="card-chip">
+                                        <i class="fas fa-microchip"></i>
+                                    </div>
+                                    <div class="card-logo">
+                                        <i class="fab" [ngClass]="{
+                                                'fa-cc-visa': pm.card?.brand === 'visa',
+                                                'fa-cc-mastercard': pm.card?.brand === 'mastercard',
+                                                'fa-cc-amex': pm.card?.brand === 'amex',
+                                                'fa-cc-discover': pm.card?.brand === 'discover',
+                                                'fa-credit-card': !pm.card?.brand
+                                            }"></i>
+                                    </div>
+                                    <div class="card-number">
+                                        <span>•••• •••• •••• {{ pm.card?.last4 || '****' }}</span>
+                                    </div>
+                                    <div class="card-details">
+                                        <div class="card-holder">
+                                            <div class="label">Card Holder</div>
+                                            <div class="value">{{ selectedCustomer.customer.name || 'Customer' }}
+                                            </div>
+                                        </div>
+                                        <div class="card-expiry">
+                                            <div class="label">Expires</div>
+                                            <div class="value" *ngIf="pm.card?.exp_month && pm.card?.exp_year">
+                                                {{ pm.card.exp_month | number:'2.0-0' }}/{{ pm.card.exp_year % 100
+                                                }}
+                                            </div>
+                                            <div class="value" *ngIf="!pm.card?.exp_month || !pm.card?.exp_year">
+                                                --/--
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-brand-name">
+                                        {{ pm.card?.brand | uppercase }}
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </div>
+
+                        <!-- Payment Methods -->
+                        <div class="details-card mb-4 stat-card">
+                            <div class="card-header-with-action">
+                                <h3>Payment Methods ({{ selectedCustomer.paymentMethods.length }})</h3>
+                                <button class="btn btn-add-small"
+                                    (click)="openAddPaymentMethodModal(selectedCustomer.customer.id)">
+                                    Add
+                                </button>
+                            </div>
+                            <div *ngFor="let pm of selectedCustomer.paymentMethods" class="payment-method-item">
+                                <div class="payment-method-header">
+                                    <div class="payment-method-info">
+                                        <span class="payment-type">{{ pm.type }}</span>
+                                        <span *ngIf="pm.card" class="card-brand">{{ pm.card.brand }} {{ pm.card.last4
+                                            }}</span>
+                                        <span
+                                            *ngIf="pm.id === selectedCustomer.customer.invoice_settings?.default_payment_method"
+                                            class="default-badge">
+                                            Default
+                                        </span>
+                                    </div>
+                                    <button
+                                        *ngIf="pm.id !== selectedCustomer.customer.invoice_settings?.default_payment_method"
+                                        class="btn btn-set-default"
+                                        (click)="setDefaultPaymentMethod(selectedCustomer.customer.id, pm.id)"
+                                        [disabled]="isSettingDefaultPayment">
+                                        Set Default
+                                    </button>
+                                </div>
+                            </div>
+                            <div *ngIf="selectedCustomer.paymentMethods.length === 0" class="no-data-small">
+                                No payment methods
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="details-card stat-card">
+                            <h3>Recent Activity ({{ selectedCustomer.recentActivity.length }})</h3>
+                            <div class="activity-timeline">
+                                <div *ngFor="let activity of selectedCustomer.recentActivity.slice(0, 10)"
+                                    class="activity-item">
+                                    <div class="activity-icon">{{ activity.icon }}</div>
+                                    <div class="activity-content">
+                                        <strong>{{ activity.title }}</strong>
+                                        <div>{{ activity.description }}</div>
+                                        <span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

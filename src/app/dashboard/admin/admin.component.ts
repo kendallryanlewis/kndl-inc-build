@@ -3,6 +3,9 @@ import { User } from 'src/app/models/User';
 import { filteredSubscriptionPlans, oneTimeAddons } from 'src/app/kndl/addons.data';
 import { CompanyBillingService } from '../../services/company-billing.service';
 import { CompanyBilling } from '../../models/company-billing';
+import { StripeService } from '../../services/stripe.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, timeout } from 'rxjs/operators';
 
 interface MetricCard {
   icon: string;
@@ -232,7 +235,10 @@ export class AdminComponent implements OnInit, AfterViewInit {
   federalFilingStatus: string = 'single';
 
 
-  constructor(private companyBillingService: CompanyBillingService) {
+  constructor(
+    private companyBillingService: CompanyBillingService,
+    private stripeService: StripeService
+  ) {
     this.user = this.getUser() || {} as User;
   }
 
@@ -263,97 +269,244 @@ export class AdminComponent implements OnInit, AfterViewInit {
 
 
   /**
-   * Load all dashboard data from Firebase
+   * Load all dashboard data from Stripe
    */
   async loadDashboardData(): Promise<void> {
     try {
       this.isLoading = true;
+      console.log('💳 Loading Stripe dashboard data...');
 
-      // Load companies and metrics
-      this.companies = await this.companyBillingService.getAllCompanies();
-      this.dashboardMetrics = await this.companyBillingService.getDashboardMetrics();
+      // Load data from Stripe in parallel
+      forkJoin({
+        customers: this.stripeService.getAllCustomers(100).pipe(
+          timeout(30000),
+          catchError((err: any) => {
+            console.error('❌ Failed to load customers:', err);
+            return of([]);
+          })
+        ),
+        products: this.stripeService.getProducts().pipe(
+          timeout(30000),
+          catchError((err: any) => {
+            console.error('❌ Failed to load products:', err);
+            return of([]);
+          })
+        )
+      }).subscribe({
+        next: async (stripeData: any) => {
+          console.log('✅ Stripe data loaded:', stripeData);
 
-      // Load all billing data from the three collections
-      const [pastBillings, futureBillings, overduePayments] = await Promise.all([
-        this.getPastBillings(),
-        this.companyBillingService.getFutureBillings(),
-        this.companyBillingService.getOverduePayments()
-      ]);
+          // Load invoices for customers
+          await this.loadStripeInvoicesForDashboard(stripeData.customers);
 
-      // Store billing data in component properties
-      this.pastBillings = pastBillings;
-      this.futureBillings = futureBillings;
-      this.overduePayments = overduePayments;
+          // Map Stripe customers to companies
+          this.companies = stripeData.customers.map((customer: any) => ({
+            id: customer.id,
+            companyName: customer.name || customer.email || 'Unknown Customer',
+            email: customer.email,
+            phone: customer.phone,
+            billing: {
+              monthlyRate: 0, // Will be calculated from subscriptions
+              subscriptionPlan: 'N/A',
+              status: customer.delinquent ? 'overdue' : 'active'
+            }
+          }));
 
-      // Update recent billings with past billings data
-      this.recentBillings = pastBillings.slice(0, 10).map(billing => ({
-        id: billing.id,
-        customer: billing.customer,
-        amount: billing.amount,
-        date: this.formatDate(billing.date),
-        service: billing.service,
-        status: this.capitalizeFirstLetter(billing.status)
-      }));
+          // Update metrics from Stripe data
+          this.updateMetricsFromStripe(stripeData);
 
-      // Update urgent/overdue billings from Firebase
-      this.urgentBillings = overduePayments.map(overdue => ({
-        id: overdue.id,
-        customer: overdue.customer,
-        amount: overdue.amount,
-        dueDate: this.formatDate(overdue.dueDate),
-        overdueDays: overdue.overdueDays,
-        service: overdue.service,
-        status: this.capitalizeFirstLetter(overdue.status),
-        priority: this.capitalizeFirstLetter(overdue.priority)
-      }));
+          // Hide the create dummy button if we have data
+          if (this.companies.length > 0) {
+            this.showCreateDummyButton = false;
+          }
 
-      // Update monthly revenue with comprehensive billing data
-      this.updateMonthlyRevenueFromBillings(pastBillings, futureBillings, overduePayments);
-
-      // Update card data with comprehensive metrics
-      this.updateCardDataFromBillings(pastBillings, futureBillings, overduePayments);
-
-      // Calculate payment statistics for charts
-      this.calculatePaymentStats();
-
-      // Hide the create dummy button if we have data
-      if (this.companies.length > 0) {
-        this.showCreateDummyButton = false;
-      }
+          this.isLoading = false;
+        },
+        error: (error: any) => {
+          console.error('❌ Error loading Stripe data:', error);
+          this.handleStripeError(error);
+          this.isLoading = false;
+        }
+      });
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-
-      // Handle permissions errors specifically
-      if (error instanceof Error && error.message.includes('permissions')) {
-        console.error('🔒 Firebase Permissions Issue Detected!');
-        console.error('Please follow these steps to fix:');
-        console.error('1. Go to Firebase Console');
-        console.error('2. Select your project');
-        console.error('3. Navigate to Firestore Database > Rules');
-        console.error('4. Update the rules as shown in firestore-rules.txt');
-
-        // Show a user-friendly error message
-        alert(`Firebase Permissions Error: Please update your Firestore security rules to allow access to the companyBillings collection. Check the console for detailed instructions.`);
-      }
-
-      // Set empty data to prevent UI errors
-      this.companies = [];
-      this.recentBillings = [];
-      this.urgentBillings = [];
-      this.dashboardMetrics = {
-        totalRevenue: 0,
-        monthlyRecurringRevenue: 0,
-        totalOverdue: 0,
-        futureRevenue: 0,
-        activeCompanies: 0,
-        totalCompanies: 0
-      };
-      this.updateCardDataFromMetrics();
-
-    } finally {
+      this.handleStripeError(error);
       this.isLoading = false;
     }
+  }
+
+  /**
+   * Load invoices for dashboard from Stripe
+   */
+  private async loadStripeInvoicesForDashboard(customers: any[]): Promise<void> {
+    if (customers.length === 0) {
+      this.pastBillings = [];
+      this.futureBillings = [];
+      this.overduePayments = [];
+      return;
+    }
+
+    // Get invoices for first few customers (to avoid too many API calls)
+    const customerIds = customers.slice(0, 10).map(c => c.id);
+    const allInvoices: any[] = [];
+
+    for (const customerId of customerIds) {
+      try {
+        const invoices = await this.stripeService.getInvoices(customerId).pipe(
+          timeout(15000),
+          catchError((err: any) => {
+            console.error(`❌ Failed to load invoices for ${customerId}:`, err);
+            return of([]);
+          })
+        ).toPromise();
+
+        if (invoices && Array.isArray(invoices)) {
+          allInvoices.push(...invoices);
+        }
+      } catch (error) {
+        console.error(`Error loading invoices for customer ${customerId}:`, error);
+      }
+    }
+
+    console.log('✅ Total invoices loaded:', allInvoices.length);
+
+    // Separate invoices into past, future, and overdue
+    const now = Date.now() / 1000; // Current time in seconds
+
+    // Past billings: paid invoices
+    this.pastBillings = allInvoices
+      .filter(invoice => invoice.status === 'paid')
+      .map(invoice => ({
+        id: invoice.id,
+        customer: this.getCustomerName(invoice.customer, customers),
+        amount: invoice.amount_paid / 100,
+        date: new Date(invoice.created * 1000),
+        service: invoice.description || `Invoice ${invoice.number || invoice.id}`,
+        status: 'completed'
+      }));
+
+    // Future billings: upcoming invoices
+    this.futureBillings = allInvoices
+      .filter(invoice => invoice.status === 'draft' || (invoice.status === 'open' && invoice.due_date && invoice.due_date > now))
+      .map(invoice => ({
+        id: invoice.id,
+        customer: this.getCustomerName(invoice.customer, customers),
+        amount: invoice.amount_due / 100,
+        date: new Date((invoice.due_date || invoice.created) * 1000),
+        service: invoice.description || `Invoice ${invoice.number || invoice.id}`,
+        status: 'pending'
+      }));
+
+    // Overdue payments: unpaid invoices past due date
+    this.overduePayments = allInvoices
+      .filter(invoice => invoice.status === 'open' && invoice.due_date && invoice.due_date < now)
+      .map(invoice => {
+        const dueDate = new Date(invoice.due_date * 1000);
+        const overdueDays = Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        return {
+          id: invoice.id,
+          customer: this.getCustomerName(invoice.customer, customers),
+          amount: invoice.amount_due / 100,
+          dueDate: dueDate,
+          overdueDays: overdueDays,
+          service: invoice.description || `Invoice ${invoice.number || invoice.id}`,
+          status: 'overdue',
+          priority: overdueDays > 30 ? 'high' : overdueDays > 14 ? 'medium' : 'low'
+        };
+      });
+
+    // Update UI components with Stripe data
+    this.updateUIFromStripeData();
+  }
+
+  /**
+   * Get customer name from customer ID
+   */
+  private getCustomerName(customerId: string, customers: any[]): string {
+    const customer = customers.find(c => c.id === customerId);
+    return customer?.name || customer?.email || 'Unknown Customer';
+  }
+
+  /**
+   * Update UI components with Stripe data
+   */
+  private updateUIFromStripeData(): void {
+    // Update recent billings
+    this.recentBillings = this.pastBillings.slice(0, 10).map(billing => ({
+      id: billing.id,
+      customer: billing.customer,
+      amount: billing.amount,
+      date: this.formatDate(billing.date),
+      service: billing.service,
+      status: this.capitalizeFirstLetter(billing.status)
+    }));
+
+    // Update urgent/overdue billings
+    this.urgentBillings = this.overduePayments.map((overdue: any) => ({
+      id: overdue.id,
+      customer: overdue.customer,
+      amount: overdue.amount,
+      dueDate: this.formatDate(overdue.dueDate),
+      overdueDays: overdue.overdueDays,
+      service: overdue.service,
+      status: this.capitalizeFirstLetter(overdue.status),
+      priority: this.capitalizeFirstLetter(overdue.priority)
+    }));
+
+    // Update monthly revenue from invoices
+    this.updateMonthlyRevenueFromBillings(this.pastBillings, this.futureBillings, this.overduePayments);
+
+    // Update card data
+    this.updateCardDataFromBillings(this.pastBillings, this.futureBillings, this.overduePayments);
+
+    // Calculate payment statistics
+    this.calculatePaymentStats();
+  }
+
+  /**
+   * Update dashboard metrics from Stripe data
+   */
+  private updateMetricsFromStripe(stripeData: any): void {
+    console.log('📊 Updating metrics from Stripe data');
+
+    // Calculate metrics from customers, products, and billing data
+    const totalRevenue = this.pastBillings.reduce((sum, b) => sum + b.amount, 0);
+    const totalOverdue = this.overduePayments.reduce((sum, b) => sum + b.amount, 0);
+    const futureRevenue = this.futureBillings.reduce((sum, b) => sum + b.amount, 0);
+
+    this.dashboardMetrics = {
+      totalCustomers: stripeData.customers.length,
+      totalProducts: stripeData.products.length,
+      totalRevenue: totalRevenue,
+      monthlyRecurringRevenue: 0, // Could be calculated from active subscriptions
+      totalOverdue: totalOverdue,
+      futureRevenue: futureRevenue,
+      activeCompanies: stripeData.customers.filter((c: any) => !c.delinquent).length,
+      totalCompanies: stripeData.customers.length
+    };
+  }
+
+  /**
+   * Handle Stripe API errors
+   */
+  private handleStripeError(error: any): void {
+    console.error('Stripe API Error:', error);
+
+    // Set empty data to prevent UI errors
+    this.companies = [];
+    this.recentBillings = [];
+    this.urgentBillings = [];
+    this.dashboardMetrics = {
+      totalRevenue: 0,
+      monthlyRecurringRevenue: 0,
+      totalOverdue: 0,
+      futureRevenue: 0,
+      activeCompanies: 0,
+      totalCompanies: 0
+    };
+    this.updateCardDataFromMetrics();
   }
 
   /**

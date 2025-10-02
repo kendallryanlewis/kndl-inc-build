@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ComponentCommunicationService } from '../../services/component-communication.service';
 import { User, UserPlatform, Company, BillingInfo, AttachedSite } from '../../models/User';
 import { getFirestore, doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { StripeService } from '../../services/stripe.service';
+import { timeout, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 interface CustomerProject {
   id: string;
@@ -82,12 +85,13 @@ export class OverviewComponent implements OnInit {
 
   constructor(
     private communicationService: ComponentCommunicationService,
+    private stripeService: StripeService
   ) { }
 
   ngOnInit() {
     this.loadCustomerData();
     this.getWebsties();
-    this.loadUserBillingData();
+    this.loadStripeInvoiceData();
     this.loadMockPayments();
   }
 
@@ -293,12 +297,124 @@ export class OverviewComponent implements OnInit {
   }
 
   /**
+   * Load invoice data from Stripe API
+   */
+  loadStripeInvoiceData() {
+    console.log('💳 Loading Stripe invoice data...');
+    this.isLoading = true;
+
+    // Load all customers to get their invoices
+    this.stripeService.getAllCustomers(10).pipe(
+      timeout(30000),
+      catchError((err: any) => {
+        console.error('❌ Failed to load Stripe customers:', err);
+        this.loadMockTransfers(); // Fallback to mock data
+        return of([]);
+      })
+    ).subscribe({
+      next: (customers: any[]) => {
+        console.log('✅ Loaded Stripe customers:', customers);
+
+        if (customers && customers.length > 0) {
+          // Load invoices for all customers
+          this.loadCustomerInvoices(customers);
+        } else {
+          console.log('No customers found, using mock data');
+          this.loadMockTransfers();
+          this.isLoading = false;
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error loading customers:', error);
+        this.loadMockTransfers(); // Fallback to mock data
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Load invoices for all customers from Stripe
+   */
+  private loadCustomerInvoices(customers: any[]) {
+    // Get invoices for each customer
+    const customerIds = customers.slice(0, 10); // Limit to first 10 customers for performance
+
+    if (customerIds.length === 0) {
+      this.loadMockTransfers();
+      this.isLoading = false;
+      return;
+    }
+
+    // For now, we'll get invoices for the first customer as a demo
+    // In production, you might want to aggregate across multiple customers
+    const firstCustomer = customerIds[0];
+
+    this.stripeService.getInvoices(firstCustomer.id).pipe(
+      timeout(30000),
+      catchError((err: any) => {
+        console.error('❌ Failed to load invoices:', err);
+        return of([]);
+      })
+    ).subscribe({
+      next: (invoices: any[]) => {
+        console.log('✅ Loaded Stripe invoices:', invoices);
+
+        if (invoices && invoices.length > 0) {
+          this.convertStripeInvoicesToTransfers(invoices, customers);
+        } else {
+          console.log('No invoices found, using mock data');
+          this.loadMockTransfers();
+        }
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('❌ Error loading invoices:', error);
+        this.loadMockTransfers();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Convert Stripe invoices to transfers format for display
+   */
+  private convertStripeInvoicesToTransfers(invoices: any[], customers: any[]) {
+    this.transfers = invoices
+      .filter(invoice => invoice.status === 'paid') // Only show paid invoices
+      .slice(0, 10) // Limit to 10 most recent
+      .map(invoice => {
+        // Find the customer for this invoice
+        const customer = customers.find(c => c.id === invoice.customer);
+        const customerName = customer?.name || customer?.email || 'Unknown Customer';
+
+        // Get payment method info
+        const paymentIntent = invoice.payment_intent;
+        const lastFour = invoice.charge?.payment_method_details?.card?.last4 || '****';
+
+        return {
+          logo: this.getDefaultCompanyLogo(customerName),
+          company: customerName,
+          description: invoice.description || `Invoice ${invoice.number || invoice.id}`,
+          lastFour: lastFour,
+          date: this.formatDate(new Date(invoice.created * 1000)),
+          amount: invoice.amount_paid / 100 // Convert from cents to dollars
+        };
+      });
+
+    console.log('✅ Converted invoices to transfers:', this.transfers);
+
+    // If no transfers were created, fall back to mock data
+    if (this.transfers.length === 0) {
+      this.loadMockTransfers();
+    }
+  }
+
+  /**
    * Refresh billing data - useful for testing and manual refresh
    */
   async refreshBillingData() {
     this.isLoading = true;
-    await this.loadUserBillingData();
-    this.isLoading = false;
+    this.loadStripeInvoiceData();
   }
 
   loadCustomerData() {

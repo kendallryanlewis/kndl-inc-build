@@ -787,6 +787,138 @@
     }
 }
 
+/* Credit Card Display */
+.credit-card-display {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.credit-card {
+    width: 100%;
+    max-width: 380px;
+    height: 220px;
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    // Card brand specific gradients
+    &.card-visa {
+        background: linear-gradient(135deg, #1a1f71 0%, #0f3460 100%);
+    }
+
+    &.card-mastercard {
+        background: linear-gradient(135deg, #eb001b 0%, #f79e1b 100%);
+    }
+
+    &.card-amex {
+        background: linear-gradient(135deg, #006fcf 0%, #00a6ff 100%);
+    }
+
+    &.card-discover {
+        background: linear-gradient(135deg, #ff6000 0%, #ffa040 100%);
+    }
+
+    &.card-default {
+        background: linear-gradient(135deg, #434343 0%, #000000 100%);
+    }
+
+    // Decorative pattern overlay
+    &::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .card-chip {
+        width: 50px;
+        height: 40px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #f5d142 0%, #e6b800 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+        i {
+            font-size: 28px;
+            color: #8b7335;
+        }
+    }
+
+    .card-logo {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        font-size: 48px;
+        opacity: 0.9;
+
+        i {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+    }
+
+    .card-number {
+        font-size: 22px;
+        letter-spacing: 2px;
+        font-weight: 500;
+        margin-bottom: 24px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        font-family: 'Courier New', monospace;
+    }
+
+    .card-details {
+        display: flex;
+        justify-content: space-between;
+        margin-top: auto;
+
+        .card-holder,
+        .card-expiry {
+            .label {
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                opacity: 0.8;
+                margin-bottom: 4px;
+            }
+
+            .value {
+                font-size: 14px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+        }
+    }
+
+    .card-brand-name {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        opacity: 0.7;
+    }
+}
+
 /* Details Card Variants */
 .details-card {
     &.subscription-card {
