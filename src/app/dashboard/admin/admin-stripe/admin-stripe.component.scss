@@ -1,4 +1,5 @@
 /* Admin Stripe Dashboard Styles */
+@import '../../../shared/styles/modal-styles.scss';
 
 .admin-stripe-container {
     padding: 24px;
@@ -297,11 +298,6 @@
 
 /* Recent Activity */
 .recent-activity {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 24px;
-
     h3 {
         margin: 0 0 16px 0;
         color: #1a202c;
@@ -332,7 +328,6 @@
     .customer-info {
         strong {
             display: block;
-            color: #1a202c;
         }
 
         small {
@@ -349,7 +344,8 @@
 }
 
 /* Products */
-.products-section {
+.products-section,
+.customers-section {
 
     &.subscriptions-section,
     &.services-section {
@@ -364,6 +360,79 @@
             line-height: 1.6;
             margin: 0 0 32px 0;
             font-style: italic;
+        }
+    }
+
+    /* Search Bar Styles */
+    .search-bar-container {
+        width: 100%;
+        max-width: 600px;
+
+        &.customers {
+            max-width: 100%;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+
+            .search-icon {
+                position: absolute;
+                left: 16px;
+                color: rgba(212, 165, 116, 0.6);
+                font-size: 16px;
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            .search-input {
+                width: 100%;
+                padding: 12px 45px 12px 45px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                color: var(--text-primary);
+                font-size: 15px;
+                transition: all 0.3s ease;
+
+                &::placeholder {
+                    color: rgba(255, 255, 255, 0.4);
+                }
+
+                &:focus {
+                    outline: none;
+                    background: rgba(255, 255, 255, 0.08);
+                    border-color: rgba(212, 165, 116, 0.5);
+                    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.1);
+                }
+            }
+
+            .clear-search-btn {
+                position: absolute;
+                right: 12px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 50%;
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: rgba(255, 255, 255, 0.6);
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                    color: rgba(255, 255, 255, 0.9);
+                    transform: scale(1.1);
+                }
+
+                i {
+                    font-size: 12px;
+                }
+            }
         }
     }
 
@@ -614,9 +683,7 @@
 
 /* Customer Details */
 .customer-details-section {
-    border-top: 2px solid #e2e8f0;
-    padding-top: 32px;
-    margin-top: 32px;
+    margin-top: 24px;
 }
 
 .details-header {
@@ -1086,7 +1153,6 @@
 
         li {
             margin-bottom: 8px;
-            color: #4a5568;
         }
     }
 }

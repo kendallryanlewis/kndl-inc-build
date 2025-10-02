@@ -7,6 +7,7 @@ import { Component, Input } from '@angular/core';
 })
 export class GenericButtonComponent {
   @Input({ required: true }) action!: () => void;
+  @Input() style: 'primary' | 'secondary' | 'danger' | 'info' = 'primary';
   @Input() title: string = 'Button';
   @Input() icon: string = 'check';
 

@@ -30,6 +30,9 @@
 
     <div *ngIf="!isLoading" class="stripe-content">
         <div *ngIf="activeTab === 'overview'" class="tab-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <app-generic-h2-title [icon]="'fa fa-chart-bar'" [title]="'Stripe Overview'"></app-generic-h2-title>
+            </div>
             <div class="overview-grid">
                 <div class="stat-card">
                     <h3>Total Products</h3>
@@ -49,31 +52,20 @@
                 </div>
 
                 <div class="stat-card">
-                    <h3>Prices</h3>
-                    <div class="stat-number">{{ stripeData.prices.length }}</div>
-                    <div class="stat-detail">Recurring: {{ getRecurringPricesCount() }}</div>
-                </div>
-
-                <div class="stat-card">
                     <h3>Customers</h3>
                     <div class="stat-number">{{ stripeData.customers.length }}</div>
                 </div>
 
-                <div class="stat-card">
-                    <h3>Connection</h3>
-                    <div class="stat-number"
-                        [class.success]="stripeData.connectionStatus && !stripeData.connectionStatus.error">
-                        {{ stripeData.connectionStatus && !stripeData.connectionStatus.error ? 'OK' : 'Error' }}
-                    </div>
-                </div>
             </div>
-
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <app-generic-h2-title [icon]="'fa fa-person-walking-arrow-right'"
+                    [title]="'Recent Customers'"></app-generic-h2-title>
+            </div>
             <div class="recent-activity">
-                <h3>Recent Customers</h3>
                 <div class="customer-list-preview">
-                    <div *ngFor="let customer of stripeData.customers.slice(0, 5)" class="customer-preview-item"
-                        (click)="loadCustomerDetails(customer.id)">
-                        <div class="customer-info">
+                    <div *ngFor="let customer of stripeData.customers.slice(0, 5)"
+                        class="customer-preview-item  stat-card" (click)="loadCustomerDetails(customer.id)">
+                        <div class="customer-info text-start">
                             <strong>{{ customer.name || customer.email || 'Unknown Customer' }}</strong>
                             <small>{{ customer.email }}</small>
                         </div>
@@ -87,18 +79,37 @@
 
         <div *ngIf="activeTab === 'subscriptions'" class="tab-content">
             <div class="products-section subscriptions-section">
-                <div class="section-header">
-                    <h2>Subscription Products</h2>
-                    <button class="btn btn-add-product" (click)="openAddProductModal('subscription')"
-                        [disabled]="isLoading">
-                        <i class="fas fa-plus"></i> Add Subscription Product
-                    </button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <app-generic-h2-title [icon]="'fa fa-sync-alt'"
+                        [title]="'Subscription Products'"></app-generic-h2-title>
+                    <div class="d-flex gap-3">
+                        <app-generic-button [style]="'secondary'"
+                            [title]="showInactiveSubscriptions ? 'Hide Inactive' : 'Show Inactive'"
+                            [action]="toggleInactiveSubscriptions.bind(this)"
+                            [icon]="showInactiveSubscriptions ? 'fa fa-eye-slash' : 'fa fa-eye'"></app-generic-button>
+                        <app-generic-button [title]="'Add Subscription'"
+                            [action]="openAddProductModal.bind(this, 'subscription')"
+                            [icon]="'fa fa-plus'"></app-generic-button>
+                    </div>
                 </div>
                 <p class="section-description">Manage products with recurring billing and subscription plans</p>
 
+                <!-- Search Bar -->
+                <div class="search-bar-container mb-4">
+                    <div class="search-input-wrapper"><i class="fa fa-search search-icon"></i>
+                        <input type="text" class="form-control search-input"
+                            placeholder="Search subscriptions by name, description, or ID..."
+                            [(ngModel)]="subscriptionSearchTerm">
+                        <button *ngIf="subscriptionSearchTerm" class="clear-search-btn"
+                            (click)="subscriptionSearchTerm = ''" aria-label="Clear search">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Subscription Products Grid -->
                 <div class="row">
-                    <div class="col-md-4 mb-4" *ngFor="let product of getSubscriptionProducts()">
+                    <div class="col-md-4 mb-4" *ngFor="let product of getFilteredSubscriptionProducts()">
                         <app-subscription-card [product]="convertToCardProduct(product)" [cardType]="'subscription'"
                             [showActions]="true" [showEdit]="true" [showDelete]="false"
                             [customActions]="getProductActions(product)" (editClicked)="openEditProductModal(product)"
@@ -117,17 +128,37 @@
 
         <div *ngIf="activeTab === 'services'" class="tab-content">
             <div class="products-section services-section">
-                <div class="section-header">
-                    <h2>Services & One-Time Products</h2>
-                    <button class="btn btn-add-product" (click)="openAddProductModal('onetime')" [disabled]="isLoading">
-                        <i class="fas fa-plus"></i> Add Service
-                    </button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <app-generic-h2-title [icon]="'fa fa-shopping-cart'"
+                        [title]="'Services & One-Time Products'"></app-generic-h2-title>
+                    <div class="d-flex gap-3">
+                        <app-generic-button [style]="'secondary'"
+                            [title]="showInactiveServices ? 'Hide Inactive' : 'Show Inactive'"
+                            [action]="toggleInactiveServices.bind(this)"
+                            [icon]="showInactiveServices ? 'fa fa-eye-slash' : 'fa fa-eye'"></app-generic-button>
+                        <app-generic-button [title]="'Add Service'" [action]="openAddProductModal.bind(this, 'onetime')"
+                            [icon]="'fa fa-plus'"></app-generic-button>
+                    </div>
                 </div>
                 <p class="section-description">Manage services and products with one-time pricing</p>
 
+                <!-- Search Bar -->
+                <div class="search-bar-container mb-4">
+                    <div class="search-input-wrapper">
+                        <i class="fa fa-search search-icon"></i>
+                        <input type="text" class="form-control search-input"
+                            placeholder="Search services by name, description, or ID..."
+                            [(ngModel)]="serviceSearchTerm">
+                        <button *ngIf="serviceSearchTerm" class="clear-search-btn" (click)="serviceSearchTerm = ''"
+                            aria-label="Clear search">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Services/One-Time Products Grid -->
                 <div class="row">
-                    <div class="col-md-4 mb-4" *ngFor="let product of getOneTimeProducts()">
+                    <div class="col-md-4 mb-4" *ngFor="let product of getFilteredOneTimeProducts()">
                         <app-subscription-card [product]="convertToCardProduct(product)" [cardType]="'service'"
                             [showActions]="true" [showEdit]="true" [showDelete]="false"
                             [customActions]="getProductActions(product)" (editClicked)="openEditProductModal(product)"
@@ -145,47 +176,54 @@
         </div>
 
         <div *ngIf="activeTab === 'customers'" class="tab-content">
-            <div class="customers-section">
-                <div class="section-header">
-                    <h2>Customers</h2>
-                    <button class="btn btn-add-customer" (click)="openAddCustomerModal()" [disabled]="isLoading">
-                        Add Customer
-                    </button>
+            <div class="customers-section" *ngIf="!selectedCustomer">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <app-generic-h2-title [icon]="'fa fa-users'" [title]="'Customers'"></app-generic-h2-title>
+                    <app-generic-button [title]="'Add Customer'" [action]="openAddCustomerModal.bind(this)"
+                        [icon]="'fa fa-plus'"></app-generic-button>
                 </div>
 
-                <div class="customers-grid">
-                    <div *ngFor="let customer of stripeData.customers" class="customer-card"
-                        (click)="loadCustomerDetails(customer.id)"
-                        [class.selected]="selectedCustomerId === customer.id">
-                        <div class="customer-header">
-                            <h3>{{ customer.name || 'Unnamed Customer' }}</h3>
-                            <span class="customer-id">{{ customer.id }}</span>
-                        </div>
-
-                        <div class="customer-info">
-                            <div *ngIf="customer.email" class="customer-email">{{ customer.email }}</div>
-                            <div *ngIf="customer.phone" class="customer-phone">{{ customer.phone }}</div>
-                            <div class="customer-created">Created: {{ formatDate(customer.created) }}</div>
-                        </div>
+                <!-- Search Bar -->
+                <div class="search-bar-container customers mb-4">
+                    <div class="search-input-wrapper"><i class="fa fa-search search-icon"></i>
+                        <input type="text" class="form-control search-input"
+                            placeholder="Search subscriptions by name, description, or ID..."
+                            [(ngModel)]="subscriptionSearchTerm">
+                        <button *ngIf="subscriptionSearchTerm" class="clear-search-btn"
+                            (click)="subscriptionSearchTerm = ''" aria-label="Clear search">
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div *ngIf="stripeData.customers.length === 0" class="no-data">
-                    No customers found
+                <div class="row">
+                    <div class="col-md-4 mb-4" *ngFor="let customer of getFilteredCustomers()">
+                        <app-subscription-card [product]="convertCustomerToCard(customer)" [cardType]="'addon'"
+                            [showActions]="true" [showEdit]="false" [showDelete]="false"
+                            [customActions]="getCustomerActions(customer)"
+                            (customActionClicked)="onCustomerAction($event, customer)">
+                        </app-subscription-card>
+                    </div>
+                </div>
+
+                <div *ngIf="stripeData.customers.length === 0" class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No customers found</h4>
+                    <p class="text-muted">Customers will appear here when created.</p>
                 </div>
             </div>
 
             <div *ngIf="selectedCustomer" class="customer-details-section">
-                <div class="details-header">
-                    <div class="details-title-section">
-                        <h2>Customer Details: {{ selectedCustomer.customer.name || selectedCustomer.customer.email }}
-                        </h2>
-                        <button class="btn btn-edit-small" (click)="openEditCustomerModal(selectedCustomer.customer)">
-                            Edit
-                        </button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <app-generic-h2-title [icon]="'fa fa-user'"
+                        [title]="'Customer: ' + (selectedCustomer.customer.name || selectedCustomer.customer.email)"></app-generic-h2-title>
+                    <div class="d-flex gap-2">
+                        <app-generic-button [style]="'danger'" [title]="'Back'"
+                            [action]="closeCustomerDetails.bind(this)" [icon]="'fa fa-arrow-left'"></app-generic-button>
+                        <app-generic-button [style]="'secondary'" [title]="'Edit Customer'"
+                            [action]="openEditCustomerModal.bind(this, selectedCustomer.customer)"
+                            [icon]="'fa fa-edit'"></app-generic-button>
                     </div>
-                    <button class="btn btn-close"
-                        (click)="selectedCustomer = null; selectedCustomerId = null">Close</button>
                 </div>
 
                 <div *ngIf="isLoadingCustomerDetails" class="loading-small">
@@ -382,13 +420,23 @@
 
         <div *ngIf="activeTab === 'connection'" class="tab-content">
             <div class="connection-section">
-                <h2>Stripe Connection Status</h2>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <app-generic-h2-title [icon]="'fa fa-link'"
+                        [title]="'Stripe Connection Status'"></app-generic-h2-title>
+                    <app-generic-button [title]="'Test Connection'" [action]="refreshData.bind(this)"
+                        [icon]="'fa fa-plug'"></app-generic-button>
+                </div>
 
-                <div class="connection-info">
+                <div class="connection-info stat-card text-start">
                     <div class="connection-status"
                         [class.success]="stripeData.connectionStatus && !stripeData.connectionStatus.error">
-                        <h3>{{ stripeData.connectionStatus && !stripeData.connectionStatus.error ? 'Connected' : 'Error'
-                            }}</h3>
+                        <h3>
+                            <span
+                                [class.text-success]="stripeData.connectionStatus && !stripeData.connectionStatus.error">
+                                {{ stripeData.connectionStatus && !stripeData.connectionStatus.error ? 'Connected'
+                                :'Error'}}
+                            </span>
+                        </h3>
                     </div>
 
                     <div class="connection-details">
@@ -405,11 +453,16 @@
     </div>
 
     <!-- Add Customer Modal -->
-    <div *ngIf="showAddCustomerModal" class="modal-overlay" (click)="closeAddCustomerModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+    <div *ngIf="showAddCustomerModal" class="modal-backdrop" (click)="closeAddCustomerModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Add Customer</h2>
-                <button class="modal-close" (click)="closeAddCustomerModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa fa-user-plus"></i>
+                    Add Customer
+                </h2>
+                <button type="button" class="close-btn" (click)="closeAddCustomerModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body">
@@ -449,11 +502,16 @@
     </div>
 
     <!-- Edit Customer Modal -->
-    <div *ngIf="showEditCustomerModal" class="modal-overlay" (click)="closeEditCustomerModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+    <div *ngIf="showEditCustomerModal" class="modal-backdrop" (click)="closeEditCustomerModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Edit Customer</h2>
-                <button class="modal-close" (click)="closeEditCustomerModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa fa-user-edit"></i>
+                    Edit Customer
+                </h2>
+                <button type="button" class="close-btn" (click)="closeEditCustomerModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body">
@@ -493,11 +551,16 @@
     </div>
 
     <!-- Add Payment Method Modal -->
-    <div *ngIf="showAddPaymentMethodModal" class="modal-overlay" (click)="closeAddPaymentMethodModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+    <div *ngIf="showAddPaymentMethodModal" class="modal-backdrop" (click)="closeAddPaymentMethodModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Add Payment Method</h2>
-                <button class="modal-close" (click)="closeAddPaymentMethodModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa fa-credit-card"></i>
+                    Add Payment Method
+                </h2>
+                <button type="button" class="close-btn" (click)="closeAddPaymentMethodModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body">
@@ -526,11 +589,16 @@
     </div>
 
     <!-- Add Subscription Modal -->
-    <div *ngIf="showAddSubscriptionModal" class="modal-overlay" (click)="closeAddSubscriptionModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+    <div *ngIf="showAddSubscriptionModal" class="modal-backdrop" (click)="closeAddSubscriptionModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Create Subscription</h2>
-                <button class="modal-close" (click)="closeAddSubscriptionModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa fa-sync-alt"></i>
+                    Create Subscription
+                </h2>
+                <button type="button" class="close-btn" (click)="closeAddSubscriptionModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body">
@@ -580,15 +648,21 @@
     </div>
 
     <!-- Add Product Modal -->
-    <div *ngIf="showAddProductModal" class="modal-overlay" (click)="closeAddProductModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+    <div *ngIf="showAddProductModal" class="modal-backdrop" (click)="closeAddProductModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Add {{ newProduct.type === 'subscription' ? 'Subscription' : 'Service' }} Product</h2>
-                <button class="modal-close" (click)="closeAddProductModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa"
+                        [ngClass]="newProduct.type === 'subscription' ? 'fa-sync-alt' : 'fa-shopping-cart'"></i>
+                    Add {{ newProduct.type === 'subscription' ? 'Subscription' : 'Service' }} Product
+                </h2>
+                <button type="button" class="close-btn" (click)="closeAddProductModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
-            <div class="modal-body">
-                <form (ngSubmit)="createProduct()" #productForm="ngForm">
+            <form (ngSubmit)="createProduct()" #productForm="ngForm">
+                <div class="modal-body">
                     <div class="form-group">
                         <label for="productName">Product Name *</label>
                         <input type="text" id="productName" name="name" [(ngModel)]="newProduct.name" required
@@ -609,38 +683,103 @@
                         </label>
                     </div>
 
-                    <div class="form-hint">
-                        <strong>Note:</strong> After creating the product, you'll need to add prices to make it
-                        available
-                        for purchase.
+                    <hr style="margin: 20px 0; border-color: rgba(255,255,255,0.1);">
+                    <h3 style="color: #d4a574; margin-bottom: 15px;">
+                        <i class="fa fa-tag"></i> Initial Price
+                    </h3>
+
+                    <div class="form-group">
+                        <label for="productPrice">Price (in cents) *</label>
+                        <input type="number" id="productPrice" name="price" [(ngModel)]="newProduct.price" required
+                            min="1" class="form-control" placeholder="e.g., 2999 for $29.99" />
+                        <small class="form-hint">Enter amount in cents (e.g., 1000 = $10.00)</small>
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" (click)="closeAddProductModal()"
-                            [disabled]="isCreatingProduct">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary"
-                            [disabled]="!productForm.valid || isCreatingProduct">
-                            <span *ngIf="!isCreatingProduct">Create Product</span>
-                            <span *ngIf="isCreatingProduct">Creating...</span>
-                        </button>
+                    <div class="form-group">
+                        <label for="productCurrency">Currency *</label>
+                        <select id="productCurrency" name="currency" [(ngModel)]="newProduct.currency" required
+                            class="form-control">
+                            <option value="usd">USD - US Dollar</option>
+                            <option value="eur">EUR - Euro</option>
+                            <option value="gbp">GBP - British Pound</option>
+                            <option value="cad">CAD - Canadian Dollar</option>
+                        </select>
                     </div>
-                </form>
-            </div>
+
+                    <div class="form-group">
+                        <label for="productPriceNickname">Price Nickname (optional)</label>
+                        <input type="text" id="productPriceNickname" name="priceNickname"
+                            [(ngModel)]="newProduct.priceNickname" class="form-control"
+                            placeholder="e.g., Monthly Plan, Standard Rate" />
+                        <small class="form-hint">A descriptive name for this price</small>
+                    </div>
+
+                    <!-- Recurring options for subscriptions -->
+                    <div *ngIf="newProduct.type === 'subscription'" class="recurring-options"
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <h4 style="color: #d4a574; margin-bottom: 10px;">
+                            <i class="fa fa-sync-alt"></i> Recurring Billing
+                        </h4>
+
+                        <div class="form-group">
+                            <label for="productInterval">Billing Interval *</label>
+                            <select id="productInterval" name="interval" [(ngModel)]="newProduct.interval" required
+                                class="form-control">
+                                <option value="month">Monthly</option>
+                                <option value="year">Yearly</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="productIntervalCount">Interval Count</label>
+                            <input type="number" id="productIntervalCount" name="intervalCount"
+                                [(ngModel)]="newProduct.intervalCount" min="1" max="12" class="form-control"
+                                placeholder="1" value="1" />
+                            <small class="form-hint">Bill every X months/years (default: 1)</small>
+                        </div>
+                    </div>
+
+                    <div class="price-preview" *ngIf="newProduct.price > 0"
+                        style="background: rgba(212, 165, 116, 0.1); padding: 12px; border-radius: 8px; margin-top: 15px; color: #d4a574;">
+                        <strong>Price Preview:</strong>
+                        {{ formatCurrency(newProduct.price, newProduct.currency || 'usd') }}
+                        <span *ngIf="newProduct.type === 'subscription' && newProduct.interval">
+                            / {{ (newProduct.intervalCount || 1) > 1 ? newProduct.intervalCount : '' }}
+                            {{ newProduct.interval }}{{ (newProduct.intervalCount || 1) > 1 ? 's' : '' }}
+                        </span>
+                        <span *ngIf="newProduct.type !== 'subscription'">(one-time)</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="closeAddProductModal()"
+                        [disabled]="isCreatingProduct">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" [disabled]="!productForm.valid || isCreatingProduct">
+                        <span *ngIf="!isCreatingProduct">Create Product</span>
+                        <span *ngIf="isCreatingProduct">Creating...</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Edit Product Modal -->
-    <div *ngIf="showEditProductModal" class="modal-overlay" (click)="closeEditProductModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+    <div *ngIf="showEditProductModal" class="modal-backdrop" (click)="closeEditProductModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Edit Product</h2>
-                <button class="modal-close" (click)="closeEditProductModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa fa-edit"></i>
+                    Edit Product
+                </h2>
+                <button type="button" class="close-btn" (click)="closeEditProductModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
-            <div class="modal-body">
-                <form (ngSubmit)="updateProduct()" #editProductForm="ngForm">
+            <form (ngSubmit)="updateProduct()" #editProductForm="ngForm">
+                <div class="modal-body">
                     <div class="customer-id-display">
                         <strong>Product ID:</strong> {{ editProduct.id }}
                     </div>
@@ -664,28 +803,78 @@
                         </label>
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" (click)="closeEditProductModal()"
-                            [disabled]="isUpdatingProduct">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary"
-                            [disabled]="!editProductForm.valid || isUpdatingProduct">
-                            <span *ngIf="!isUpdatingProduct">Update Product</span>
-                            <span *ngIf="isUpdatingProduct">Updating...</span>
-                        </button>
+                    <hr style="margin: 20px 0; border-color: rgba(255,255,255,0.1);">
+                    <h3 style="color: #d4a574; margin-bottom: 15px;">
+                        <i class="fa fa-tag"></i> Price Information
+                    </h3>
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 15px;">
+                        <i class="fa fa-info-circle"></i> This shows the first price for this product. To add or edit
+                        multiple prices, use the Prices section.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="editProductPrice">Price (in cents)</label>
+                        <input type="number" id="editProductPrice" name="price" [(ngModel)]="editProduct.price" min="1"
+                            class="form-control" placeholder="e.g., 2999 for $29.99" />
+                        <small class="form-hint">Enter amount in cents (e.g., 1000 = $10.00)</small>
                     </div>
-                </form>
-            </div>
+
+                    <div class="form-group">
+                        <label for="editProductCurrency">Currency</label>
+                        <select id="editProductCurrency" name="currency" [(ngModel)]="editProduct.currency"
+                            class="form-control">
+                            <option value="usd">USD - US Dollar</option>
+                            <option value="eur">EUR - Euro</option>
+                            <option value="gbp">GBP - British Pound</option>
+                            <option value="cad">CAD - Canadian Dollar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProductPriceNickname">Price Nickname</label>
+                        <input type="text" id="editProductPriceNickname" name="priceNickname"
+                            [(ngModel)]="editProduct.priceNickname" class="form-control"
+                            placeholder="e.g., Monthly Plan, Standard Rate" />
+                        <small class="form-hint">A descriptive name for this price</small>
+                    </div>
+
+                    <div class="price-preview" *ngIf="editProduct.price > 0"
+                        style="background: rgba(212, 165, 116, 0.1); padding: 12px; border-radius: 8px; margin-top: 15px; color: #d4a574;">
+                        <strong>Current Price:</strong>
+                        {{ formatCurrency(editProduct.price, editProduct.currency || 'usd') }}
+                        <span *ngIf="editProduct.interval">
+                            / {{ (editProduct.intervalCount || 1) > 1 ? editProduct.intervalCount : '' }}
+                            {{ editProduct.interval }}{{ (editProduct.intervalCount || 1) > 1 ? 's' : '' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="closeEditProductModal()"
+                        [disabled]="isUpdatingProduct">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary"
+                        [disabled]="!editProductForm.valid || isUpdatingProduct">
+                        <span *ngIf="!isUpdatingProduct">Update Product</span>
+                        <span *ngIf="isUpdatingProduct">Updating...</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Add Price Modal -->
-    <div *ngIf="showAddPriceModal" class="modal-overlay" (click)="closeAddPriceModal()">
-        <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+    <div *ngIf="showAddPriceModal" class="modal-backdrop" (click)="closeAddPriceModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h2>Add Price</h2>
-                <button class="modal-close" (click)="closeAddPriceModal()">&times;</button>
+                <h2 class="modal-title">
+                    <i class="fa fa-tag"></i>
+                    Add Price
+                </h2>
+                <button type="button" class="close-btn" (click)="closeAddPriceModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body">

@@ -1,0 +1,33 @@
+.primary {
+    border-color: var(--accent-blue) !important;
+    background: color-mix(in srgb, var(--accent-blue) 60%, transparent) !important;
+    box-shadow: 0 0px 16px rgba(0, 123, 255, 0.3);
+
+}
+
+.secondary {
+    border-color: #d2b48c;
+    background: color-mix(in srgb, var(--c-text-primary) 60%, transparent) !important;
+    box-shadow: 0 0px 16px rgba(255, 193, 7, 0.3);
+
+}
+
+.info {
+    border-color: #17a2b8;
+    background: rgba(23, 162, 184, 0.6);
+    box-shadow: 0 0px 16px rgba(23, 162, 184, 0.3);
+
+}
+
+.danger {
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.6);
+    box-shadow: 0 0px 16px rgba(220, 53, 69, 0.3);
+
+}
+
+.success {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.6);
+    box-shadow: 0 0px 16px rgba(40, 167, 69, 0.3);
+}
