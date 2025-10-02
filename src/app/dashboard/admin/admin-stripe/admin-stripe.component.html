@@ -1,0 +1,862 @@
+<div class="admin-stripe-container">
+    <div class="stripe-header">
+        <h1>Admin Stripe Management</h1>
+        <div class="environment-info">
+            <span class="env-badge" [class.live-mode]="stripeData.isLiveMode">
+                {{ stripeData.isLiveMode ? 'LIVE MODE' : 'TEST MODE' }}
+            </span>
+            <span class="env-name">{{ stripeData.environment }}</span>
+            <span class="cache-indicator" *ngIf="isCacheValid()" title="Using cached data">
+                <i class="fas fa-database"></i> Cached {{ getCacheAge() }}
+            </span>
+            <button class="btn btn-refresh" (click)="refreshData()" [disabled]="isLoading">
+                <i class="fas fa-sync-alt" [class.spinning]="isLoading"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading Stripe data...</p>
+    </div>
+
+    <div *ngIf="errors.length > 0" class="error-container">
+        <h3>Errors</h3>
+        <ul>
+            <li *ngFor="let error of errors" class="error-item">{{ error }}</li>
+        </ul>
+    </div>
+
+    <div *ngIf="!isLoading" class="stripe-content">
+        <div *ngIf="activeTab === 'overview'" class="tab-content">
+            <div class="overview-grid">
+                <div class="stat-card">
+                    <h3>Total Products</h3>
+                    <div class="stat-number">{{ stripeData.products.length }}</div>
+                </div>
+
+                <div class="stat-card subscription-highlight">
+                    <h3>Subscriptions</h3>
+                    <div class="stat-number">{{ getSubscriptionProducts().length }}</div>
+                    <div class="stat-detail">Recurring products</div>
+                </div>
+
+                <div class="stat-card onetime-highlight">
+                    <h3>One-Time</h3>
+                    <div class="stat-number">{{ getOneTimeProducts().length }}</div>
+                    <div class="stat-detail">Non-recurring products</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Prices</h3>
+                    <div class="stat-number">{{ stripeData.prices.length }}</div>
+                    <div class="stat-detail">Recurring: {{ getRecurringPricesCount() }}</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Customers</h3>
+                    <div class="stat-number">{{ stripeData.customers.length }}</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Connection</h3>
+                    <div class="stat-number"
+                        [class.success]="stripeData.connectionStatus && !stripeData.connectionStatus.error">
+                        {{ stripeData.connectionStatus && !stripeData.connectionStatus.error ? 'OK' : 'Error' }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-activity">
+                <h3>Recent Customers</h3>
+                <div class="customer-list-preview">
+                    <div *ngFor="let customer of stripeData.customers.slice(0, 5)" class="customer-preview-item"
+                        (click)="loadCustomerDetails(customer.id)">
+                        <div class="customer-info">
+                            <strong>{{ customer.name || customer.email || 'Unknown Customer' }}</strong>
+                            <small>{{ customer.email }}</small>
+                        </div>
+                        <div class="customer-meta">
+                            <span class="created-date">{{ formatDate(customer.created) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="activeTab === 'subscriptions'" class="tab-content">
+            <div class="products-section subscriptions-section">
+                <div class="section-header">
+                    <h2>Subscription Products</h2>
+                    <button class="btn btn-add-product" (click)="openAddProductModal('subscription')"
+                        [disabled]="isLoading">
+                        <i class="fas fa-plus"></i> Add Subscription Product
+                    </button>
+                </div>
+                <p class="section-description">Manage products with recurring billing and subscription plans</p>
+
+                <div *ngFor="let product of getSubscriptionProducts()" class="product-card subscription-product">
+                    <div class="product-header">
+                        <div class="product-title-section">
+                            <h3>{{ product.name }}</h3>
+                            <span class="product-status" [class.active]="product.active">
+                                {{ product.active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="btn-icon btn-edit" (click)="openEditProductModal(product)"
+                                title="Edit Product">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-archive" (click)="archiveProduct(product.id, product.name)"
+                                [disabled]="!product.active || isDeletingProduct" title="Archive Product">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-details">
+                        <p *ngIf="product.description" class="product-description">{{ product.description }}</p>
+
+                        <div class="product-meta">
+                            <span>ID: {{ product.id }}</span>
+                            <span>Created: {{ formatDate(product.created) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="product-prices">
+                        <div class="prices-header">
+                            <h4>Prices:</h4>
+                            <button class="btn-add-price" (click)="openAddPriceModal(product)"
+                                [disabled]="!product.active">
+                                <i class="fas fa-plus"></i> Add Price
+                            </button>
+                        </div>
+                        <div *ngFor="let price of getPricesForProduct(product.id)" class="price-item">
+                            <div class="price-info">
+                                <span class="price-amount">{{ formatCurrency(price.unit_amount, price.currency)
+                                    }}</span>
+                                <span *ngIf="price.recurring" class="price-recurring">
+                                    / {{ price.recurring.interval }}
+                                </span>
+                                <span *ngIf="!price.recurring" class="price-onetime">one-time</span>
+                            </div>
+                            <div class="price-meta">
+                                <span [class.active]="price.active">{{ price.active ? 'Active' : 'Inactive' }}</span>
+                                <span *ngIf="price.nickname">{{ price.nickname }}</span>
+                                <button class="btn-icon-small btn-archive-price" (click)="archivePrice(price.id, price)"
+                                    [disabled]="!price.active" title="Archive Price">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div *ngIf="hasNoPricesForProduct(product.id)" class="no-prices">
+                            No prices found
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="getSubscriptionProducts().length === 0" class="no-data">
+                    No subscription products found
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="activeTab === 'services'" class="tab-content">
+            <div class="products-section services-section">
+                <div class="section-header">
+                    <h2>Services & One-Time Products</h2>
+                    <button class="btn btn-add-product" (click)="openAddProductModal('onetime')" [disabled]="isLoading">
+                        <i class="fas fa-plus"></i> Add Service
+                    </button>
+                </div>
+                <p class="section-description">Manage services and products with one-time pricing</p>
+
+                <div *ngFor="let product of getOneTimeProducts()" class="product-card onetime-product">
+                    <div class="product-header">
+                        <div class="product-title-section">
+                            <h3>{{ product.name }}</h3>
+                            <span class="product-status" [class.active]="product.active">
+                                {{ product.active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="btn-icon btn-edit" (click)="openEditProductModal(product)"
+                                title="Edit Product">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-archive" (click)="archiveProduct(product.id, product.name)"
+                                [disabled]="!product.active || isDeletingProduct" title="Archive Product">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-details">
+                        <p *ngIf="product.description" class="product-description">{{ product.description }}</p>
+
+                        <div class="product-meta">
+                            <span>ID: {{ product.id }}</span>
+                            <span>Created: {{ formatDate(product.created) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="product-prices">
+                        <div class="prices-header">
+                            <h4>Prices:</h4>
+                            <button class="btn-add-price" (click)="openAddPriceModal(product)"
+                                [disabled]="!product.active">
+                                <i class="fas fa-plus"></i> Add Price
+                            </button>
+                        </div>
+                        <div *ngFor="let price of getPricesForProduct(product.id)" class="price-item">
+                            <div class="price-info">
+                                <span class="price-amount">{{ formatCurrency(price.unit_amount, price.currency)
+                                    }}</span>
+                                <span *ngIf="!price.recurring" class="price-onetime">one-time</span>
+                            </div>
+                            <div class="price-meta">
+                                <span [class.active]="price.active">{{ price.active ? 'Active' : 'Inactive' }}</span>
+                                <button class="btn-icon-small btn-archive-price" (click)="archivePrice(price.id, price)"
+                                    [disabled]="!price.active" title="Archive Price">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div *ngIf="hasNoPricesForProduct(product.id)" class="no-prices">
+                            No prices found
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="getOneTimeProducts().length === 0" class="no-data">
+                    No service products found
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="activeTab === 'customers'" class="tab-content">
+            <div class="customers-section">
+                <div class="section-header">
+                    <h2>Customers</h2>
+                    <button class="btn btn-add-customer" (click)="openAddCustomerModal()" [disabled]="isLoading">
+                        Add Customer
+                    </button>
+                </div>
+
+                <div class="customers-grid">
+                    <div *ngFor="let customer of stripeData.customers" class="customer-card"
+                        (click)="loadCustomerDetails(customer.id)"
+                        [class.selected]="selectedCustomerId === customer.id">
+                        <div class="customer-header">
+                            <h3>{{ customer.name || 'Unnamed Customer' }}</h3>
+                            <span class="customer-id">{{ customer.id }}</span>
+                        </div>
+
+                        <div class="customer-info">
+                            <div *ngIf="customer.email" class="customer-email">{{ customer.email }}</div>
+                            <div *ngIf="customer.phone" class="customer-phone">{{ customer.phone }}</div>
+                            <div class="customer-created">Created: {{ formatDate(customer.created) }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="stripeData.customers.length === 0" class="no-data">
+                    No customers found
+                </div>
+            </div>
+
+            <div *ngIf="selectedCustomer" class="customer-details-section">
+                <div class="details-header">
+                    <div class="details-title-section">
+                        <h2>Customer Details: {{ selectedCustomer.customer.name || selectedCustomer.customer.email }}
+                        </h2>
+                        <button class="btn btn-edit-small" (click)="openEditCustomerModal(selectedCustomer.customer)">
+                            Edit
+                        </button>
+                    </div>
+                    <button class="btn btn-close"
+                        (click)="selectedCustomer = null; selectedCustomerId = null">Close</button>
+                </div>
+
+                <div *ngIf="isLoadingCustomerDetails" class="loading-small">
+                    Loading...
+                </div>
+
+                <div *ngIf="!isLoadingCustomerDetails" class="customer-details-grid">
+                    <!-- Recurring Subscriptions -->
+                    <div class="details-card subscription-card">
+                        <div class="card-header-with-action">
+                            <h3>
+                                <i class="fas fa-sync-alt"></i>
+                                Recurring Subscriptions ({{ getCustomerRecurringSubscriptions().length }})
+                            </h3>
+                            <button class="btn btn-add-small"
+                                (click)="openAddSubscriptionModal(selectedCustomer.customer.id)">
+                                Add
+                            </button>
+                        </div>
+                        <div *ngFor="let sub of getCustomerRecurringSubscriptions()"
+                            class="subscription-item recurring-subscription">
+                            <div class="subscription-header">
+                                <div class="subscription-title">
+                                    <span class="product-name">{{ getSubscriptionProductName(sub) }}</span>
+                                    <span class="subscription-id">{{ sub.id }}</span>
+                                </div>
+                                <span class="badge" [ngClass]="getStatusBadgeClass(sub.status)">{{ sub.status }}</span>
+                            </div>
+                            <div class="subscription-details">
+                                <div *ngIf="sub.current_period_start">
+                                    <strong>Current Period:</strong> {{ formatDate(sub.current_period_start) }} - {{
+                                    formatDate(sub.current_period_end) }}
+                                </div>
+                                <div *ngIf="sub.items?.data?.[0]?.price">
+                                    <strong>Amount:</strong> {{ formatCurrency(sub.items.data[0].price.unit_amount,
+                                    sub.items.data[0].price.currency) }}
+                                    <span *ngIf="sub.items.data[0].price.recurring">
+                                        / {{ sub.items.data[0].price.recurring.interval }}
+                                    </span>
+                                </div>
+                                <div *ngIf="sub.plan?.amount && !sub.items?.data?.[0]?.price">
+                                    <strong>Amount:</strong> {{ formatCurrency(sub.plan.amount, sub.currency || 'usd')
+                                    }}
+                                    <span *ngIf="sub.plan.interval">/ {{ sub.plan.interval }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="getCustomerRecurringSubscriptions().length === 0" class="no-data-small">
+                            No recurring subscriptions
+                        </div>
+                    </div>
+
+                    <!-- One-Time Services -->
+                    <div class="details-card service-card">
+                        <div class="card-header-with-action">
+                            <h3>
+                                <i class="fas fa-shopping-cart"></i>
+                                One-Time Services ({{ getCustomerOneTimeServices().length }})
+                            </h3>
+                        </div>
+                        <div *ngFor="let service of getCustomerOneTimeServices()"
+                            class="subscription-item onetime-service">
+                            <div class="subscription-header">
+                                <div class="subscription-title">
+                                    <span class="product-name">{{ getSubscriptionProductName(service) }}</span>
+                                    <span class="subscription-id">{{ service.id }}</span>
+                                </div>
+                                <span class="badge" [ngClass]="getStatusBadgeClass(service.status)">{{ service.status
+                                    }}</span>
+                            </div>
+                            <div class="subscription-details">
+                                <div *ngIf="service.created">
+                                    <strong>Created:</strong> {{ formatDate(service.created) }}
+                                </div>
+                                <div *ngIf="service.items?.data?.[0]?.price">
+                                    <strong>Amount:</strong> {{ formatCurrency(service.items.data[0].price.unit_amount,
+                                    service.items.data[0].price.currency) }}
+                                    <span class="onetime-badge">one-time</span>
+                                </div>
+                                <div *ngIf="service.plan?.amount && !service.items?.data?.[0]?.price">
+                                    <strong>Amount:</strong> {{ formatCurrency(service.plan.amount, service.currency ||
+                                    'usd') }}
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="getCustomerOneTimeServices().length === 0" class="no-data-small">
+                            No one-time services
+                        </div>
+                    </div>
+
+                    <div class="details-card">
+                        <div class="card-header-with-action">
+                            <h3>Payment Methods ({{ selectedCustomer.paymentMethods.length }})</h3>
+                            <button class="btn btn-add-small"
+                                (click)="openAddPaymentMethodModal(selectedCustomer.customer.id)">
+                                Add
+                            </button>
+                        </div>
+                        <div *ngFor="let pm of selectedCustomer.paymentMethods" class="payment-method-item">
+                            <div class="payment-method-header">
+                                <div class="payment-method-info">
+                                    <span class="payment-type">{{ pm.type }}</span>
+                                    <span *ngIf="pm.card" class="card-brand">{{ pm.card.brand }} {{ pm.card.last4
+                                        }}</span>
+                                    <span
+                                        *ngIf="pm.id === selectedCustomer.customer.invoice_settings?.default_payment_method"
+                                        class="default-badge">
+                                        Default
+                                    </span>
+                                </div>
+                                <button
+                                    *ngIf="pm.id !== selectedCustomer.customer.invoice_settings?.default_payment_method"
+                                    class="btn btn-set-default"
+                                    (click)="setDefaultPaymentMethod(selectedCustomer.customer.id, pm.id)"
+                                    [disabled]="isSettingDefaultPayment">
+                                    Set Default
+                                </button>
+                            </div>
+                        </div>
+                        <div *ngIf="selectedCustomer.paymentMethods.length === 0" class="no-data-small">
+                            No payment methods
+                        </div>
+                    </div>
+
+                    <div class="details-card invoices-section">
+                        <div class="section-header">
+                            <h3>Invoices ({{ selectedCustomer.invoices.length }})</h3>
+                            <div class="invoice-controls">
+                                <select [(ngModel)]="invoiceFilter" (change)="setInvoiceFilter(invoiceFilter)"
+                                    class="filter-select">
+                                    <option value="all">All</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="unpaid">Unpaid</option>
+                                    <option value="overdue">Overdue</option>
+                                </select>
+                                <select [(ngModel)]="invoiceSortBy" (change)="setInvoiceSort(invoiceSortBy)"
+                                    class="sort-select">
+                                    <option value="date">Date</option>
+                                    <option value="amount">Amount</option>
+                                    <option value="status">Status</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="invoices-list">
+                            <div *ngFor="let invoice of getFilteredInvoices()" class="invoice-item"
+                                [class.overdue]="isInvoiceOverdue(invoice)">
+                                <div class="invoice-main">
+                                    <div class="invoice-header">
+                                        <span class="invoice-icon">{{ getInvoiceStatusIcon(invoice.status) }}</span>
+                                        <div class="invoice-info">
+                                            <strong>{{ invoice.number || invoice.id }}</strong>
+                                            <span>{{ formatDate(invoice.created) }}</span>
+                                        </div>
+                                        <span class="badge" [ngClass]="getStatusBadgeClass(invoice.status)">{{
+                                            invoice.status }}</span>
+                                    </div>
+                                    <div class="invoice-details">
+                                        <div class="invoice-amount">
+                                            <strong>{{ formatCurrency(invoice.total, invoice.currency) }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="invoice-actions">
+                                    <button class="btn-small" (click)="viewInvoiceDetails(invoice)">Details</button>
+                                    <button class="btn-small" (click)="downloadInvoice(invoice)"
+                                        *ngIf="invoice.invoice_pdf || invoice.hosted_invoice_url">Download</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div *ngIf="getFilteredInvoices().length === 0" class="no-data-small">
+                            No invoices
+                        </div>
+                    </div>
+
+                    <div class="details-card">
+                        <h3>Recent Activity ({{ selectedCustomer.recentActivity.length }})</h3>
+                        <div class="activity-timeline">
+                            <div *ngFor="let activity of selectedCustomer.recentActivity.slice(0, 10)"
+                                class="activity-item">
+                                <div class="activity-icon">{{ activity.icon }}</div>
+                                <div class="activity-content">
+                                    <strong>{{ activity.title }}</strong>
+                                    <div>{{ activity.description }}</div>
+                                    <span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="activeTab === 'connection'" class="tab-content">
+            <div class="connection-section">
+                <h2>Stripe Connection Status</h2>
+
+                <div class="connection-info">
+                    <div class="connection-status"
+                        [class.success]="stripeData.connectionStatus && !stripeData.connectionStatus.error">
+                        <h3>{{ stripeData.connectionStatus && !stripeData.connectionStatus.error ? 'Connected' : 'Error'
+                            }}</h3>
+                    </div>
+
+                    <div class="connection-details">
+                        <h4>Environment Details:</h4>
+                        <ul>
+                            <li><strong>Environment:</strong> {{ stripeData.environment }}</li>
+                            <li><strong>Mode:</strong> {{ stripeData.isLiveMode ? 'Live' : 'Test' }}</li>
+                            <li><strong>Timestamp:</strong> {{ getCurrentTimestamp() }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Customer Modal -->
+    <div *ngIf="showAddCustomerModal" class="modal-overlay" (click)="closeAddCustomerModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Add Customer</h2>
+                <button class="modal-close" (click)="closeAddCustomerModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="createCustomer()" #customerForm="ngForm">
+                    <div class="form-group">
+                        <label for="customerName">Name *</label>
+                        <input type="text" id="customerName" name="name" [(ngModel)]="newCustomer.name" required
+                            class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerEmail">Email *</label>
+                        <input type="email" id="customerEmail" name="email" [(ngModel)]="newCustomer.email" required
+                            class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerPhone">Phone</label>
+                        <input type="tel" id="customerPhone" name="phone" [(ngModel)]="newCustomer.phone"
+                            class="form-control" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeAddCustomerModal()"
+                            [disabled]="isCreatingCustomer">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                            [disabled]="!customerForm.valid || isCreatingCustomer">
+                            <span *ngIf="!isCreatingCustomer">Create</span>
+                            <span *ngIf="isCreatingCustomer">Creating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Customer Modal -->
+    <div *ngIf="showEditCustomerModal" class="modal-overlay" (click)="closeEditCustomerModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Edit Customer</h2>
+                <button class="modal-close" (click)="closeEditCustomerModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="updateCustomer()" #editForm="ngForm">
+                    <div class="form-group">
+                        <label for="editName">Name *</label>
+                        <input type="text" id="editName" name="name" [(ngModel)]="editCustomer.name" required
+                            class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editEmail">Email *</label>
+                        <input type="email" id="editEmail" name="email" [(ngModel)]="editCustomer.email" required
+                            class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPhone">Phone</label>
+                        <input type="tel" id="editPhone" name="phone" [(ngModel)]="editCustomer.phone"
+                            class="form-control" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeEditCustomerModal()"
+                            [disabled]="isUpdatingCustomer">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                            [disabled]="!editForm.valid || isUpdatingCustomer">
+                            <span *ngIf="!isUpdatingCustomer">Update</span>
+                            <span *ngIf="isUpdatingCustomer">Updating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Payment Method Modal -->
+    <div *ngIf="showAddPaymentMethodModal" class="modal-overlay" (click)="closeAddPaymentMethodModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Add Payment Method</h2>
+                <button class="modal-close" (click)="closeAddPaymentMethodModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="addPaymentMethod()" #pmForm="ngForm">
+                    <div class="form-group">
+                        <label for="paymentMethodId">Payment Method ID *</label>
+                        <input type="text" id="paymentMethodId" name="paymentMethodId"
+                            [(ngModel)]="newPaymentMethod.paymentMethodId" required class="form-control" />
+                        <small>Test: pm_card_visa, pm_card_mastercard</small>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeAddPaymentMethodModal()"
+                            [disabled]="isAddingPaymentMethod">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                            [disabled]="!pmForm.valid || isAddingPaymentMethod">
+                            <span *ngIf="!isAddingPaymentMethod">Add</span>
+                            <span *ngIf="isAddingPaymentMethod">Adding...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subscription Modal -->
+    <div *ngIf="showAddSubscriptionModal" class="modal-overlay" (click)="closeAddSubscriptionModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Create Subscription</h2>
+                <button class="modal-close" (click)="closeAddSubscriptionModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="createSubscription()" #subForm="ngForm">
+                    <div class="form-group">
+                        <label for="priceId">Price *</label>
+                        <select id="priceId" name="priceId" [(ngModel)]="newSubscription.priceId" required
+                            class="form-control">
+                            <option value="">Select a price</option>
+                            <option *ngFor="let price of getAvailablePrices()" [value]="price.id">
+                                {{ formatPriceDisplay(price) }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method</label>
+                        <select id="paymentMethod" name="paymentMethodId" [(ngModel)]="newSubscription.paymentMethodId"
+                            class="form-control">
+                            <option value="">Use default</option>
+                            <option *ngFor="let pm of getAvailablePaymentMethods()" [value]="pm.id">
+                                {{ pm.card?.brand }} {{ pm.card?.last4 }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trialDays">Trial Days</label>
+                        <input type="number" id="trialDays" name="trialPeriodDays"
+                            [(ngModel)]="newSubscription.trialPeriodDays" min="0" class="form-control" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeAddSubscriptionModal()"
+                            [disabled]="isCreatingSubscription">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                            [disabled]="!subForm.valid || isCreatingSubscription">
+                            <span *ngIf="!isCreatingSubscription">Create</span>
+                            <span *ngIf="isCreatingSubscription">Creating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div *ngIf="showAddProductModal" class="modal-overlay" (click)="closeAddProductModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Add {{ newProduct.type === 'subscription' ? 'Subscription' : 'Service' }} Product</h2>
+                <button class="modal-close" (click)="closeAddProductModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="createProduct()" #productForm="ngForm">
+                    <div class="form-group">
+                        <label for="productName">Product Name *</label>
+                        <input type="text" id="productName" name="name" [(ngModel)]="newProduct.name" required
+                            class="form-control" placeholder="e.g., Premium Subscription" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="productDescription">Description</label>
+                        <textarea id="productDescription" name="description" [(ngModel)]="newProduct.description"
+                            class="form-control" rows="3"
+                            placeholder="Describe what this product includes..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="active" [(ngModel)]="newProduct.active" />
+                            Active (available for purchase)
+                        </label>
+                    </div>
+
+                    <div class="form-hint">
+                        <strong>Note:</strong> After creating the product, you'll need to add prices to make it
+                        available
+                        for purchase.
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeAddProductModal()"
+                            [disabled]="isCreatingProduct">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                            [disabled]="!productForm.valid || isCreatingProduct">
+                            <span *ngIf="!isCreatingProduct">Create Product</span>
+                            <span *ngIf="isCreatingProduct">Creating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div *ngIf="showEditProductModal" class="modal-overlay" (click)="closeEditProductModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Edit Product</h2>
+                <button class="modal-close" (click)="closeEditProductModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form (ngSubmit)="updateProduct()" #editProductForm="ngForm">
+                    <div class="customer-id-display">
+                        <strong>Product ID:</strong> {{ editProduct.id }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProductName">Product Name *</label>
+                        <input type="text" id="editProductName" name="name" [(ngModel)]="editProduct.name" required
+                            class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProductDescription">Description</label>
+                        <textarea id="editProductDescription" name="description" [(ngModel)]="editProduct.description"
+                            class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="active" [(ngModel)]="editProduct.active" />
+                            Active (available for purchase)
+                        </label>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeEditProductModal()"
+                            [disabled]="isUpdatingProduct">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                            [disabled]="!editProductForm.valid || isUpdatingProduct">
+                            <span *ngIf="!isUpdatingProduct">Update Product</span>
+                            <span *ngIf="isUpdatingProduct">Updating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Price Modal -->
+    <div *ngIf="showAddPriceModal" class="modal-overlay" (click)="closeAddPriceModal()">
+        <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Add Price</h2>
+                <button class="modal-close" (click)="closeAddPriceModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="product-info-display" *ngIf="selectedProductForPrice">
+                    <strong>Product:</strong> {{ selectedProductForPrice.name }}
+                    <span class="badge badge-info">{{ selectedProductForPrice.metadata?.type || 'onetime' }}</span>
+                </div>
+
+                <form (ngSubmit)="createPrice()" #priceForm="ngForm">
+                    <div class="form-group">
+                        <label for="priceAmount">Amount (in cents) *</label>
+                        <input type="number" id="priceAmount" name="unitAmount" [(ngModel)]="newPrice.unitAmount"
+                            required min="1" class="form-control" placeholder="e.g., 2999 for $29.99" />
+                        <small class="form-hint">Enter amount in cents (e.g., 1000 = $10.00)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priceCurrency">Currency *</label>
+                        <select id="priceCurrency" name="currency" [(ngModel)]="newPrice.currency" required
+                            class="form-control">
+                            <option value="usd">USD - US Dollar</option>
+                            <option value="eur">EUR - Euro</option>
+                            <option value="gbp">GBP - British Pound</option>
+                            <option value="cad">CAD - Canadian Dollar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priceNickname">Nickname (optional)</label>
+                        <input type="text" id="priceNickname" name="nickname" [(ngModel)]="newPrice.nickname"
+                            class="form-control" placeholder="e.g., Monthly Plan, Annual Plan" />
+                        <small class="form-hint">A descriptive name for internal use</small>
+                    </div>
+
+                    <!-- Recurring options (only for subscription products) -->
+                    <div *ngIf="newPrice.recurring" class="recurring-options">
+                        <h4>Recurring Billing</h4>
+
+                        <div class="form-group">
+                            <label for="recurringInterval">Billing Interval *</label>
+                            <select id="recurringInterval" name="interval" [(ngModel)]="newPrice.recurring.interval"
+                                required class="form-control">
+                                <option value="month">Monthly</option>
+                                <option value="year">Yearly</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="intervalCount">Interval Count</label>
+                            <input type="number" id="intervalCount" name="intervalCount"
+                                [(ngModel)]="newPrice.recurring.intervalCount" min="1" max="12" class="form-control"
+                                placeholder="1" />
+                            <small class="form-hint">Bill every X months/years (default: 1)</small>
+                        </div>
+                    </div>
+
+                    <div class="price-preview" *ngIf="newPrice.unitAmount > 0">
+                        <strong>Preview:</strong>
+                        {{ formatCurrency(newPrice.unitAmount, newPrice.currency) }}
+                        <span *ngIf="newPrice.recurring">
+                            / {{ (newPrice.recurring.intervalCount || 1) > 1 ? newPrice.recurring.intervalCount : '' }}
+                            {{ newPrice.recurring.interval }}{{ (newPrice.recurring.intervalCount || 1) > 1 ? 's' : ''
+                            }}
+                        </span>
+                        <span *ngIf="!newPrice.recurring">(one-time)</span>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" (click)="closeAddPriceModal()"
+                            [disabled]="isCreatingPrice">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" [disabled]="!priceForm.valid || isCreatingPrice">
+                            <span *ngIf="!isCreatingPrice">Create Price</span>
+                            <span *ngIf="isCreatingPrice">Creating...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -75,6 +75,8 @@ export class StripeService {
     // Observable subjects for products and prices
     private productsSubject = new BehaviorSubject<StripeProduct[]>([]);
     private pricesSubject = new BehaviorSubject<StripePrice[]>([]);
+    private productsLoaded = false;
+    private pricesLoaded = false;
 
     public subscriptions$ = this.subscriptionsSubject.asObservable();
     public paymentMethods$ = this.paymentMethodsSubject.asObservable();
@@ -138,7 +140,7 @@ export class StripeService {
         // Development: Always use test mode even with real Stripe
         // Production: Use live mode
         const stripeEnv = environment.production ? 'live' : 'test';
-        
+
         // Debug logging to confirm environment
         console.log('🔧 STRIPE ENVIRONMENT CONFIG:', {
             production: environment.production,
@@ -147,7 +149,7 @@ export class StripeService {
             stripeEnvironment: stripeEnv,
             willUseMocks: this.useMockFunctions
         });
-        
+
         return stripeEnv;
     }
 
@@ -387,6 +389,10 @@ export class StripeService {
 
     // Get all products
     getProducts(): Observable<StripeProduct[]> {
+        if (!this.productsLoaded) {
+            this.productsLoaded = true;
+            this.loadProducts();
+        }
         return this.products$;
     }
 
@@ -432,11 +438,13 @@ export class StripeService {
                 }),
                 catchError((error) => {
                     console.error('Error loading products:', error);
+                    this.productsLoaded = false;
                     return of([] as StripeProduct[]);
                 })
             )
             .subscribe(products => {
                 this.productsSubject.next(products);
+                this.productsLoaded = true;
             });
     }
 
@@ -497,6 +505,10 @@ export class StripeService {
 
     // Get all prices
     getPrices(): Observable<StripePrice[]> {
+        if (!this.pricesLoaded) {
+            this.pricesLoaded = true;
+            this.loadPrices();
+        }
         return this.prices$;
     }
 
@@ -542,11 +554,13 @@ export class StripeService {
                 }),
                 catchError((error) => {
                     console.error('Error loading prices:', error);
+                    this.pricesLoaded = false;
                     return of([] as StripePrice[]);
                 })
             )
             .subscribe(prices => {
                 this.pricesSubject.next(prices);
+                this.pricesLoaded = true;
             });
     }
 
@@ -1094,7 +1108,14 @@ export class StripeService {
         })).pipe(
             map((result: any) => {
                 console.log('✅ STRIPE SERVICE DEBUG: getInvoices response', result.data);
-                return Array.isArray(result.data) ? result.data : [];
+                console.log('Result.data.data:', result?.data?.data);
+
+                // Firebase callable functions wrap the response in result.data
+                // Our function returns { data: invoices.data }, so we need result.data.data
+                const invoices = result?.data?.data || result?.data || [];
+                console.log('Final invoices array:', invoices);
+
+                return invoices;
             }),
             catchError(error => {
                 console.error('❌ STRIPE SERVICE DEBUG: getInvoices error', error);

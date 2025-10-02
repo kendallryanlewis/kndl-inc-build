@@ -1,4 +1,4 @@
-import { HttpClientModule } from "@angular/common/http";
+import { HttpClientModule, HTTP_INTERCEPTORS } from "@angular/common/http";
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
@@ -26,6 +26,7 @@ import { KndlServiceComponent } from "./kndl/kndl-service/kndl-service.component
 import { KndlTopNavigationComponent } from "./kndl/kndl-top-navigation/kndl-top-navigation.component";
 import { KndlComponent } from "./kndl/kndl.component";
 import { LoginComponent } from "./login/login.component";
+import { CorsInterceptor } from "./interceptors/cors.interceptor";
 import { PageNotFoundComponent } from "./page-not-found/page-not-found.component";
 import { AboutComponent } from "./standard-model/about/about.component";
 import { ContactComponent } from "./standard-model/contact/contact.component";
@@ -57,12 +58,6 @@ import { AdminUsersComponent } from './dashboard/admin/admin-users/admin-users.c
 import { AdminTaskComponent } from './dashboard/admin/admin-task/admin-task.component';
 import { AdminWikiComponent } from './dashboard/admin/admin-wiki/admin-wiki.component';
 import { RemoveDashesAndCapitalizePipe } from './pipes/remove-dashes-and-capitalize.pipe';
-import { AdminSitesComponent } from './dashboard/admin/admin-sites/admin-sites.component';
-import { OverviewTabComponent } from './dashboard/admin/admin-sites/overview-tab/overview-tab.component';
-import { BillingTabComponent } from './dashboard/admin/admin-sites/billing-tab/billing-tab.component';
-import { SubscriptionTabComponent } from './dashboard/admin/admin-sites/subscription-tab/subscription-tab.component';
-import { AddonsTabComponent } from './dashboard/admin/admin-sites/addons-tab/addons-tab.component';
-import { SettingsTabComponent } from './dashboard/admin/admin-sites/settings-tab/settings-tab.component';
 
 import './firebase-init';
 import { EditableTextComponent } from './dashboard/admin/components/editable-text.component';
@@ -80,6 +75,7 @@ import { EditorModule } from "@progress/kendo-angular-editor";
 import { BillingManagementComponent } from './dashboard/billing-management/billing-management.component';
 import { GenericButtonComponent } from './reusable/generic-button/generic-button.component';
 import { SubscriptionCardComponent } from './reusable/subscription-card/subscription-card.component';
+import { AdminStripeComponent } from "./dashboard/admin/admin-stripe/admin-stripe.component";
 
 @NgModule({
   declarations: [
@@ -134,12 +130,6 @@ import { SubscriptionCardComponent } from './reusable/subscription-card/subscrip
     AdminTaskComponent,
     AdminWikiComponent,
     RemoveDashesAndCapitalizePipe,
-    AdminSitesComponent,
-    OverviewTabComponent,
-    BillingTabComponent,
-    SubscriptionTabComponent,
-    AddonsTabComponent,
-    SettingsTabComponent,
     EditableTextComponent,
     AdminLandingEditorComponent,
     LandingEditorComponent,
@@ -152,7 +142,8 @@ import { SubscriptionCardComponent } from './reusable/subscription-card/subscrip
     AdminWikiListComponent,
     BillingManagementComponent,
     GenericButtonComponent,
-    SubscriptionCardComponent
+    SubscriptionCardComponent,
+    AdminStripeComponent
   ],
   imports: [
     EditorModule,
@@ -165,7 +156,13 @@ import { SubscriptionCardComponent } from './reusable/subscription-card/subscrip
     HttpClientModule,
     QuillModule.forRoot()
   ],
-  providers: [],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: CorsInterceptor,
+      multi: true
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

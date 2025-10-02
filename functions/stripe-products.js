@@ -1,15 +1,22 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const cors = require('cors')({
     origin: [
         'http://localhost:4200',
         'http://127.0.0.1:4200',
+        'https://localhost:4200',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'https://kndl-inc.com',
+        'https://www.kndl-inc.com',
         'https://kndl-3663b.web.app', // Firebase hosting
         'https://kndl-3663b.firebaseapp.com', // Firebase hosting
-        'https://kndl-inc.com', // Your custom domain (if you have one)
-        'https://www.kndl-inc.com' // Your custom domain with www
+        /^https?:\/\/localhost(:\d+)?$/, // Any localhost port
+        /^https?:\/\/127\.0\.0\.1(:\d+)?$/, // Any 127.0.0.1 port
+        /^https?:\/\/.*\.kndl-inc\.com$/ // Any subdomain of kndl-inc.com
     ],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 });
 require('dotenv').config();
 
@@ -18,19 +25,49 @@ if (!admin.apps.length) {
     admin.initializeApp();
 }
 
-// Initialize Stripe with Firebase config as priority, fallback to env variables
-// Note: Validate API keys before initialization to avoid authentication errors
-const testKey = functions.config().stripe?.test_secret_key || process.env.STRIPE_TEST_SECRET_KEY;
-const liveKey = process.env.STRIPE_LIVE_SECRET_KEY;
+// Helper to load Stripe secrets with 2nd-gen safe fallbacks
+const loadStripeSecrets = () => {
+    const secretsFromEnv = {
+        test_secret_key: process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_TEST_KEY,
+        live_secret_key: process.env.STRIPE_LIVE_SECRET_KEY || process.env.STRIPE_LIVE_KEY
+    };
+
+    if (secretsFromEnv.test_secret_key || secretsFromEnv.live_secret_key) {
+        return secretsFromEnv;
+    }
+
+    try {
+        // Legacy fallback for 1st gen deployments
+        if (typeof functions.config === 'function') {
+            const legacyConfig = functions.config();
+            if (legacyConfig?.stripe) {
+                console.warn('⚠️ STRIPE WARNING: Falling back to functions.config().stripe; migrate secrets to STRIPE_TEST_SECRET_KEY/STRIPE_LIVE_SECRET_KEY env vars for 2nd gen.');
+                return {
+                    test_secret_key: legacyConfig.stripe.test_secret_key,
+                    live_secret_key: legacyConfig.stripe.live_secret_key
+                };
+            }
+        }
+    } catch (configError) {
+        console.warn('⚠️ STRIPE WARNING: functions.config() unavailable, relying on environment variables only.', configError?.message);
+    }
+
+    return secretsFromEnv;
+};
+
+const stripeRuntimeConfig = loadStripeSecrets();
+
+const testKey = stripeRuntimeConfig.test_secret_key;
+const liveKey = stripeRuntimeConfig.live_secret_key;
 
 if (!testKey || testKey.startsWith('sk_test_...') || testKey === 'sk_test_...') {
     console.error('❌ STRIPE ERROR: Test secret key is missing or invalid');
-    console.error('🔧 FIX: Update STRIPE_TEST_SECRET_KEY in functions/.env file');
+    console.error('🔧 FIX: Set STRIPE_TEST_SECRET_KEY via firebase functions:env:set or provide it in functions/.env before deploying.');
 }
 
 if (!liveKey || liveKey.startsWith('sk_live_...') || liveKey === 'sk_live_...' || liveKey.includes('REPLACE_WITH_YOUR_ACTUAL_LIVE_KEY')) {
     console.warn('⚠️ STRIPE WARNING: Live secret key is missing or invalid');
-    console.warn('🔧 FIX: Update STRIPE_LIVE_SECRET_KEY in functions/.env file');
+    console.warn('🔧 FIX: Set STRIPE_LIVE_SECRET_KEY via firebase functions:env:set or provide it in functions/.env before deploying.');
 }
 
 const stripeTest = testKey ? require('stripe')(testKey) : null;

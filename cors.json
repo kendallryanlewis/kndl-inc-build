@@ -2,7 +2,12 @@
     {
         "origin": [
             "http://localhost:4200",
-            "http://127.0.0.1:4200"
+            "http://127.0.0.1:4200",
+            "https://localhost:4200",
+            "https://kndl-inc.com",
+            "https://www.kndl-inc.com",
+            "https://kndl-3663b.web.app",
+            "https://kndl-3663b.firebaseapp.com"
         ],
         "method": [
             "GET",
