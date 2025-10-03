@@ -672,7 +672,7 @@ export class AdminStripeComponent implements OnInit {
 
     getPricesForProduct(productId: string): any[] {
         // Handle both string product IDs and product objects (matching overview component pattern)
-        return this.stripeData.prices.filter(p => 
+        return this.stripeData.prices.filter(p =>
             p && (p.product === productId || p.product?.id === productId)
         );
     }
@@ -1359,12 +1359,12 @@ export class AdminStripeComponent implements OnInit {
             if (result && result.product) {
                 this.invalidateCache(); // Clear cache to force fresh data
                 this.closeEditProductModal();
-                
+
                 // Force the stripe service to reload data
                 this.stripeService.forceDataRefresh().then(() => {
                     // Then reload the component's data
                     this.loadStripeData();
-                    
+
                     if (result.priceChanged && result.price) {
                         const amount = this.formatCurrency(result.price.unit_amount, result.price.currency);
                         alert(`✅ Product updated successfully!\n\nNew price created: ${amount}\n\nNote: The old price was not archived. You can archive it manually if needed.`);
@@ -1575,11 +1575,11 @@ export class AdminStripeComponent implements OnInit {
     convertToCardProduct(stripeProduct: any): any {
         const prices = this.getPricesForProduct(stripeProduct.id);
         const primaryPrice = prices.find(p => p.active) || prices[0];
-        
+
         // Determine if this is a recurring or one-time product based on price
         const isRecurring = primaryPrice?.recurring ? true : false;
         const priceAmount = primaryPrice ? (primaryPrice.unit_amount / 100) : 0;
-        
+
         // Determine product type from metadata
         const metadataType = stripeProduct.metadata?.type;
         const isBusinessModel = metadataType === 'businessModel';
