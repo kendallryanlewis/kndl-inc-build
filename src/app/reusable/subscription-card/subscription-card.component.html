@@ -1,5 +1,6 @@
 <div class="subscription-plan-card h-100 stat-card" [ngClass]="getCardClass()">
-    <div class="card-header d-flex justify-content-between align-items-start">
+    <div class="card-header d-flex justify-content-between align-items-start"
+        *ngIf="showActions == true || showEdit == true || showDelete == true">
         <div>
             <div class="mb-2">
                 <div class="plan-details" *ngFor="let detail of getProductDetails()">

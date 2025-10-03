@@ -182,6 +182,141 @@ exports.updateStripeProduct = functions.https.onCall(async (data, context) => {
     }
 });
 
+// Delete a product permanently from Stripe
+// WARNING: This action cannot be undone. Only inactive products should be deleted.
+// NOTE: Products with prices cannot be deleted, only archived (Stripe limitation)
+exports.deleteStripeProduct = functions.https.onCall(async (data, context) => {
+    try {
+        if (!data.productId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Product ID is required');
+        }
+
+        const stripe = getStripeInstance(data.environment || 'test');
+
+        // First, check if the product exists and is inactive
+        const product = await stripe.products.retrieve(data.productId);
+
+        if (product.active) {
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                'Cannot delete active product. Please archive it first.'
+            );
+        }
+
+        // Get all prices associated with this product
+        const prices = await stripe.prices.list({
+            product: data.productId,
+            limit: 100
+        });
+
+        console.log(`🔍 Found ${prices.data.length} prices for product ${data.productId}`);
+
+        // STRIPE LIMITATION: Products with prices (even archived) cannot be deleted
+        // Only products with NO prices can be deleted
+        if (prices.data.length > 0) {
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                `Cannot delete product with prices. This product has ${prices.data.length} price(s). Stripe does not allow deleting products that have prices associated with them (even archived prices). You can only archive this product. To permanently delete a product, it must have ZERO prices.`
+            );
+        }
+
+        // Only products with no prices can be deleted
+        const deletedProduct = await stripe.products.del(data.productId);
+
+        console.log(`🗑️ Product deleted: ${data.productId} in ${data.environment || 'test'} mode by ${context.auth?.uid || 'anonymous'}`);
+
+        return {
+            data: deletedProduct,
+            message: 'Product deleted successfully',
+            deletedId: data.productId
+        };
+    } catch (error) {
+        console.error('Error deleting Stripe product:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to delete product');
+    }
+});
+
+// Get all customers subscribed to a specific product
+exports.getProductCustomers = functions.https.onCall(async (data, context) => {
+    try {
+        if (!data.productId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Product ID is required');
+        }
+
+        const stripe = getStripeInstance(data.environment || 'test');
+
+        // Get all subscriptions that include this product
+        const subscriptions = await stripe.subscriptions.list({
+            limit: 100,
+            status: 'all', // Get all statuses (active, past_due, canceled, etc.)
+        });
+
+        // Filter subscriptions that include the specified product
+        const relevantSubscriptions = subscriptions.data.filter(sub =>
+            sub.items.data.some(item => item.price.product === data.productId)
+        );
+
+        // Get customer details for each subscription
+        const customerPromises = relevantSubscriptions.map(async (sub) => {
+            const customer = await stripe.customers.retrieve(sub.customer);
+            const subscriptionItem = sub.items.data.find(item => item.price.product === data.productId);
+
+            return {
+                customerId: customer.id,
+                customerName: customer.name || 'N/A',
+                customerEmail: customer.email || 'N/A',
+                subscriptionId: sub.id,
+                subscriptionStatus: sub.status,
+                subscriptionCreated: sub.created,
+                subscriptionCurrentPeriodEnd: sub.current_period_end,
+                priceId: subscriptionItem?.price.id,
+                priceName: subscriptionItem?.price.nickname || 'N/A',
+                amount: subscriptionItem?.price.unit_amount / 100,
+                currency: subscriptionItem?.price.currency.toUpperCase(),
+                quantity: subscriptionItem?.quantity || 1
+            };
+        });
+
+        const customers = await Promise.all(customerPromises);
+
+        console.log(`📊 Found ${customers.length} customers for product ${data.productId} in ${data.environment || 'test'} mode`);
+
+        return {
+            data: customers,
+            productId: data.productId,
+            totalCustomers: customers.length
+        };
+    } catch (error) {
+        console.error('Error getting product customers:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to get product customers');
+    }
+});
+
+// Remove a customer from a product (cancel their subscription to that product)
+exports.removeCustomerFromProduct = functions.https.onCall(async (data, context) => {
+    try {
+        if (!data.subscriptionId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Subscription ID is required');
+        }
+
+        const stripe = getStripeInstance(data.environment || 'test');
+
+        // Cancel the subscription
+        const canceledSubscription = await stripe.subscriptions.cancel(data.subscriptionId);
+
+        console.log(`🚫 Subscription ${data.subscriptionId} canceled in ${data.environment || 'test'} mode by ${context.auth?.uid || 'anonymous'}`);
+
+        return {
+            data: canceledSubscription,
+            message: 'Customer removed from product successfully',
+            subscriptionId: data.subscriptionId
+        };
+    } catch (error) {
+        console.error('Error removing customer from product:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to remove customer from product');
+    }
+});
+
 // Get all products from Stripe
 exports.getStripeProducts = functions.https.onCall(async (data, context) => {
     try {

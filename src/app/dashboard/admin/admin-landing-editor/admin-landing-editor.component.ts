@@ -1,5 +1,4 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { LandingLayoutService } from '../../../services/landing-layout.service';
 import { StripeService, StripeProduct, StripePrice } from '../../../services/stripe.service';
 import { AboutUsContent } from 'src/app/models/about-us-content';
 import { DetailedServicesContent } from 'src/app/models/detailed-service-content';
@@ -77,7 +76,7 @@ interface PreviewSection {
 })
 export class AdminLandingEditorComponent implements OnInit, OnChanges, OnDestroy {
     @Input() subTab: string = 'Home';
-    sectionIds: string[] = ['Home', 'About Us', 'Services', 'Enhancements', 'Call to Action', '|', 'Service Plans', 'Subscriptions', 'Add-Ons'];
+    sectionIds: string[] = ['Home', 'About Us', 'Services', 'Enhancements', 'Call to Action'];
     @Output() childTabs = new EventEmitter<string[]>();
     @Input() content: string = '';
 
@@ -183,7 +182,6 @@ export class AdminLandingEditorComponent implements OnInit, OnChanges, OnDestroy
     private changedFields = new Set<string>();
 
     constructor(
-        private landingLayoutService: LandingLayoutService,
         private cdr: ChangeDetectorRef,
         private stripeService: StripeService
     ) {

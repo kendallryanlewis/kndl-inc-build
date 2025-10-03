@@ -10,6 +10,7 @@ export class GenericButtonComponent {
   @Input() style: 'primary' | 'secondary' | 'danger' | 'info' = 'primary';
   @Input() title: string = 'Button';
   @Input() icon: string = 'check';
+  @Input() width: string = 'auto';
 
   callParent() {
     this.action?.(); // call the parent-supplied function

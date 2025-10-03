@@ -5,36 +5,8 @@
         <div class="header-section d-flex justify-content-between align-items-center mb-3">
             <app-generic-h2-title [title]="'Admin Users'" [icon]="'fa-users'"
                 [subTitle]="'Manage users, roles, and permissions.'"></app-generic-h2-title>
-
             <!-- Action Buttons -->
             <div class="header-actions d-flex gap-2">
-                <!-- Bulk Actions (shown when users are selected) -->
-                <div class="bulk-actions d-flex gap-2" *ngIf="selectedUserIds.size > 0">
-                    <div class="selected-count-badge bg-primary text-white px-3 py-2 rounded-pill small">
-                        <i class="fa fa-check me-1"></i>
-                        {{ selectedUserIds.size }} selected
-                    </div>
-                    <button class="btn btn-outline-success btn-sm" (click)="bulkChangeStatus('Active')"
-                        title="Set selected users to Active">
-                        <i class="fa fa-check-circle me-1"></i>
-                        Activate
-                    </button>
-                    <button class="btn btn-outline-warning btn-sm" (click)="bulkChangeRole('Manager')"
-                        title="Set selected users to Manager role">
-                        <i class="fa fa-users me-1"></i>
-                        Make Manager
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm" (click)="bulkDeleteUsers()"
-                        title="Delete selected users">
-                        <i class="fa fa-trash me-1"></i>
-                        Delete
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="clearSelection()" title="Clear selection">
-                        <i class="fa fa-times me-1"></i>
-                        Clear
-                    </button>
-                </div>
-
                 <!-- Add User Button -->
                 <button class="admin-tab bg-blue my-auto" (click)="showCreateUserModal = true">
                     <i class="fa fa-plus me-2"></i>
@@ -42,126 +14,63 @@
                 </button>
             </div>
         </div>
-
+        <!-- User Details Panel (existing code) -->
         <div class="row w-100 h-100 g-2">
-            <!-- Users List -->
-            <div class="users-container h-100" [ngClass]="selectedUser ? 'col-4 shadow' : 'col-12'">
-                <div class="users-grid h-100 d-flex flex-column">
-
-                    <!-- Search -->
-                    <div class="search-header rounded-top rounded-0">
-                        <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm ps-4 rounded-top"
-                                placeholder="Search users..." [(ngModel)]="searchQuery"
-                                (ngModelChange)="onSearchChange()" name="userSearch" />
-                            <i
-                                class="fa fa-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted"></i>
+            <div class="users-container h-100 col-md-4"
+                [class]="selectedUser ? 'bg-blue bg-opacity-10 shadow p-3' : 'col-md-12 '">
+                <!-- Users Section (Card Grid Layout) -->
+                <div class="users-section">
+                    <!-- Search Bar -->
+                    <div class="search-bar-container mb-4">
+                        <div class="search-input-wrapper">
+                            <i class="fa fa-search search-icon"></i>
+                            <input type="text" class="form-control search-input"
+                                placeholder="Search users by name, email, or role..." [(ngModel)]="searchQuery"
+                                (ngModelChange)="onSearchChange()" name="userSearch">
+                            <button *ngIf="searchQuery" class="clear-search-btn"
+                                (click)="searchQuery = ''; onSearchChange()" aria-label="Clear search">
+                                <i class="fa fa-times"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <p class="m-0 mb-3 p-2 small bg-blue text-white rounded-bottom">
-                        {{ getCurrentUsers().length }} users found
-                    </p>
-
-                    <!-- User Cards -->
-                    <div class="users-list flex-grow-1 overflow-auto">
-                        <!-- Select All Header -->
-                        <div class="select-all-header d-flex align-items-center p-2 mb-2 bg-light "
-                            *ngIf="getCurrentUsers().length > 0">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="selectAll"
-                                    [checked]="areAllUsersSelected()"
-                                    [indeterminate]="areSomeUsersSelected() && !areAllUsersSelected()"
-                                    (change)="toggleSelectAll($event)">
-                                <label class="form-check-label small text-muted" for="selectAll">
-                                    {{ selectedUserIds.size > 0 ? selectedUserIds.size + ' selected' : 'Select all' }}
-                                </label>
+                    <!-- Bulk Actions Bar (shown when users are selected) -->
+                    <div class="bulk-actions-bar mb-3 p-3 bg-light border rounded" *ngIf="selectedUserIds.size > 0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="selected-count">
+                                <i class="fa fa-check-circle text-primary me-2"></i>
+                                <strong>{{ selectedUserIds.size }}</strong> user(s) selected
                             </div>
                         </div>
+                    </div>
 
-                        <div *ngFor="let user of getCurrentUsers()"
-                            class="user-card d-flex align-items-center p-2 mb-3 bg-white border rounded stat-card position-relative"
-                            [class.bg-primary]="selectedUser?.id === user.id && selectedUserIds.size === 0"
-                            [class.text-white]="selectedUser?.id === user.id && selectedUserIds.size === 0"
-                            [class.bg-info]="selectedUserIds.has(user.id) && selectedUser?.id !== user.id"
-                            [class.text-white]="selectedUserIds.has(user.id)">
-
-                            <!-- Selection Checkbox -->
-                            <div class="user-checkbox me-2" (click)="$event.stopPropagation()">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" [id]="'user-' + user.id"
-                                        [checked]="selectedUserIds.has(user.id)"
-                                        (change)="toggleUserSelection(user.id, $event)">
-                                </div>
-                            </div>
-
-                            <!-- Main User Info (Clickable) -->
-                            <div class="user-main-content d-flex align-items-center flex-grow-1 cursor-pointer"
+                    <!-- User Cards Grid -->
+                    <div class="row">
+                        <div class="col-md-4 mb-4" *ngFor="let user of getFilteredUsers()"
+                            [class.col-md-12]="selectedUser != null">
+                            <!-- User Card -->
+                            <app-subscription-card [product]="convertUserToCard(user)" [cardType]="'addon'"
+                                [showActions]="false" [showEdit]="false" [showDelete]="false"
+                                [customActions]="getUserActions(user)"
+                                (customActionClicked)="onUserAction($event, user)" class="cursor-pointer"
                                 (click)="selectUser(user)">
-                                <!-- User Avatar -->
-                                <div class="user-avatar me-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white fw-bold"
-                                        style="width: 32px; height: 32px; font-size: 0.875rem;">
-                                        {{ getInitials(user.name) }}
-                                    </div>
-                                </div>
-
-                                <!-- User Info -->
-                                <div class="flex-grow-1 min-w-0">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="min-w-0 flex-grow-1">
-                                            <h6 class="mb-0 fw-medium text-truncate" style="font-size: 0.9rem;">
-                                                {{ user.name }}
-                                            </h6>
-                                            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
-                                        </div>
-                                        <div class="text-end ms-2">
-                                            <span class="badge rounded-pill" style="font-size: 0.65rem;" [ngClass]="{
-                                                      'bg-success': user.status === 'Active',
-                                                      'bg-warning': user.status === 'Invited',
-                                                      'bg-danger': user.status === 'Deleted'
-                                                  }">
-                                                {{ user.status }}
-                                            </span>
-                                            <div class="text-muted mt-1 small">{{ user.role }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Quick Action Buttons -->
-                            <div class="user-actions d-flex gap-1 ms-2" (click)="$event.stopPropagation()">
-                                <button
-                                    class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
-                                    style="width: 28px; height: 28px; padding: 0;" (click)="quickEditUser(user)"
-                                    title="Quick Edit User"
-                                    [class.btn-outline-light]="selectedUser?.id === user.id || selectedUserIds.has(user.id)">
-                                    <i class="fa fa-edit" style="font-size: 0.75rem;"></i>
-                                </button>
-                                <button
-                                    class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"
-                                    style="width: 28px; height: 28px; padding: 0;" (click)="quickDeleteUser(user)"
-                                    title="Delete User"
-                                    [class.btn-outline-light]="selectedUser?.id === user.id || selectedUserIds.has(user.id)"
-                                    *ngIf="user.status !== 'Deleted'">
-                                    <i class="fa fa-trash" style="font-size: 0.75rem;"></i>
-                                </button>
-                                <button
-                                    class="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center"
-                                    style="width: 28px; height: 28px; padding: 0;" (click)="restoreUser(user)"
-                                    title="Restore User"
-                                    [class.btn-outline-light]="selectedUser?.id === user.id || selectedUserIds.has(user.id)"
-                                    *ngIf="user.status === 'Deleted'">
-                                    <i class="fa fa-undo" style="font-size: 0.75rem;"></i>
-                                </button>
-                            </div>
+                            </app-subscription-card>
                         </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div *ngIf="getCurrentUsers().length === 0" class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No users found</h4>
+                        <p class="text-muted">
+                            {{ searchQuery ? 'Try adjusting your search criteria.' : 'Users will appear here when
+                            added.' }}
+                        </p>
                     </div>
                 </div>
             </div>
-
             <!-- User Details Panel -->
-            <div *ngIf="selectedUser" class="user-details-panel h-100 col-8">
+            <div *ngIf="selectedUser" class="user-details-panel h-100 col-md-8">
                 <div class="details-container h-100 d-flex flex-column ms-5">
                     <!-- Header -->
                     <div class="details-header pb-4">
@@ -178,312 +87,321 @@
                                     <div class="text-muted small">{{ selectedUser.email }}</div>
                                 </div>
                             </div>
-                            <button class="btn btn-outline-secondary btn-sm" (click)="closeDetails()">
-                                <i class="fa fa-times"></i>
-                            </button>
+                            <app-generic-button [icon]="'fa fa-arrow-left'" [title]="''" [action]="closeDetails"
+                                [style]="'danger'"></app-generic-button>
                         </div>
 
                         <!-- Stats -->
                         <div class="stats-row mt-3 row g-2">
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold">{{ selectedUser.role }}</div>
                                     <div class="text-muted small">Role</div>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold">{{ formatDate(selectedUser.joinDate) }}</div>
                                     <div class="text-muted small">Joined</div>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold">{{ formatDate(selectedUser.lastLogin) }}</div>
                                     <div class="text-muted small">Last Login</div>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 bg-light border stat-card">
+                                <div class="text-center p-2 bg-light border stat-card rounded">
                                     <div class="fw-bold" [ngClass]="{
                                         'text-success': selectedUser.status === 'Active',
                                         'text-warning': selectedUser.status === 'Invited',
                                         'text-danger': selectedUser.status === 'Deleted'
-                                    }">{{ selectedUser.status }}</div>
+                                    }">{{ selectedUser.status }}
+                                    </div>
                                     <div class="text-muted small">Status</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tabs Navigation -->
-                    <div class="tabs-nav px-3 py-2  stat-card bg-blue text-tan">
-                        <nav class="d-flex gap-1">
-                            <button *ngFor="let tab of availableTabs"
-                                class="nav-btn px-3 py-1 border-0 bg-transparent small fw-medium d-flex align-items-center gap-2 text-tan"
-                                [class.bg-primary]="isTabActive(tab.id)" [class.text-white]="isTabActive(tab.id)"
-                                [class.text-white]="!isTabActive(tab.id)" (click)="setActiveTab(tab.id)"
-                                [attr.aria-selected]="isTabActive(tab.id)" role="tab">
-                                <i class="fa" [class]="tab.icon"></i>
-                                {{ tab.label }}
-                            </button>
-                        </nav>
-                    </div>
+                    <!-- Combined Content (All sections in one view) -->
+                    <div class="combined-content flex-grow-1 overflow-auto mt-3">
+                        <div class="stat-card p-3">
 
-                    <!-- Tab Content -->
-                    <div class="tab-content flex-grow-1 overflow-auto mt-3">
-
-                        <!-- Overview Tab -->
-                        <div *ngIf="isTabActive('overview')" class="stat-card p-3">
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <!-- Recent Activity -->
-                                    <div class="stt-card mb-3">
-                                        <h6 class="mb-3 fw-medium">Recent Activity</h6>
-                                        <div class="activity-list">
-                                            <div class="activity-item d-flex align-items-center p-2 mb-2 "
-                                                *ngFor="let activity of getRecentActivity(selectedUser)">
-                                                <div class="activity-icon me-2 rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
-                                                    style="width: 24px; height: 24px;">
-                                                    <i [class]="activity.icon" style="font-size: 0.75rem;"></i>
+                            <!-- Overview Section -->
+                            <div class="content-section mb-4">
+                                <h5 class="section-title mb-3">
+                                    <i class="fa fa-chart-line me-2"></i>
+                                    Overview
+                                </h5>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <!-- Recent Activity -->
+                                        <div class="stt-card mb-3">
+                                            <h6 class="mb-3 fw-medium">Recent Activity</h6>
+                                            <div class="activity-list">
+                                                <div class="activity-item d-flex align-items-center p-2 mb-2 "
+                                                    *ngFor="let activity of getRecentActivity(selectedUser)">
+                                                    <div class="activity-icon me-2 rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
+                                                        style="width: 24px; height: 24px;">
+                                                        <i [class]="activity.icon" style="font-size: 0.75rem;"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <div class="activity-text small">{{ activity.description }}
+                                                        </div>
+                                                        <div class="activity-date text-muted"
+                                                            style="font-size: 0.75rem;">{{
+                                                            formatDate(activity.date) }}</div>
+                                                    </div>
                                                 </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="activity-text small">{{ activity.description }}</div>
-                                                    <div class="activity-date text-muted" style="font-size: 0.75rem;">{{
-                                                        formatDate(activity.date) }}</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- User Performance -->
+                                        <div class="stt-card">
+                                            <h6 class="mb-3 fw-medium">User Statistics</h6>
+                                            <div class="performance-metrics row g-2">
+                                                <div class="col-4">
+                                                    <div class="metric-item text-center p-2 border">
+                                                        <div class="metric-value small fw-bold">{{
+                                                            selectedUser.onboardingCompleted ? 'Yes' : 'No' }}</div>
+                                                        <div class="metric-label text-muted"
+                                                            style="font-size: 0.75rem;">
+                                                            Onboarded</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="metric-item text-center p-2 border">
+                                                        <div class="metric-value small fw-bold">{{
+                                                            selectedUser.platforms.length || 0 }}</div>
+                                                        <div class="metric-label text-muted"
+                                                            style="font-size: 0.75rem;">
+                                                            Platforms</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="metric-item text-center p-2 border">
+                                                        <div class="metric-value small fw-bold">{{
+                                                            getLoginStreak(selectedUser) }}</div>
+                                                        <div class="metric-label text-muted"
+                                                            style="font-size: 0.75rem;">
+                                                            Day Streak</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- User Performance -->
-                                    <div class="stt-card">
-                                        <h6 class="mb-3 fw-medium">User Statistics</h6>
-                                        <div class="performance-metrics row g-2">
-                                            <div class="col-4">
-                                                <div class="metric-item text-center p-2 border">
-                                                    <div class="metric-value small fw-bold">{{
-                                                        selectedUser.onboardingCompleted ? 'Yes' : 'No' }}</div>
-                                                    <div class="metric-label text-muted" style="font-size: 0.75rem;">
-                                                        Onboarded</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-4">
-                                                <div class="metric-item text-center p-2 border">
-                                                    <div class="metric-value small fw-bold">{{
-                                                        selectedUser.platforms.length || 0 }}</div>
-                                                    <div class="metric-label text-muted" style="font-size: 0.75rem;">
-                                                        Platforms</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-4">
-                                                <div class="metric-item text-center p-2 border">
-                                                    <div class="metric-value small fw-bold">{{
-                                                        getLoginStreak(selectedUser) }}</div>
-                                                    <div class="metric-label text-muted" style="font-size: 0.75rem;">
-                                                        Day Streak</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <!-- User Information -->
-                                    <div class="stt-card">
-                                        <h6 class="mb-3 fw-medium">User Information</h6>
-                                        <div class="info-list">
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
-                                                <span class="small text-muted">Status</span>
-                                                <span class="status-badge px-2 py-1 rounded-pill small fw-medium"
-                                                    [ngClass]="{
+                                    <div class="col-md-4">
+                                        <!-- User Information -->
+                                        <div class="stt-card">
+                                            <h6 class="mb-3 fw-medium">User Information</h6>
+                                            <div class="info-list">
+                                                <div
+                                                    class="info-item d-flex justify-content-between align-items-center py-2 ">
+                                                    <span class="small text-muted">Status</span>
+                                                    <span class="status-badge px-2 py-1 rounded-pill small fw-medium"
+                                                        [ngClass]="{
                                                           'bg-success bg-opacity-20 text-success': selectedUser.status === 'Active',
                                                           'bg-warning bg-opacity-20 text-warning': selectedUser.status === 'Invited',
                                                           'bg-danger bg-opacity-20 text-danger': selectedUser.status === 'Deleted'
                                                       }">
-                                                    {{ selectedUser.status | titlecase }}
-                                                </span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
-                                                <span class="small text-muted">Role</span>
-                                                <span class="small fw-medium">{{ selectedUser.role }}</span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
-                                                <span class="small text-muted">Location</span>
-                                                <span class="small">{{ selectedUser.location || 'Not specified'
-                                                    }}</span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2 ">
-                                                <span class="small text-muted">Joined</span>
-                                                <span class="small">{{ formatDate(selectedUser.joinDate) }}</span>
-                                            </div>
-                                            <div
-                                                class="info-item d-flex justify-content-between align-items-center py-2">
-                                                <span class="small text-muted">Phone</span>
-                                                <span class="small">{{ selectedUser.phone || 'Not provided' }}</span>
+                                                        {{ selectedUser.status | titlecase }}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    class="info-item d-flex justify-content-between align-items-center py-2 ">
+                                                    <span class="small text-muted">Role</span>
+                                                    <span class="small fw-medium">{{ selectedUser.role }}</span>
+                                                </div>
+                                                <div
+                                                    class="info-item d-flex justify-content-between align-items-center py-2 ">
+                                                    <span class="small text-muted">Location</span>
+                                                    <span class="small">{{ selectedUser.location || 'Not specified'
+                                                        }}</span>
+                                                </div>
+                                                <div
+                                                    class="info-item d-flex justify-content-between align-items-center py-2 ">
+                                                    <span class="small text-muted">Joined</span>
+                                                    <span class="small">{{ formatDate(selectedUser.joinDate) }}</span>
+                                                </div>
+                                                <div
+                                                    class="info-item d-flex justify-content-between align-items-center py-2">
+                                                    <span class="small text-muted">Phone</span>
+                                                    <span class="small">{{ selectedUser.phone || 'Not provided'
+                                                        }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Sites Tab -->
-                        <div *ngIf="isTabActive('sites')" class="stat-card p-3">
-                            <div class="stt-card">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 fw-medium">
-                                        <i class="fa fa-globe me-2"></i>
-                                        Attached Sites
-                                    </h6>
-                                    <button class="btn btn-primary btn-sm" (click)="openSiteSelectionModal()"
-                                        [disabled]="loadingSites">
-                                        <i class="fa fa-plus me-1"></i>
-                                        Attach Sites
-                                    </button>
-                                </div>
-
-                                <!-- Loading State -->
-                                <div class="text-center py-4" *ngIf="loadingSites">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading sites...</span>
-                                    </div>
-                                    <p class="mt-2 text-muted">Loading available sites...</p>
-                                </div>
-
-                                <!-- Attached Sites List -->
-                                <div *ngIf="!loadingSites">
-                                    <!-- No Sites Attached -->
-                                    <div class="text-center py-4" *ngIf="attachedCompanies.length === 0">
-                                        <i class="fa fa-globe text-muted" style="font-size: 3rem;"></i>
-                                        <h6 class="mt-3 text-muted">No Sites Attached</h6>
-                                        <p class="text-muted">This user doesn't have any sites attached to their
-                                            profile.</p>
-                                        <button class="btn btn-outline-primary" (click)="openSiteSelectionModal()">
+                            <!-- Sites Section -->
+                            <div class="content-section mb-4">
+                                <h5 class="section-title mb-3">
+                                    <i class="fa fa-globe me-2"></i>
+                                    Sites
+                                </h5>
+                                <div class="stt-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="mb-0 fw-medium">
+                                            <i class="fa fa-globe me-2"></i>
+                                            Attached Sites
+                                        </h6>
+                                        <button class="btn btn-primary btn-sm" (click)="openSiteSelectionModal()"
+                                            [disabled]="loadingSites">
                                             <i class="fa fa-plus me-1"></i>
-                                            Attach First Site
+                                            Attach Sites
                                         </button>
                                     </div>
 
-                                    <!-- Sites Grid -->
-                                    <div class="sites-grid" *ngIf="attachedCompanies.length > 0">
-                                        <div class="row g-3">
-                                            <div class="col-md-6 col-lg-4" *ngFor="let company of attachedCompanies">
-                                                <div class="site-card border rounded p-3 h-100 d-flex flex-column">
-                                                    <!-- Site Header -->
-                                                    <div
-                                                        class="site-header d-flex justify-content-between align-items-start mb-2">
-                                                        <div class="site-info flex-grow-1">
-                                                            <h6 class="site-name mb-1 fw-bold">{{ company.name }}</h6>
-                                                            <small class="text-muted" *ngIf="company.website">
-                                                                <i class="fa fa-link me-1"></i>
-                                                                <a [href]="company.website" target="_blank"
-                                                                    class="text-decoration-none">
-                                                                    {{ company.website }}
-                                                                </a>
-                                                            </small>
-                                                        </div>
-                                                        <div class="site-actions">
-                                                            <button class="btn btn-outline-danger btn-sm"
-                                                                (click)="detachSite(company.id)" title="Detach Site">
-                                                                <i class="fa fa-unlink" style="font-size: 0.75rem;"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                    <!-- Loading State -->
+                                    <div class="text-center py-4" *ngIf="loadingSites">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading sites...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Loading available sites...</p>
+                                    </div>
 
-                                                    <!-- Site Details -->
-                                                    <div class="site-details flex-grow-1">
-                                                        <div class="site-info-item d-flex align-items-center mb-2"
-                                                            *ngIf="company.industry">
-                                                            <i class="fa fa-industry text-muted me-2"
-                                                                style="width: 16px;"></i>
-                                                            <span class="small">{{ company.industry }}</span>
-                                                        </div>
+                                    <!-- Attached Sites List -->
+                                    <div *ngIf="!loadingSites">
+                                        <!-- No Sites Attached -->
+                                        <div class="text-center py-4" *ngIf="attachedCompanies.length === 0">
+                                            <i class="fa fa-globe text-muted" style="font-size: 3rem;"></i>
+                                            <h6 class="mt-3 text-muted">No Sites Attached</h6>
+                                            <p class="text-muted">This user doesn't have any sites attached to their
+                                                profile.</p>
+                                            <button class="btn btn-outline-primary" (click)="openSiteSelectionModal()">
+                                                <i class="fa fa-plus me-1"></i>
+                                                Attach First Site
+                                            </button>
+                                        </div>
 
-                                                        <div class="site-info-item d-flex align-items-center mb-2"
-                                                            *ngIf="company.contactEmail">
-                                                            <i class="fa fa-envelope text-muted me-2"
-                                                                style="width: 16px;"></i>
-                                                            <span class="small">{{ company.contactEmail }}</span>
-                                                        </div>
-
-                                                        <div class="site-info-item d-flex align-items-center mb-2">
-                                                            <i class="fa fa-calendar text-muted me-2"
-                                                                style="width: 16px;"></i>
-                                                            <span class="small">
-                                                                Attached {{
-                                                                formatDate(getAttachedSite(company.id)?.dateAttached) }}
-                                                            </span>
-                                                        </div>
-
-                                                        <!-- Site Status -->
-                                                        <div class="site-status mt-2">
-                                                            <span class="badge rounded-pill"
-                                                                [class.bg-success]="company.status === 'Active'"
-                                                                [class.bg-warning]="company.status === 'Inactive'"
-                                                                [class.bg-danger]="company.status === 'Suspended'">
-                                                                {{ company.status }}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Site Links -->
-                                                    <div class="site-links mt-3 pt-2 border-top"
-                                                        *ngIf="company.links && company.links.length > 0">
-                                                        <small class="text-muted d-block mb-2">Quick Links:</small>
-                                                        <div class="d-flex flex-wrap gap-1">
-                                                            <a *ngFor="let link of company.links.slice(0, 3)"
-                                                                [href]="link.url" target="_blank"
-                                                                class="badge bg-light text-dark text-decoration-none"
-                                                                [title]="link.name">
-                                                                <i class="fa" [class.fa-globe]="link.type === 'website'"
-                                                                    [class.fa-book]="link.type === 'documentation'"
-                                                                    [class.fa-question-circle]="link.type === 'support'"
-                                                                    [class.fa-share-alt]="link.type === 'social'"
-                                                                    [class.fa-link]="link.type === 'other'"
-                                                                    style="font-size: 0.75rem;"></i>
-                                                                {{ link.name }}
-                                                            </a>
-                                                            <span *ngIf="company.links.length > 3"
-                                                                class="badge bg-secondary"
-                                                                [title]="'And ' + (company.links.length - 3) + ' more links'">
-                                                                +{{ company.links.length - 3 }}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Billing Info (if available) -->
-                                                    <div class="billing-info mt-3 pt-2 border-top"
-                                                        *ngIf="company.billing">
-                                                        <small class="text-muted d-block mb-2">Billing:</small>
-                                                        <div class="billing-details">
-                                                            <div class="d-flex justify-content-between align-items-center"
-                                                                *ngIf="company.billing.subscriptionPlan">
-                                                                <small class="text-muted">Plan:</small>
-                                                                <small class="fw-medium">{{
-                                                                    company.billing.subscriptionPlan }}</small>
+                                        <!-- Sites Grid -->
+                                        <div class="sites-grid" *ngIf="attachedCompanies.length > 0">
+                                            <div class="row g-3">
+                                                <div class="col-md-6 col-lg-4"
+                                                    *ngFor="let company of attachedCompanies">
+                                                    <div class="site-card border rounded p-3 h-100 d-flex flex-column">
+                                                        <!-- Site Header -->
+                                                        <div
+                                                            class="site-header d-flex justify-content-between align-items-start mb-2">
+                                                            <div class="site-info flex-grow-1">
+                                                                <h6 class="site-name mb-1 fw-bold">{{ company.name }}
+                                                                </h6>
+                                                                <small class="text-muted" *ngIf="company.website">
+                                                                    <i class="fa fa-link me-1"></i>
+                                                                    <a [href]="company.website" target="_blank"
+                                                                        class="text-decoration-none">
+                                                                        {{ company.website }}
+                                                                    </a>
+                                                                </small>
                                                             </div>
-                                                            <div class="d-flex justify-content-between align-items-center"
-                                                                *ngIf="company.billing.monthlyRate">
-                                                                <small class="text-muted">Rate:</small>
-                                                                <small class="fw-medium">${{ company.billing.monthlyRate
-                                                                    }}/month</small>
+                                                            <div class="site-actions">
+                                                                <button class="btn btn-outline-danger btn-sm"
+                                                                    (click)="detachSite(company.id)"
+                                                                    title="Detach Site">
+                                                                    <i class="fa fa-unlink"
+                                                                        style="font-size: 0.75rem;"></i>
+                                                                </button>
                                                             </div>
-                                                            <div class="d-flex justify-content-between align-items-center"
-                                                                *ngIf="company.billing.subscriptionStatus">
-                                                                <small class="text-muted">Status:</small>
-                                                                <span class="badge badge-sm rounded-pill"
-                                                                    [class.bg-success]="company.billing.subscriptionStatus === 'Active'"
-                                                                    [class.bg-warning]="company.billing.subscriptionStatus === 'Past Due'"
-                                                                    [class.bg-danger]="company.billing.subscriptionStatus === 'Cancelled'">
-                                                                    {{ company.billing.subscriptionStatus }}
+                                                        </div>
+
+                                                        <!-- Site Details -->
+                                                        <div class="site-details flex-grow-1">
+                                                            <div class="site-info-item d-flex align-items-center mb-2"
+                                                                *ngIf="company.industry">
+                                                                <i class="fa fa-industry text-muted me-2"
+                                                                    style="width: 16px;"></i>
+                                                                <span class="small">{{ company.industry }}</span>
+                                                            </div>
+
+                                                            <div class="site-info-item d-flex align-items-center mb-2"
+                                                                *ngIf="company.contactEmail">
+                                                                <i class="fa fa-envelope text-muted me-2"
+                                                                    style="width: 16px;"></i>
+                                                                <span class="small">{{ company.contactEmail }}</span>
+                                                            </div>
+
+                                                            <div class="site-info-item d-flex align-items-center mb-2">
+                                                                <i class="fa fa-calendar text-muted me-2"
+                                                                    style="width: 16px;"></i>
+                                                                <span class="small">
+                                                                    Attached {{
+                                                                    formatDate(getAttachedSite(company.id)?.dateAttached)
+                                                                    }}
+                                                                </span>
+                                                            </div>
+
+                                                            <!-- Site Status -->
+                                                            <div class="site-status mt-2">
+                                                                <span class="badge rounded-pill"
+                                                                    [class.bg-success]="company.status === 'Active'"
+                                                                    [class.bg-warning]="company.status === 'Inactive'"
+                                                                    [class.bg-danger]="company.status === 'Suspended'">
+                                                                    {{ company.status }}
                                                                 </span>
                                                             </div>
                                                         </div>
+
+                                                        <!-- Site Links -->
+                                                        <div class="site-links mt-3 pt-2 border-top"
+                                                            *ngIf="company.links && company.links.length > 0">
+                                                            <small class="text-muted d-block mb-2">Quick Links:</small>
+                                                            <div class="d-flex flex-wrap gap-1">
+                                                                <a *ngFor="let link of company.links.slice(0, 3)"
+                                                                    [href]="link.url" target="_blank"
+                                                                    class="badge bg-light text-dark text-decoration-none"
+                                                                    [title]="link.name">
+                                                                    <i class="fa"
+                                                                        [class.fa-globe]="link.type === 'website'"
+                                                                        [class.fa-book]="link.type === 'documentation'"
+                                                                        [class.fa-question-circle]="link.type === 'support'"
+                                                                        [class.fa-share-alt]="link.type === 'social'"
+                                                                        [class.fa-link]="link.type === 'other'"
+                                                                        style="font-size: 0.75rem;"></i>
+                                                                    {{ link.name }}
+                                                                </a>
+                                                                <span *ngIf="company.links.length > 3"
+                                                                    class="badge bg-secondary"
+                                                                    [title]="'And ' + (company.links.length - 3) + ' more links'">
+                                                                    +{{ company.links.length - 3 }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Billing Info (if available) -->
+                                                        <div class="billing-info mt-3 pt-2 border-top"
+                                                            *ngIf="company.billing">
+                                                            <small class="text-muted d-block mb-2">Billing:</small>
+                                                            <div class="billing-details">
+                                                                <div class="d-flex justify-content-between align-items-center"
+                                                                    *ngIf="company.billing.subscriptionPlan">
+                                                                    <small class="text-muted">Plan:</small>
+                                                                    <small class="fw-medium">{{
+                                                                        company.billing.subscriptionPlan }}</small>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center"
+                                                                    *ngIf="company.billing.monthlyRate">
+                                                                    <small class="text-muted">Rate:</small>
+                                                                    <small class="fw-medium">${{
+                                                                        company.billing.monthlyRate
+                                                                        }}/month</small>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center"
+                                                                    *ngIf="company.billing.subscriptionStatus">
+                                                                    <small class="text-muted">Status:</small>
+                                                                    <span class="badge badge-sm rounded-pill"
+                                                                        [class.bg-success]="company.billing.subscriptionStatus === 'Active'"
+                                                                        [class.bg-warning]="company.billing.subscriptionStatus === 'Past Due'"
+                                                                        [class.bg-danger]="company.billing.subscriptionStatus === 'Cancelled'">
+                                                                        {{ company.billing.subscriptionStatus }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -491,396 +409,375 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Permissions Tab -->
-                        <div *ngIf="isTabActive('permissions')" class="stat-card p-3">
-                            <div class="stt-card">
-                                <h6 class="mb-3 fw-medium">User Permissions</h6>
-                                <div class="permissions-grid">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="permission-group p-3 border rounded">
-                                                <h6 class="mb-3">System Access</h6>
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        [checked]="hasPermission(selectedUser, 'dashboard_access')"
-                                                        disabled>
-                                                    <label class="form-check-label">Dashboard Access</label>
-                                                </div>
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        [checked]="hasPermission(selectedUser, 'admin_panel')" disabled>
-                                                    <label class="form-check-label">Admin Panel</label>
-                                                </div>
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        [checked]="hasPermission(selectedUser, 'settings_access')"
-                                                        disabled>
-                                                    <label class="form-check-label">Settings Access</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="permission-group p-3 border rounded">
-                                                <h6 class="mb-3">User Management</h6>
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        [checked]="hasPermission(selectedUser, 'create_users')"
-                                                        disabled>
-                                                    <label class="form-check-label">Create Users</label>
-                                                </div>
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        [checked]="hasPermission(selectedUser, 'edit_users')" disabled>
-                                                    <label class="form-check-label">Edit Users</label>
-                                                </div>
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        [checked]="hasPermission(selectedUser, 'delete_users')"
-                                                        disabled>
-                                                    <label class="form-check-label">Delete Users</label>
+                            <!-- Permissions Section -->
+                            <div class="content-section mb-4">
+                                <h5 class="section-title mb-3">
+                                    <i class="fa fa-shield-alt me-2"></i>
+                                    Permissions
+                                </h5>
+                                <div class="stt-card">
+                                    <h6 class="mb-3 fw-medium">User Permissions</h6>
+                                    <div class="permissions-grid">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="permission-group p-3 border rounded">
+                                                    <h6 class="mb-3">System Access</h6>
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            [checked]="hasPermission(selectedUser, 'dashboard_access')"
+                                                            disabled>
+                                                        <label class="form-check-label">Dashboard Access</label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            [checked]="hasPermission(selectedUser, 'admin_panel')"
+                                                            disabled>
+                                                        <label class="form-check-label">Admin Panel</label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            [checked]="hasPermission(selectedUser, 'settings_access')"
+                                                            disabled>
+                                                        <label class="form-check-label">Settings Access</label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Settings Tab -->
-                        <div *ngIf="isTabActive('settings')" class="stat-card p-3">
-                            <div class="stt-card">
-                                <h6 class="mb-3 fw-medium">
+                            <!-- Settings Section -->
+                            <div class="content-section mb-4">
+                                <h5 class="section-title mb-3">
                                     <i class="fa fa-cog me-2"></i>
                                     User Settings
                                     <span class="badge bg-warning text-dark ms-2 small" *ngIf="hasUnsavedChanges()">
                                         <i class="fa fa-exclamation-triangle me-1"></i>
                                         Unsaved Changes
                                     </span>
-                                </h6>
+                                </h5>
+                                <div class="stt-card">
 
-                                <!-- Success Message -->
-                                <div class="alert alert-success d-flex align-items-center mb-3" *ngIf="successMessage">
-                                    <i class="fa fa-check-circle me-2"></i>
-                                    {{ successMessage }}
-                                </div>
-
-                                <!-- Error Message -->
-                                <div class="alert alert-danger d-flex align-items-center mb-3" *ngIf="errorMessage">
-                                    <i class="fa fa-exclamation-triangle me-2"></i>
-                                    {{ errorMessage }}
-                                    <button type="button" class="btn-close ms-auto" (click)="errorMessage = ''"
-                                        aria-label="Close"></button>
-                                </div>
-                                <form #settingsForm="ngForm" (ngSubmit)="saveUserSettings()">
-                                    <!-- Form Progress Indicator -->
-                                    <div class="form-progress mb-4">
-                                        <div class="progress" style="height: 3px;">
-                                            <div class="progress-bar bg-primary"
-                                                [style.width]="getFormCompletionPercentage() + '%'"></div>
-                                        </div>
-                                        <small class="text-muted mt-1 d-block">
-                                            {{ getFormCompletionPercentage() }}% Complete
-                                        </small>
+                                    <!-- Success Message -->
+                                    <div class="alert alert-success d-flex align-items-center mb-3"
+                                        *ngIf="successMessage">
+                                        <i class="fa fa-check-circle me-2"></i>
+                                        {{ successMessage }}
                                     </div>
 
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <!-- First Name -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-user me-1 text-primary"></i>
-                                                    First Name
-                                                    <span class="text-danger">*</span>
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter the user's first name (2-50 characters)"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <input type="text" class="form-control enhanced-input"
-                                                    [class.is-valid]="firstName.valid && firstName.touched && firstName.value?.length > 0"
-                                                    [class.is-invalid]="firstName.invalid && firstName.touched"
-                                                    [(ngModel)]="selectedUser.firstName" name="firstName" required
-                                                    minlength="2" maxlength="50" #firstName="ngModel"
-                                                    placeholder="Enter first name" autocomplete="given-name">
-                                                <div class="form-text text-muted" *ngIf="!firstName.touched">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    Enter the user's given name
-                                                </div>
-                                                <div *ngIf="firstName.invalid && firstName.touched"
-                                                    class="invalid-feedback">
-                                                    <div *ngIf="firstName.errors?.['required']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        First name is required
-                                                    </div>
-                                                    <div *ngIf="firstName.errors?.['minlength']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        First name must be at least 2 characters
-                                                    </div>
-                                                    <div *ngIf="firstName.errors?.['maxlength']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        First name cannot exceed 50 characters
-                                                    </div>
-                                                </div>
-                                                <div *ngIf="firstName.valid && firstName.touched && firstName.value?.length > 0"
-                                                    class="valid-feedback">
-                                                    <i class="fa fa-check-circle me-1"></i>
-                                                    Looks good!
-                                                </div>
+                                    <!-- Error Message -->
+                                    <div class="alert alert-danger d-flex align-items-center mb-3" *ngIf="errorMessage">
+                                        <i class="fa fa-exclamation-triangle me-2"></i>
+                                        {{ errorMessage }}
+                                        <button type="button" class="btn-close ms-auto" (click)="errorMessage = ''"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <form #settingsForm="ngForm" (ngSubmit)="saveUserSettings()">
+                                        <!-- Form Progress Indicator -->
+                                        <div class="form-progress mb-4">
+                                            <div class="progress" style="height: 3px;">
+                                                <div class="progress-bar bg-primary"
+                                                    [style.width]="getFormCompletionPercentage() + '%'"></div>
                                             </div>
-
-                                            <!-- Last Name -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-user me-1 text-primary"></i>
-                                                    Last Name
-                                                    <span class="text-danger">*</span>
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter the user's last name (2-50 characters)"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <input type="text" class="form-control enhanced-input"
-                                                    [class.is-valid]="lastName.valid && lastName.touched && lastName.value?.length > 0"
-                                                    [class.is-invalid]="lastName.invalid && lastName.touched"
-                                                    [(ngModel)]="selectedUser.lastName" name="lastName" required
-                                                    minlength="2" maxlength="50" #lastName="ngModel"
-                                                    placeholder="Enter last name" autocomplete="family-name">
-                                                <div class="form-text text-muted" *ngIf="!lastName.touched">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    Enter the user's family name
-                                                </div>
-                                                <div *ngIf="lastName.invalid && lastName.touched"
-                                                    class="invalid-feedback">
-                                                    <div *ngIf="lastName.errors?.['required']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        Last name is required
-                                                    </div>
-                                                    <div *ngIf="lastName.errors?.['minlength']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        Last name must be at least 2 characters
-                                                    </div>
-                                                    <div *ngIf="lastName.errors?.['maxlength']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        Last name cannot exceed 50 characters
-                                                    </div>
-                                                </div>
-                                                <div *ngIf="lastName.valid && lastName.touched && lastName.value?.length > 0"
-                                                    class="valid-feedback">
-                                                    <i class="fa fa-check-circle me-1"></i>
-                                                    Looks good!
-                                                </div>
-                                            </div>
-
-                                            <!-- Email -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-envelope me-1 text-primary"></i>
-                                                    Email Address
-                                                    <span class="text-danger">*</span>
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Enter a valid email address (used for login)"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <input type="email" class="form-control enhanced-input"
-                                                    [class.is-valid]="email.valid && email.touched"
-                                                    [class.is-invalid]="email.invalid && email.touched"
-                                                    [(ngModel)]="selectedUser.email" name="email" required email
-                                                    #email="ngModel" placeholder="user@example.com"
-                                                    autocomplete="email">
-                                                <div class="form-text text-muted" *ngIf="!email.touched">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    This email will be used for login and notifications
-                                                </div>
-                                                <div *ngIf="email.invalid && email.touched" class="invalid-feedback">
-                                                    <div *ngIf="email.errors?.['required']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        Email address is required
-                                                    </div>
-                                                    <div *ngIf="email.errors?.['email']">
-                                                        <i class="fa fa-exclamation-circle me-1"></i>
-                                                        Please enter a valid email address
-                                                    </div>
-                                                </div>
-                                                <div *ngIf="email.valid && email.touched" class="valid-feedback">
-                                                    <i class="fa fa-check-circle me-1"></i>
-                                                    Valid email format!
-                                                </div>
-                                            </div>
+                                            <small class="text-muted mt-1 d-block">
+                                                {{ getFormCompletionPercentage() }}% Complete
+                                            </small>
                                         </div>
 
-                                        <div class="col-md-6">
-                                            <!-- Phone -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-phone me-1 text-primary"></i>
-                                                    Phone Number
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Optional: Enter phone number with country code"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <input type="tel" class="form-control enhanced-input"
-                                                    [class.is-valid]="phone.valid && phone.touched && phone.value?.length > 0"
-                                                    [(ngModel)]="selectedUser.phone" name="phone" #phone="ngModel"
-                                                    placeholder="+1 (555) 123-4567" pattern="[\+]?[0-9\s\-\(\)]+"
-                                                    autocomplete="tel">
-                                                <div class="form-text text-muted" *ngIf="!phone.touched">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    Optional field for contact purposes
-                                                </div>
-                                            </div>
-
-                                            <!-- Role -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-shield-alt me-1 text-primary"></i>
-                                                    Role
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="User role determines permissions and access levels"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <select class="form-control enhanced-input"
-                                                    [(ngModel)]="selectedUser.role" name="role">
-                                                    <option value="User">
-                                                        <i class="fa fa-user"></i> User - Basic Access
-                                                    </option>
-                                                    <option value="Manager">
-                                                        <i class="fa fa-users"></i> Manager - Team Management
-                                                    </option>
-                                                    <option value="Admin">
-                                                        <i class="fa fa-crown"></i> Admin - Full Access
-                                                    </option>
-                                                </select>
-                                                <div class="form-text text-muted">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    <span *ngIf="selectedUser.role === 'User'">Basic dashboard and
-                                                        settings access</span>
-                                                    <span *ngIf="selectedUser.role === 'Manager'">Can create and manage
-                                                        users</span>
-                                                    <span *ngIf="selectedUser.role === 'Admin'">Full system
-                                                        administration access</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Status -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-toggle-on me-1 text-primary"></i>
-                                                    Status
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="User account status affects login ability"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <select class="form-control enhanced-input"
-                                                    [(ngModel)]="selectedUser.status" name="status">
-                                                    <option value="Active">
-                                                        <i class="fa fa-check-circle text-success"></i> Active - Can
-                                                        Login
-                                                    </option>
-                                                    <option value="Invited">
-                                                        <i class="fa fa-clock text-warning"></i> Invited - Pending Setup
-                                                    </option>
-                                                    <option value="Deleted">
-                                                        <i class="fa fa-times-circle text-danger"></i> Deleted - No
-                                                        Access
-                                                    </option>
-                                                </select>
-                                                <div class="form-text">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    <span class="text-success"
-                                                        *ngIf="selectedUser.status === 'Active'">User can log in and
-                                                        access the system</span>
-                                                    <span class="text-warning"
-                                                        *ngIf="selectedUser.status === 'Invited'">User has been invited
-                                                        but hasn't completed setup</span>
-                                                    <span class="text-danger"
-                                                        *ngIf="selectedUser.status === 'Deleted'">User account is
-                                                        disabled</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Location -->
-                                            <div class="form-group mb-3">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-map-marker-alt me-1 text-primary"></i>
-                                                    Location
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Optional: User's location for contact and timezone purposes"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <input type="text" class="form-control enhanced-input"
-                                                    [(ngModel)]="selectedUser.location" name="location"
-                                                    placeholder="City, Country">
-                                                <div class="form-text text-muted">
-                                                    <i class="fa fa-lightbulb me-1"></i>
-                                                    Optional field for location-based features
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Bio (Full Width) -->
-                                        <div class="col-12">
-                                            <div class="form-group mb-4">
-                                                <label class="form-label fw-medium">
-                                                    <i class="fa fa-file-alt me-1 text-primary"></i>
-                                                    Biography
-                                                    <i class="fa fa-info-circle ms-1 text-muted"
-                                                        title="Optional: Brief description about the user"
-                                                        style="cursor: help;" data-bs-toggle="tooltip"></i>
-                                                </label>
-                                                <textarea class="form-control enhanced-input"
-                                                    [(ngModel)]="selectedUser.bio" name="bio" rows="3" maxlength="500"
-                                                    placeholder="Brief description about the user"></textarea>
-                                                <div class="form-text text-muted d-flex justify-content-between">
-                                                    <span>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <!-- First Name -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-user me-1 text-primary"></i>
+                                                        First Name
+                                                        <span class="text-danger">*</span>
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="Enter the user's first name (2-50 characters)"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <input type="text" class="form-control enhanced-input"
+                                                        [class.is-valid]="firstName.valid && firstName.touched && firstName.value?.length > 0"
+                                                        [class.is-invalid]="firstName.invalid && firstName.touched"
+                                                        [(ngModel)]="selectedUser.firstName" name="firstName" required
+                                                        minlength="2" maxlength="50" #firstName="ngModel"
+                                                        placeholder="Enter first name" autocomplete="given-name">
+                                                    <div class="form-text text-muted" *ngIf="!firstName.touched">
                                                         <i class="fa fa-lightbulb me-1"></i>
-                                                        Optional field for user profile information
-                                                    </span>
-                                                    <span class="text-end">
-                                                        {{ (selectedUser.bio?.length || 0) }}/500 characters
-                                                    </span>
+                                                        Enter the user's given name
+                                                    </div>
+                                                    <div *ngIf="firstName.invalid && firstName.touched"
+                                                        class="invalid-feedback">
+                                                        <div *ngIf="firstName.errors?.['required']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            First name is required
+                                                        </div>
+                                                        <div *ngIf="firstName.errors?.['minlength']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            First name must be at least 2 characters
+                                                        </div>
+                                                        <div *ngIf="firstName.errors?.['maxlength']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            First name cannot exceed 50 characters
+                                                        </div>
+                                                    </div>
+                                                    <div *ngIf="firstName.valid && firstName.touched && firstName.value?.length > 0"
+                                                        class="valid-feedback">
+                                                        <i class="fa fa-check-circle me-1"></i>
+                                                        Looks good!
+                                                    </div>
+                                                </div>
+
+                                                <!-- Last Name -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-user me-1 text-primary"></i>
+                                                        Last Name
+                                                        <span class="text-danger">*</span>
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="Enter the user's last name (2-50 characters)"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <input type="text" class="form-control enhanced-input"
+                                                        [class.is-valid]="lastName.valid && lastName.touched && lastName.value?.length > 0"
+                                                        [class.is-invalid]="lastName.invalid && lastName.touched"
+                                                        [(ngModel)]="selectedUser.lastName" name="lastName" required
+                                                        minlength="2" maxlength="50" #lastName="ngModel"
+                                                        placeholder="Enter last name" autocomplete="family-name">
+                                                    <div class="form-text text-muted" *ngIf="!lastName.touched">
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        Enter the user's family name
+                                                    </div>
+                                                    <div *ngIf="lastName.invalid && lastName.touched"
+                                                        class="invalid-feedback">
+                                                        <div *ngIf="lastName.errors?.['required']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            Last name is required
+                                                        </div>
+                                                        <div *ngIf="lastName.errors?.['minlength']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            Last name must be at least 2 characters
+                                                        </div>
+                                                        <div *ngIf="lastName.errors?.['maxlength']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            Last name cannot exceed 50 characters
+                                                        </div>
+                                                    </div>
+                                                    <div *ngIf="lastName.valid && lastName.touched && lastName.value?.length > 0"
+                                                        class="valid-feedback">
+                                                        <i class="fa fa-check-circle me-1"></i>
+                                                        Looks good!
+                                                    </div>
+                                                </div>
+
+                                                <!-- Email -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-envelope me-1 text-primary"></i>
+                                                        Email Address
+                                                        <span class="text-danger">*</span>
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="Enter a valid email address (used for login)"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <input type="email" class="form-control enhanced-input"
+                                                        [class.is-valid]="email.valid && email.touched"
+                                                        [class.is-invalid]="email.invalid && email.touched"
+                                                        [(ngModel)]="selectedUser.email" name="email" required email
+                                                        #email="ngModel" placeholder="user@example.com"
+                                                        autocomplete="email">
+                                                    <div class="form-text text-muted" *ngIf="!email.touched">
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        This email will be used for login and notifications
+                                                    </div>
+                                                    <div *ngIf="email.invalid && email.touched"
+                                                        class="invalid-feedback">
+                                                        <div *ngIf="email.errors?.['required']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            Email address is required
+                                                        </div>
+                                                        <div *ngIf="email.errors?.['email']">
+                                                            <i class="fa fa-exclamation-circle me-1"></i>
+                                                            Please enter a valid email address
+                                                        </div>
+                                                    </div>
+                                                    <div *ngIf="email.valid && email.touched" class="valid-feedback">
+                                                        <i class="fa fa-check-circle me-1"></i>
+                                                        Valid email format!
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Action Buttons -->
-                                            <div class="form-actions d-flex gap-2">
-                                                <button type="button" class="btn btn-outline-secondary flex-grow-1"
-                                                    (click)="cancelUserSettingsChanges()" [disabled]="savingSettings">
-                                                    <i class="fa fa-times me-1"></i>
-                                                    {{ hasUnsavedChanges() ? 'Cancel Changes' : 'Reset' }}
-                                                </button>
-                                                <button type="submit" class="btn btn-primary flex-grow-1"
-                                                    [disabled]="settingsForm.invalid || savingSettings || !hasUnsavedChanges()">
-                                                    <span *ngIf="savingSettings">
-                                                        <i class="fa fa-spinner fa-spin me-1"></i>
-                                                        Saving...
-                                                    </span>
-                                                    <span *ngIf="!savingSettings">
-                                                        <i class="fa fa-save me-1"></i>
-                                                        Save Changes ({{ getChangedFieldsCount() }} field{{
-                                                        getChangedFieldsCount() === 1 ? '' : 's' }})
-                                                    </span>
-                                                </button>
+                                            <div class="col-md-6">
+                                                <!-- Phone -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-phone me-1 text-primary"></i>
+                                                        Phone Number
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="Optional: Enter phone number with country code"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <input type="tel" class="form-control enhanced-input"
+                                                        [class.is-valid]="phone.valid && phone.touched && phone.value?.length > 0"
+                                                        [(ngModel)]="selectedUser.phone" name="phone" #phone="ngModel"
+                                                        placeholder="+1 (555) 123-4567" pattern="[\+]?[0-9\s\-\(\)]+"
+                                                        autocomplete="tel">
+                                                    <div class="form-text text-muted" *ngIf="!phone.touched">
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        Optional field for contact purposes
+                                                    </div>
+                                                </div>
+
+                                                <!-- Role -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-shield-alt me-1 text-primary"></i>
+                                                        Role
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="User role determines permissions and access levels"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <select class="form-control enhanced-input"
+                                                        [(ngModel)]="selectedUser.role" name="role">
+                                                        <option value="User">
+                                                            <i class="fa fa-user"></i> User - Basic Access
+                                                        </option>
+                                                        <option value="Manager">
+                                                            <i class="fa fa-users"></i> Manager - Team Management
+                                                        </option>
+                                                        <option value="Admin">
+                                                            <i class="fa fa-crown"></i> Admin - Full Access
+                                                        </option>
+                                                    </select>
+                                                    <div class="form-text text-muted">
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        <span *ngIf="selectedUser.role === 'User'">Basic dashboard and
+                                                            settings access</span>
+                                                        <span *ngIf="selectedUser.role === 'Manager'">Can create and
+                                                            manage
+                                                            users</span>
+                                                        <span *ngIf="selectedUser.role === 'Admin'">Full system
+                                                            administration access</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Status -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-toggle-on me-1 text-primary"></i>
+                                                        Status
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="User account status affects login ability"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <select class="form-control enhanced-input"
+                                                        [(ngModel)]="selectedUser.status" name="status">
+                                                        <option value="Active">
+                                                            <i class="fa fa-check-circle text-success"></i> Active - Can
+                                                            Login
+                                                        </option>
+                                                        <option value="Invited">
+                                                            <i class="fa fa-clock text-warning"></i> Invited - Pending
+                                                            Setup
+                                                        </option>
+                                                        <option value="Deleted">
+                                                            <i class="fa fa-times-circle text-danger"></i> Deleted - No
+                                                            Access
+                                                        </option>
+                                                    </select>
+                                                    <div class="form-text">
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        <span class="text-success"
+                                                            *ngIf="selectedUser.status === 'Active'">User can log in and
+                                                            access the system</span>
+                                                        <span class="text-warning"
+                                                            *ngIf="selectedUser.status === 'Invited'">User has been
+                                                            invited
+                                                            but hasn't completed setup</span>
+                                                        <span class="text-danger"
+                                                            *ngIf="selectedUser.status === 'Deleted'">User account is
+                                                            disabled</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Location -->
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-map-marker-alt me-1 text-primary"></i>
+                                                        Location
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="Optional: User's location for contact and timezone purposes"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <input type="text" class="form-control enhanced-input"
+                                                        [(ngModel)]="selectedUser.location" name="location"
+                                                        placeholder="City, Country">
+                                                    <div class="form-text text-muted">
+                                                        <i class="fa fa-lightbulb me-1"></i>
+                                                        Optional field for location-based features
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Bio (Full Width) -->
+                                            <div class="col-12">
+                                                <div class="form-group mb-4">
+                                                    <label class="form-label fw-medium">
+                                                        <i class="fa fa-file-alt me-1 text-primary"></i>
+                                                        Biography
+                                                        <i class="fa fa-info-circle ms-1 text-muted"
+                                                            title="Optional: Brief description about the user"
+                                                            style="cursor: help;" data-bs-toggle="tooltip"></i>
+                                                    </label>
+                                                    <textarea class="form-control enhanced-input"
+                                                        [(ngModel)]="selectedUser.bio" name="bio" rows="3"
+                                                        maxlength="500"
+                                                        placeholder="Brief description about the user"></textarea>
+                                                    <div class="form-text text-muted d-flex justify-content-between">
+                                                        <span>
+                                                            <i class="fa fa-lightbulb me-1"></i>
+                                                            Optional field for user profile information
+                                                        </span>
+                                                        <span class="text-end">
+                                                            {{ (selectedUser.bio?.length || 0) }}/500 characters
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Action Buttons -->
+                                                <div class="form-actions d-flex gap-2">
+                                                    <button type="button" class="btn btn-outline-secondary flex-grow-1"
+                                                        (click)="cancelUserSettingsChanges()"
+                                                        [disabled]="savingSettings">
+                                                        <i class="fa fa-times me-1"></i>
+                                                        {{ hasUnsavedChanges() ? 'Cancel Changes' : 'Reset' }}
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary flex-grow-1"
+                                                        [disabled]="settingsForm.invalid || savingSettings || !hasUnsavedChanges()">
+                                                        <span *ngIf="savingSettings">
+                                                            <i class="fa fa-spinner fa-spin me-1"></i>
+                                                            Saving...
+                                                        </span>
+                                                        <span *ngIf="!savingSettings">
+                                                            <i class="fa fa-save me-1"></i>
+                                                            Save Changes ({{ getChangedFieldsCount() }} field{{
+                                                            getChangedFieldsCount() === 1 ? '' : 's' }})
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Tab Navigation Controls -->
-                        <div class="tab-controls d-flex justify-content-between align-items-center mb-3">
-                            <div class="tab-navigation">
-                                <button class="btn btn-outline-secondary btn-sm me-2" (click)="navigateToPreviousTab()"
-                                    title="Previous Tab">
-                                    <i class="fa fa-chevron-left"></i>
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" (click)="navigateToNextTab()"
-                                    title="Next Tab">
-                                    <i class="fa fa-chevron-right"></i>
-                                </button>
-                            </div>
                         </div>
+                        <!-- End of stat-card wrapper -->
                     </div>
+                    <!-- End of Combined Content -->
                 </div>
             </div>
         </div>
@@ -1030,19 +927,18 @@
             </div>
         </div>
     </div>
-</section>
 
-<!-- Site Selection Modal -->
-<section class="modal" [class.show]="showSiteSelectionModal"
-    [style.display]="showSiteSelectionModal ? 'block' : 'none'">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <!-- Site Selection Modal -->
+    <div class="modal-backdrop" *ngIf="showSiteSelectionModal" (click)="closeSiteSelectionModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h2 class="modal-title">
                     <i class="fa fa-building"></i>
                     Select Sites for {{ selectedUser?.firstName }} {{ selectedUser?.lastName }}
-                </h5>
-                <button type="button" class="btn-close" (click)="closeSiteSelectionModal()"></button>
+                </h2>
+                <button type="button" class="close-btn" (click)="closeSiteSelectionModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body">
@@ -1053,30 +949,64 @@
 
                 <div class="company-selection-list">
                     <div *ngFor="let company of getFilteredCompanies()" class="company-selection-item"
-                        [class.selected]="selectedSiteIds.has(company.id)">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" [id]="'company-' + company.id"
-                                [checked]="selectedSiteIds.has(company.id)" (change)="toggleSiteSelection(company.id)">
-                            <label class="form-check-label" [for]="'company-' + company.id">
-                                <div class="company-info">
-                                    <h6 class="mb-1">{{ company.name }}</h6>
-                                    <small class="text-muted" *ngIf="company.website">{{ company.website }}</small>
-                                    <div *ngIf="company.billing" class="billing-info mt-2">
-                                        <span class="badge bg-info" *ngIf="company.billing.subscriptionPlan">{{
-                                            company.billing.subscriptionPlan }}</span>
-                                        <small class="text-muted ms-2" *ngIf="company.billing.monthlyRate">
-                                            ${{ company.billing.monthlyRate }}/month
-                                        </small>
-                                    </div>
-                                </div>
-                            </label>
+                        [class.selected]="selectedSiteIds.has(company.id)" (click)="toggleSiteSelection(company.id)">
+                        <div class="company-info">
+                            <h6 class="mb-1">{{ company.name }}</h6>
+                            <small class="text-muted" *ngIf="company.website">{{ company.website }}</small>
+
+                            <!-- Stripe Customer Info -->
+                            <div *ngIf="company.stripeCustomerId" class="stripe-info mt-1">
+                                <span class="badge bg-success me-1">
+                                    <i class="fa fa-stripe"></i> Stripe
+                                </span>
+                                <small class="text-muted">{{ company.stripeCustomerId }}</small>
+                                <span *ngIf="company.source === 'stripe-only'" class="badge bg-warning ms-1"
+                                    title="This customer is from Stripe but not yet saved in Firestore">
+                                    <i class="fa fa-exclamation-triangle"></i> Stripe Only
+                                </span>
+                            </div>
+
+                            <div *ngIf="company.billing" class="billing-info mt-2">
+                                <span class="badge bg-info"
+                                    *ngIf="company.billing.subscriptionPlan && company.billing.subscriptionPlan !== 'N/A'">{{
+                                    company.billing.subscriptionPlan }}</span>
+                                <small class="text-muted ms-2"
+                                    *ngIf="company.billing.monthlyRate && company.billing.monthlyRate > 0">
+                                    ${{ company.billing.monthlyRate }}/month
+                                </small>
+                                <span class="badge ms-2"
+                                    [class.bg-success]="company.billing.subscriptionStatus === 'active' || company.billing.subscriptionStatus === 'Active'"
+                                    [class.bg-warning]="company.billing.subscriptionStatus === 'past_due' || company.billing.subscriptionStatus === 'Past Due'"
+                                    [class.bg-secondary]="company.billing.subscriptionStatus === 'canceled' || company.billing.subscriptionStatus === 'Cancelled'"
+                                    [class.bg-info]="company.billing.subscriptionStatus === 'trialing'"
+                                    *ngIf="company.billing.subscriptionStatus && company.billing.subscriptionStatus !== 'N/A'">
+                                    {{ company.billing.subscriptionStatus }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div *ngIf="getFilteredCompanies().length === 0" class="text-center text-muted py-4">
-                    <i class="fa fa-search fa-2x mb-2"></i>
-                    <p>No companies found</p>
+                <div *ngIf="getFilteredCompanies().length === 0 && !loadingSites" class="text-center text-muted py-4">
+                    <i class="fa fa-building fa-3x mb-3 text-muted"></i>
+                    <h5 class="mb-2">No Companies Found</h5>
+                    <p class="mb-3">
+                        {{ siteSearchQuery ? 'Try adjusting your search criteria.' : 'There are no companies in the
+                        system
+                        yet.' }}
+                    </p>
+                    <button *ngIf="!siteSearchQuery" type="button" class="btn btn-outline-primary btn-sm"
+                        (click)="createSampleCompanies()">
+                        <i class="fa fa-plus me-1"></i>
+                        Create Sample Companies
+                    </button>
+                </div>
+
+                <div *ngIf="loadingSites" class="text-center text-muted py-4">
+                    <div class="spinner-border text-primary mb-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading companies...</p>
                 </div>
             </div>
 

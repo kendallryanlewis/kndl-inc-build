@@ -46,6 +46,7 @@ export class DashboardComponent implements OnDestroy, OnChanges, OnInit {
 
   // Stripe environment state
   isStripeTestMode: boolean = true;
+
   private destroy$ = new Subject<void>();
 
   constructor(

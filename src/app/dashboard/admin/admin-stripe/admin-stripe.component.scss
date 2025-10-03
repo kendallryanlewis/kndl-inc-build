@@ -665,8 +665,6 @@
 }
 
 .customer-info {
-    margin-bottom: 12px;
-
     div {
         margin-bottom: 4px;
         font-size: 14px;
@@ -1949,6 +1947,123 @@
     max-width: 700px;
 }
 
+/* Product Customers Modal */
+.large-modal {
+    max-width: 1000px !important;
+    width: 95% !important;
+}
+
+.customers-list {
+    .customer-count {
+        padding: 12px;
+        background: #f7fafc;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #2d3748;
+    }
+
+    .table-responsive {
+        margin-top: 16px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+
+        thead {
+            background: #f7fafc;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+
+            th {
+                padding: 12px;
+                text-align: left;
+                font-weight: 600;
+                color: #4a5568;
+                font-size: 13px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                border-bottom: 2px solid #e2e8f0;
+            }
+        }
+
+        tbody {
+            tr {
+                border-bottom: 1px solid #e2e8f0;
+                transition: background-color 0.2s;
+
+                &:hover {
+                    background: #f7fafc;
+                }
+
+                td {
+                    padding: 12px;
+                    vertical-align: middle;
+                    font-size: 14px;
+                    color: #2d3748;
+
+                    small {
+                        font-size: 12px;
+                    }
+
+                    .badge {
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+
+                        &.badge-success {
+                            background: #c6f6d5;
+                            color: #22543d;
+                        }
+
+                        &.badge-warning {
+                            background: #feebc8;
+                            color: #7c2d12;
+                        }
+
+                        &.badge-danger {
+                            background: #fed7d7;
+                            color: #742a2a;
+                        }
+
+                        &.badge-secondary {
+                            background: #e2e8f0;
+                            color: #2d3748;
+                        }
+                    }
+
+                    .btn-sm {
+                        padding: 4px 12px;
+                        font-size: 12px;
+                        border-radius: 4px;
+                        font-weight: 500;
+                        transition: all 0.2s;
+
+                        &.btn-danger {
+                            background: #fc8181;
+                            color: white;
+                            border: none;
+
+                            &:hover {
+                                background: #f56565;
+                            }
+                        }
+
+                        i {
+                            margin-right: 4px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* Responsive Updates for Product Management */
 @media (max-width: 768px) {
     .product-header {
@@ -1982,5 +2097,17 @@
     .btn-add-product {
         width: 100%;
         justify-content: center;
+    }
+
+    .large-modal {
+        width: 98% !important;
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            min-width: 800px;
+        }
     }
 }

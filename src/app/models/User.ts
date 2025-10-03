@@ -48,8 +48,10 @@ export interface Company {
     links?: CompanyLink[];
     status: 'Active' | 'Inactive' | 'Suspended';
     stripeCustomerId?: string;
+    stripeCustomerData?: any; // Full Stripe customer object for reference
     dateCreated?: Date;
     dateUpdated?: Date;
+    source?: 'firestore' | 'stripe-only'; // Track where the company data originated
 }
 
 export interface BillingInfo {
@@ -57,7 +59,7 @@ export interface BillingInfo {
     billingAddress?: string;
     paymentMethod?: string;
     subscriptionPlan?: string;
-    subscriptionStatus?: 'Active' | 'Cancelled' | 'Past Due';
+    subscriptionStatus?: 'Active' | 'Cancelled' | 'Past Due' | 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete' | 'incomplete_expired' | 'unpaid' | 'N/A';
     nextBillingDate?: Date;
     monthlyRate?: number;
 }
@@ -77,4 +79,5 @@ export interface AttachedSite {
     role?: string; // User's role for this specific site
     permissions?: string[]; // Specific permissions for this site
     notes?: string;
+    customerId?: string; // Stripe customer ID for this site
 }

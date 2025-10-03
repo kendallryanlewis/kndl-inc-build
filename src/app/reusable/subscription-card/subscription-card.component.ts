@@ -59,9 +59,9 @@ export interface CardAction {
 export class SubscriptionCardComponent {
   @Input() product!: AnyProduct;
   @Input() cardType: 'subscription' | 'addon' | 'onetime' | 'service' | 'legacy-addon' = 'subscription';
-  @Input() showActions: boolean = true;
-  @Input() showEdit: boolean = true;
-  @Input() showDelete: boolean = true;
+  @Input() showActions: boolean = false;
+  @Input() showEdit: boolean = false;
+  @Input() showDelete: boolean = false;
   @Input() customActions: CardAction[] = [];
 
   // Events
@@ -157,6 +157,11 @@ export class SubscriptionCardComponent {
 
   // Get pricing display text
   getPriceDisplay(): string {
+    // Check for custom price display first (for user cards, etc.)
+    if ((this.product as any).customPriceDisplay) {
+      return (this.product as any).customPriceDisplay;
+    }
+
     if (this.isSubscriptionPlan(this.product)) {
       return `${this.formatCurrency(this.product.monthlyPrice)}/month`;
     } else if (this.isAddonProduct(this.product)) {

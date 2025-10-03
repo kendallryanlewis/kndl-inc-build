@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { getAuth, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { User, Company, AttachedSite } from '../../../models/User';
+import { StripeService } from '../../../services/stripe.service';
+import { forkJoin } from 'rxjs';
 export type UserRole = 'Admin' | 'User' | 'Manager';
 export type UserStatus = 'Active' | 'Deleted' | 'Invited';
 
@@ -63,7 +65,11 @@ export class AdminUsersComponent implements OnInit, OnChanges {
   get deletedUsers(): User[] { return this.users.filter(u => u.status === 'Deleted' && this.match(u)); }
   get invitedUsers(): User[] { return this.users.filter(u => u.status === 'Invited' && this.match(u)); }
 
-  constructor(private cdr: ChangeDetectorRef, private router: Router) { }
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    private stripeService: StripeService
+  ) { }
 
   async ngOnInit(): Promise<void> {
     // Ensure subTab defaults to 'Home' if not provided
@@ -145,15 +151,45 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       this.users = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
         console.log('Processing user document:', docSnap.id, data);
+
+        // Convert Firestore timestamps to Date objects
+        const joinDate = data['joinDate'] ? this.convertFirestoreTimestamp(data['joinDate']) : undefined;
+        const lastLogin = data['lastLogin'] ? this.convertFirestoreTimestamp(data['lastLogin']) : undefined;
+
+        // Process attached sites to convert timestamps
+        const attachedSites = data['attachedSites'] ? data['attachedSites'].map((site: any) => ({
+          companyId: site.companyId,
+          companyName: site.companyName,
+          dateAttached: site.dateAttached ? this.convertFirestoreTimestamp(site.dateAttached) : new Date(),
+          role: site.role || '',
+          permissions: site.permissions || [],
+          notes: site.notes || ''
+        })) : [];
+
         return {
-          ...data,
-          id: data['id'],
-          joinDate: data['joinDate'] ? new Date(data['joinDate']) : undefined,
-          lastLogin: data['lastLogin'] ? new Date(data['lastLogin']) : undefined
+          id: data['id'] || docSnap.id,
+          firstName: data['firstName'] || '',
+          lastName: data['lastName'] || '',
+          name: data['name'] || `${data['firstName']} ${data['lastName']}`,
+          email: data['email'] || '',
+          phone: data['phone'],
+          avatarUrl: data['avatarUrl'],
+          platforms: data['platforms'] || [],
+          attachedSites: attachedSites,
+          onboardingCompleted: data['onboardingCompleted'] || false,
+          role: data['role'] || 'User',
+          status: data['status'] || 'Active',
+          joinDate: joinDate,
+          lastLogin: lastLogin,
+          location: data['location'] || '',
+          bio: data['bio'] || '',
+          stripeCustomerId: data['stripeCustomerId'],
+          companyId: data['companyId']
         } as User;
       });
 
       console.log('Users loaded successfully:', this.users.length, 'users');
+      console.log('Sample user data:', this.users[0]);
     } catch (error) {
       console.error('Error loading users from Firestore:', error);
       // Show more detailed error information
@@ -166,6 +202,32 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       }
       alert('Error loading users: ' + (error as Error).message);
     }
+  }
+
+  /**
+   * Convert Firestore timestamp to JavaScript Date
+   * Handles both Firestore Timestamp objects and plain objects with seconds/nanoseconds
+   */
+  private convertFirestoreTimestamp(timestamp: any): Date {
+    if (!timestamp) return new Date();
+
+    // Check if it's a Firestore Timestamp object with toDate method
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+    }
+
+    // Check if it has seconds property (Firestore Timestamp structure)
+    if (timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000);
+    }
+
+    // If it's already a Date or timestamp number
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+
+    // Try to parse as Date
+    return new Date(timestamp);
   }
 
   // Tab Management Methods
@@ -187,14 +249,11 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       }
     }
 
-    console.log(`Setting activeTab from ${this.activeTab} to ${tabId}`);
     this.activeTab = tabId;
-    console.log(`activeTab is now: ${this.activeTab}`);
     this.cdr.detectChanges(); // Force change detection
   }
 
   isTabActive(tabId: string): boolean {
-    console.log(`isTabActive called for: ${tabId}, current activeTab: ${this.activeTab}`);
     return this.activeTab === tabId;
   }
 
@@ -212,7 +271,6 @@ export class AdminUsersComponent implements OnInit, OnChanges {
     const currentIndex = this.availableTabs.findIndex(tab => tab.id === this.activeTab);
     const nextIndex = (currentIndex + 1) % this.availableTabs.length;
     const nextTab = this.availableTabs[nextIndex];
-    console.log(`Navigating to next tab: ${nextTab.label} (${nextTab.id})`);
     this.setActiveTab(nextTab.id);
     this.cdr.detectChanges(); // Force change detection
   }
@@ -221,7 +279,6 @@ export class AdminUsersComponent implements OnInit, OnChanges {
     const currentIndex = this.availableTabs.findIndex(tab => tab.id === this.activeTab);
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : this.availableTabs.length - 1;
     const prevTab = this.availableTabs[prevIndex];
-    console.log(`Navigating to previous tab: ${prevTab.label} (${prevTab.id})`);
     this.setActiveTab(prevTab.id);
     this.cdr.detectChanges(); // Force change detection
   }
@@ -249,7 +306,7 @@ export class AdminUsersComponent implements OnInit, OnChanges {
     }
   }
 
-  closeDetails(): void {
+  closeDetails = () => {
     this.openDetails = false;
     this.selectedUser = null;
     this.originalUserData = null;
@@ -647,28 +704,117 @@ export class AdminUsersComponent implements OnInit, OnChanges {
 
     this.loadingSites = true;
     try {
-      console.log('Loading companies from Firestore...');
+      console.log('Loading companies from Firestore and Stripe...');
       const firestore = getFirestore();
-      const querySnapshot = await getDocs(collection(firestore, 'companies'));
 
-      this.companies = querySnapshot.docs.map(docSnap => {
+      // Load companies from Firestore first
+      const firestoreSnapshot = await getDocs(collection(firestore, 'companies'));
+      console.log('Firestore companies loaded:', firestoreSnapshot.docs.length);
+
+      // Load ALL Stripe customers to use as companies
+      let stripeCustomerMap = new Map();
+      let stripeCustomersArray: any[] = [];
+
+      try {
+        stripeCustomersArray = await this.stripeService.getAllCustomers(100).toPromise() || [];
+        if (stripeCustomersArray && Array.isArray(stripeCustomersArray)) {
+          stripeCustomersArray.forEach((customer: any) => {
+            stripeCustomerMap.set(customer.id, customer);
+          });
+          console.log('✅ Loaded Stripe customers:', stripeCustomersArray.length);
+        }
+      } catch (stripeError) {
+        console.warn('⚠️ Failed to load Stripe customers, continuing with Firestore data only:', stripeError);
+      }
+
+      // Start with Firestore companies and enrich with Stripe data
+      const firestoreCompanies = firestoreSnapshot.docs.map(docSnap => {
         const data = docSnap.data();
+        const stripeCustomerId = data['stripeCustomerId'];
+        const stripeCustomer = stripeCustomerId ? stripeCustomerMap.get(stripeCustomerId) : null;
+
+        // Remove from map so we know which Stripe customers are already in Firestore
+        if (stripeCustomerId && stripeCustomerMap.has(stripeCustomerId)) {
+          stripeCustomerMap.delete(stripeCustomerId);
+        }
+
+        // Enrich billing data with Stripe information
+        let billingInfo = data['billing'] ? {
+          ...data['billing'],
+          nextBillingDate: data['billing']['nextBillingDate'] ? new Date(data['billing']['nextBillingDate']) : undefined
+        } : undefined;
+
+        // If we have Stripe customer data, enhance billing info
+        if (stripeCustomer) {
+          billingInfo = {
+            ...billingInfo,
+            billingEmail: stripeCustomer.email || billingInfo?.billingEmail,
+            paymentMethod: stripeCustomer.default_source || billingInfo?.paymentMethod,
+            subscriptionStatus: stripeCustomer.subscriptions?.data?.[0]?.status || billingInfo?.subscriptionStatus,
+          };
+        }
+
         return {
           ...data,
           id: data['id'] || docSnap.id,
+          name: data['name'] || 'Unnamed Company',
+          status: data['status'] || 'Active',
           dateCreated: data['dateCreated'] ? new Date(data['dateCreated']) : undefined,
           dateUpdated: data['dateUpdated'] ? new Date(data['dateUpdated']) : undefined,
-          billing: data['billing'] ? {
-            ...data['billing'],
-            nextBillingDate: data['billing']['nextBillingDate'] ? new Date(data['billing']['nextBillingDate']) : undefined
-          } : undefined
-        } as Company;
+          stripeCustomerId: stripeCustomerId,
+          stripeCustomerData: stripeCustomer,
+          billing: billingInfo,
+          source: 'firestore'
+        } as Company & { stripeCustomerData?: any; source?: string };
       });
 
-      console.log('Companies loaded successfully:', this.companies.length, 'companies');
+      // Add Stripe-only customers (those not in Firestore) as virtual companies
+      const stripeOnlyCompanies = Array.from(stripeCustomerMap.values()).map((customer: any) => {
+        const subscription = customer.subscriptions?.data?.[0];
+
+        return {
+          id: customer.id,
+          name: customer.name || customer.email || customer.description || 'Stripe Customer',
+          website: customer.metadata?.website || '',
+          industry: customer.metadata?.industry || '',
+          description: customer.description || 'Stripe customer (not in Firestore)',
+          contactEmail: customer.email,
+          contactPhone: customer.phone,
+          status: customer.delinquent ? 'Inactive' : 'Active',
+          stripeCustomerId: customer.id,
+          stripeCustomerData: customer,
+          billing: {
+            billingEmail: customer.email,
+            paymentMethod: customer.default_source || customer.invoice_settings?.default_payment_method,
+            subscriptionStatus: subscription?.status || 'N/A',
+            subscriptionPlan: subscription?.items?.data?.[0]?.price?.product?.name || 'N/A',
+            monthlyRate: subscription ? (subscription.items?.data?.[0]?.price?.unit_amount / 100) : 0,
+            nextBillingDate: subscription?.current_period_end ? new Date(subscription.current_period_end * 1000) : undefined
+          },
+          dateCreated: new Date(customer.created * 1000),
+          dateUpdated: undefined,
+          source: 'stripe-only'
+        } as Company & { stripeCustomerData?: any; source?: string };
+      });
+
+      // Combine both sources
+      this.companies = [...firestoreCompanies, ...stripeOnlyCompanies];
+
+      console.log('📊 Companies loaded:', {
+        total: this.companies.length,
+        fromFirestore: firestoreCompanies.length,
+        fromStripeOnly: stripeOnlyCompanies.length
+      });
+
+      // If no companies found, log a helpful message
+      if (this.companies.length === 0) {
+        console.warn('⚠️ No companies found in Firestore or Stripe.');
+      }
     } catch (error) {
-      console.error('Error loading companies from Firestore:', error);
+      console.error('❌ Error loading companies from Firestore/Stripe:', error);
       this.errorMessage = 'Failed to load companies: ' + (error as Error).message;
+      // Set companies to empty array on error
+      this.companies = [];
     } finally {
       this.loadingSites = false;
     }
@@ -1081,6 +1227,222 @@ export class AdminUsersComponent implements OnInit, OnChanges {
       certificates: '3',
       internships: '2'
     };
+  }
+
+  // ==================== CARD FORMAT METHODS ====================
+
+  /**
+   * Convert user to card format for subscription-card component
+   */
+  convertUserToCard(user: User): any {
+    // Build description - only show location since email is in price area
+    let description = user.location || '';
+
+    // Build features array to display user information
+    // Hide features when a user is selected (compact view)
+    const features: string[] = [];
+
+    if (!this.selectedUser) {
+      features.push(`Role: ${user.role}`);
+      features.push(`Joined: ${this.formatDate(user.joinDate)}`);
+
+      if (user.attachedSites && user.attachedSites.length > 0) {
+        features.push(`Sites: ${user.attachedSites.length} (${user.attachedSites.map(s => s.companyName).join(', ')})`);
+      } else {
+        features.push(`Sites: None`);
+      }
+
+      if (user.platforms && user.platforms.length > 0) {
+        features.push(`Platforms: ${user.platforms.length}`);
+      }
+
+      features.push(`Onboarded: ${user.onboardingCompleted ? 'Yes' : 'No'}`);
+
+      if (user.lastLogin) {
+        features.push(`Last Login: ${this.formatDate(user.lastLogin)}`);
+      }
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      description: description,
+      status: user.status, // 'Active', 'Invited', or 'Deleted' - card uses this for styling
+      features: features,
+      customPriceDisplay: user.email, // Display email as the price
+      lastModified: user.lastLogin ? this.formatDateForCard(user.lastLogin) : this.formatDateForCard(user.joinDate)
+    };
+  }
+
+  /**
+   * Format date for card display (e.g., "Sep 26, 2025")
+   */
+  private formatDateForCard(date: Date | undefined): string {
+    if (!date) return 'Never';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  /**
+   * Get action buttons for user cards
+   */
+  getUserActions(user: User): any[] {
+    const actions = [
+      {
+        label: 'View Details',
+        icon: 'fa-eye',
+        style: 'btn-info',
+        action: 'view',
+        enabled: true
+      },
+      {
+        label: 'Edit',
+        icon: 'fa-edit',
+        style: 'btn-primary',
+        action: 'edit',
+        enabled: true
+      }
+    ];
+
+    if (user.status === 'Deleted') {
+      actions.push({
+        label: 'Restore',
+        icon: 'fa-undo',
+        style: 'btn-success',
+        action: 'restore',
+        enabled: true
+      });
+      actions.push({
+        label: 'Hard Delete',
+        icon: 'fa-trash',
+        style: 'btn-danger',
+        action: 'hard-delete',
+        enabled: true
+      });
+    } else {
+      actions.push({
+        label: 'Delete',
+        icon: 'fa-trash',
+        style: 'btn-danger',
+        action: 'delete',
+        enabled: true
+      });
+    }
+
+    return actions;
+  }
+
+  /**
+   * Handle user card action events
+   */
+  onUserAction(event: any, user: User): void {
+    const action = event.action || event;
+
+    switch (action) {
+      case 'view':
+        this.selectUser(user);
+        break;
+      case 'edit':
+        this.quickEditUser(user);
+        break;
+      case 'delete':
+        this.quickDeleteUser(user);
+        break;
+      case 'restore':
+        this.restoreUser(user);
+        break;
+      case 'hard-delete':
+        this.hardDeleteUser(user);
+        break;
+      default:
+        console.warn('Unknown action:', action);
+    }
+  }
+
+  /**
+   * Get filtered users based on search query
+   */
+  getFilteredUsers(): User[] {
+    return this.getCurrentUsers();
+  }
+
+  /**
+   * Create sample companies for testing (useful during development)
+   */
+  async createSampleCompanies(): Promise<void> {
+    try {
+      const firestore = getFirestore();
+      const sampleCompanies = [
+        {
+          id: 'company-001',
+          name: 'Tech Solutions Inc',
+          website: 'https://techsolutions.example.com',
+          industry: 'Technology',
+          description: 'Leading technology solutions provider',
+          contactEmail: 'contact@techsolutions.example.com',
+          status: 'Active',
+          billing: {
+            subscriptionPlan: 'Pro',
+            monthlyRate: 299,
+            subscriptionStatus: 'Active'
+          },
+          dateCreated: new Date(),
+          dateUpdated: new Date()
+        },
+        {
+          id: 'company-002',
+          name: 'Marketing Masters LLC',
+          website: 'https://marketingmasters.example.com',
+          industry: 'Marketing',
+          description: 'Full-service marketing agency',
+          contactEmail: 'info@marketingmasters.example.com',
+          status: 'Active',
+          billing: {
+            subscriptionPlan: 'Business',
+            monthlyRate: 499,
+            subscriptionStatus: 'Active'
+          },
+          dateCreated: new Date(),
+          dateUpdated: new Date()
+        },
+        {
+          id: 'company-003',
+          name: 'Design Studio Co',
+          website: 'https://designstudio.example.com',
+          industry: 'Design',
+          description: 'Creative design and branding studio',
+          contactEmail: 'hello@designstudio.example.com',
+          status: 'Active',
+          billing: {
+            subscriptionPlan: 'Starter',
+            monthlyRate: 99,
+            subscriptionStatus: 'Active'
+          },
+          dateCreated: new Date(),
+          dateUpdated: new Date()
+        }
+      ];
+
+      for (const company of sampleCompanies) {
+        await setDoc(doc(firestore, 'companies', company.id), company);
+      }
+
+      console.log('✅ Sample companies created successfully');
+      this.successMessage = 'Sample companies created successfully!';
+
+      // Reload companies
+      await this.loadCompanies();
+
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
+    } catch (error) {
+      console.error('Error creating sample companies:', error);
+      this.errorMessage = 'Failed to create sample companies: ' + (error as Error).message;
+    }
   }
 
 }

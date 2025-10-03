@@ -62,6 +62,18 @@ export class AdminComponent implements OnInit, AfterViewInit {
   futureBillings: any[] = [];
   overduePayments: any[] = [];
 
+  // Caching for performance (5 minutes)
+  private cachedData: any = null;
+  private cacheTimestamp: number = 0;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  // Loading guards to prevent duplicate requests
+  private isCurrentlyLoading = false;
+  private loadingPromise: Promise<void> | null = null;
+
+  // Invoice cache per customer (to prevent duplicate API calls)
+  private invoiceCache: Map<string, any[]> = new Map();
+
   // Component state
   showCreateDummyButton = true;
 
@@ -251,6 +263,8 @@ export class AdminComponent implements OnInit, AfterViewInit {
   }
 
   async ngOnInit(): Promise<void> {
+    console.log('🔄 AdminComponent ngOnInit called');
+
     // Ensure subTab defaults to 'Home' if not provided
     if (!this.subTab || this.subTab.trim() === '') {
       this.subTab = 'Home';
@@ -259,6 +273,8 @@ export class AdminComponent implements OnInit, AfterViewInit {
     await Promise.all([
       this.emitChildTabs()
     ]);
+
+    // Load dashboard data (with deduplication protection)
     this.loadDashboardData();
   }
 
@@ -269,16 +285,95 @@ export class AdminComponent implements OnInit, AfterViewInit {
 
 
   /**
-   * Load all dashboard data from Stripe
+   * Check if cache is still valid
+   */
+  private isCacheValid(): boolean {
+    if (!this.cachedData || this.cacheTimestamp === 0) return false;
+    const now = Date.now();
+    const cacheAge = now - this.cacheTimestamp;
+    return cacheAge < this.CACHE_DURATION;
+  }
+
+  /**
+   * Load dashboard from cached data
+   */
+  private loadFromCache(): void {
+    console.log('📦 Restoring data from cache...');
+    this.isLoading = true;
+
+    // Restore cached data
+    this.companies = this.cachedData.companies;
+    this.pastBillings = this.cachedData.pastBillings;
+    this.futureBillings = this.cachedData.futureBillings;
+    this.overduePayments = this.cachedData.overduePayments;
+
+    // Update metrics and UI
+    this.updateMetricsFromStripe(this.cachedData.stripeData);
+
+    if (this.companies.length > 0) {
+      this.showCreateDummyButton = false;
+    }
+
+    this.isLoading = false;
+    console.log('✅ Cache restored successfully');
+  }
+
+  /**
+   * Force refresh - clear all caches and reload data
+   */
+  forceRefresh(): void {
+    console.log('🔄 Force refresh triggered - clearing all caches');
+    this.cachedData = null;
+    this.cacheTimestamp = 0;
+    this.invoiceCache.clear();
+    this.loadDashboardData();
+  }
+
+  /**
+   * Load all dashboard data from Stripe (with caching and deduplication)
    */
   async loadDashboardData(): Promise<void> {
+    // DEDUPLICATION: If already loading, return the existing promise
+    if (this.isCurrentlyLoading && this.loadingPromise) {
+      console.log('⏳ Already loading data, waiting for existing request...');
+      return this.loadingPromise;
+    }
+
+    // Check cache first
+    if (this.isCacheValid()) {
+      const cacheAgeSeconds = ((Date.now() - this.cacheTimestamp) / 1000).toFixed(0);
+      console.log(`💾 Using cached data (${cacheAgeSeconds}s old)`);
+      this.loadFromCache();
+      return;
+    }
+
+    // Mark as loading and create promise
+    this.isCurrentlyLoading = true;
+    this.loadingPromise = this.loadFreshData();
+
+    try {
+      await this.loadingPromise;
+    } finally {
+      this.isCurrentlyLoading = false;
+      this.loadingPromise = null;
+    }
+  }
+
+  /**
+   * Load fresh data from Stripe API
+   */
+  private async loadFreshData(): Promise<void> {
     try {
       this.isLoading = true;
-      console.log('💳 Loading Stripe dashboard data...');
+      const overallStartTime = Date.now();
+      console.log('💳 Loading fresh Stripe dashboard data...');
 
-      // Load data from Stripe in parallel
+      // Clear invoice cache when loading fresh data
+      this.invoiceCache.clear();
+
+      // Load data from Stripe in parallel (reduced customer limit for faster loading)
       forkJoin({
-        customers: this.stripeService.getAllCustomers(100).pipe(
+        customers: this.stripeService.getAllCustomers(50).pipe(
           timeout(30000),
           catchError((err: any) => {
             console.error('❌ Failed to load customers:', err);
@@ -294,10 +389,17 @@ export class AdminComponent implements OnInit, AfterViewInit {
         )
       }).subscribe({
         next: async (stripeData: any) => {
-          console.log('✅ Stripe data loaded:', stripeData);
+          const apiLoadTime = ((Date.now() - overallStartTime) / 1000).toFixed(2);
+          console.log(`✅ Stripe base data loaded in ${apiLoadTime}s:`, {
+            customers: stripeData.customers.length,
+            products: stripeData.products.length
+          });
 
           // Load invoices for customers
+          const invoiceStartTime = Date.now();
           await this.loadStripeInvoicesForDashboard(stripeData.customers);
+          const invoiceLoadTime = ((Date.now() - invoiceStartTime) / 1000).toFixed(2);
+          console.log(`⏱️ Invoice loading completed in ${invoiceLoadTime}s`);
 
           // Map Stripe customers to companies
           this.companies = stripeData.customers.map((customer: any) => ({
@@ -320,6 +422,19 @@ export class AdminComponent implements OnInit, AfterViewInit {
             this.showCreateDummyButton = false;
           }
 
+          // Cache the data for 5 minutes
+          this.cachedData = {
+            companies: this.companies,
+            pastBillings: this.pastBillings,
+            futureBillings: this.futureBillings,
+            overduePayments: this.overduePayments,
+            stripeData: stripeData
+          };
+          this.cacheTimestamp = Date.now();
+          console.log('💾 Data cached for 5 minutes');
+
+          const totalLoadTime = ((Date.now() - overallStartTime) / 1000).toFixed(2);
+          console.log(`🎉 Dashboard fully loaded in ${totalLoadTime}s total`);
           this.isLoading = false;
         },
         error: (error: any) => {
@@ -338,6 +453,7 @@ export class AdminComponent implements OnInit, AfterViewInit {
 
   /**
    * Load invoices for dashboard from Stripe
+   * OPTIMIZED: Uses parallel loading with forkJoin instead of sequential for-loop
    */
   private async loadStripeInvoicesForDashboard(customers: any[]): Promise<void> {
     if (customers.length === 0) {
@@ -347,29 +463,60 @@ export class AdminComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    // Get invoices for first few customers (to avoid too many API calls)
-    const customerIds = customers.slice(0, 10).map(c => c.id);
-    const allInvoices: any[] = [];
+    // Get invoices for first 5 customers (reduced for faster loading)
+    const customerIds = customers.slice(0, 5).map(c => c.id);
 
-    for (const customerId of customerIds) {
-      try {
-        const invoices = await this.stripeService.getInvoices(customerId).pipe(
-          timeout(15000),
-          catchError((err: any) => {
-            console.error(`❌ Failed to load invoices for ${customerId}:`, err);
-            return of([]);
-          })
-        ).toPromise();
+    console.log(`⚡ Loading invoices for ${customerIds.length} customers in PARALLEL...`);
+    const startTime = Date.now();
 
-        if (invoices && Array.isArray(invoices)) {
-          allInvoices.push(...invoices);
-        }
-      } catch (error) {
-        console.error(`Error loading invoices for customer ${customerId}:`, error);
+    // Create parallel API calls for all customers (with caching)
+    const invoiceObservables = customerIds.map(customerId => {
+      // Check cache first
+      if (this.invoiceCache.has(customerId)) {
+        console.log(`💾 Using cached invoices for customer ${customerId.substring(0, 8)}...`);
+        return of(this.invoiceCache.get(customerId) || []);
       }
-    }
 
-    console.log('✅ Total invoices loaded:', allInvoices.length);
+      // Make API call and cache result
+      return this.stripeService.getInvoices(customerId).pipe(
+        timeout(15000),
+        catchError((err: any) => {
+          console.warn(`⚠️ Failed to load invoices for customer ${customerId}:`, err.message || err);
+          return of([]); // Return empty array on error, don't block other calls
+        }),
+        map((invoices: any) => {
+          const invoiceArray = Array.isArray(invoices) ? invoices : [];
+          // Cache the result
+          this.invoiceCache.set(customerId, invoiceArray);
+          return invoiceArray;
+        })
+      );
+    });
+
+    // Execute all API calls in parallel using forkJoin
+    try {
+      const invoiceArrays = await forkJoin(invoiceObservables).toPromise();
+      const allInvoices = (invoiceArrays || []).flat();
+
+      const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`✅ Loaded ${allInvoices.length} invoices in ${loadTime}s (PARALLEL)`);
+
+      // Continue with processing
+      this.processInvoices(allInvoices, customers);
+    } catch (error) {
+      console.error('❌ Error in parallel invoice loading:', error);
+      this.pastBillings = [];
+      this.futureBillings = [];
+      this.overduePayments = [];
+      return;
+    }
+  }
+
+  /**
+   * Process invoices and categorize them into past, future, and overdue
+   */
+  private processInvoices(allInvoices: any[], customers: any[]): void {
+    console.log('📊 Processing invoices...');
 
     // Separate invoices into past, future, and overdue
     const now = Date.now() / 1000; // Current time in seconds

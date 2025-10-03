@@ -1,185 +1,376 @@
 <div class="dashboard-overview">
     <!-- Overview Section (Main content) -->
     <div class="row no-gutters">
-        <div class="col-8">
-            <section class="service-section">
-                <h2>Service Overview</h2>
-                <div class="service-section-header">
-                    <div class="dropdown-field">
-                        <select [(ngModel)]="selectedSite">
-                            <option disabled value="">Select type</option>
-                            <option *ngFor="let site of websites">{{ site }}</option>
-                        </select>
-                        <i class="fa fa-dropdown-arrow"></i>
-                    </div>
-                </div>
-                <div class="mobile-only">
-                    <button class="flat-button">
-                        Toggle search
-                    </button>
-                </div>
-                <div class="tiles">
-                    <article class="tile">
-                        <div class="tile-header">
-                            <i class="ph-lightning-light"></i>
-                            <h3>
-                                <span>Branding</span>
-                                <span>{{ CompanyName }}</span>
+        <div class="col-md-9">
+            <ng-switch [ngSwitch]="subTab">
+                <section *ngSwitchCase="'Subscriptions'">
+                    <!-- Subscriptions & Products Section -->
+                    <div class="service-section">
+                        <app-generic-h2-title [title]="'Available Products & Services'" [icon]="'fa fa-shopping-cart'"
+                            [subTitle]="'Browse and subscribe to our products and services'"></app-generic-h2-title>
+
+                        <!-- No Company Selected -->
+                        <div *ngIf="!selectedCompany" class="empty-state" style="text-align: center; padding: 3rem;">
+                            <i class="fa fa-buildings" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p style="margin: 1rem 0;">Please select a company to view available products</p>
+                        </div>
+
+                        <!-- Recurring Subscriptions -->
+                        <div *ngIf="selectedCompany" style="margin-top: 2rem;">
+                            <h3 class="admin-title" style="margin-bottom: 1.5rem;">
+                                <i class="fa fa-sync-alt" style="margin-right: 0.5rem;"></i>
+                                Recurring Subscriptions
                             </h3>
+
+                            <div class="row" *ngIf="getSubscriptionProducts().length > 0">
+                                <div class="col-md-4" *ngFor="let product of getSubscriptionProducts()">
+                                    <div class="product-card">
+                                        <div class="product-header">
+                                            <h4>{{ product.name }}</h4>
+                                            <span class="badge bg-primary" *ngIf="hasActiveSubscription(product.id)">
+                                                Active
+                                            </span>
+                                        </div>
+                                        <p class="product-description">{{ product.description || 'No description
+                                            available' }}</p>
+
+                                        <!-- Pricing Options -->
+                                        <div class="pricing-options">
+                                            <div class="price-option"
+                                                *ngFor="let price of getRecurringPricesForProduct(product.id)">
+                                                <div class="price-info">
+                                                    <span class="price-amount">{{ formatCurrency((price.unit_amount ||
+                                                        0) / 100) }}</span>
+                                                    <span class="price-interval">/ {{ price.recurring?.interval
+                                                        }}</span>
+                                                </div>
+                                                <button class="btn btn-sm btn-primary"
+                                                    (click)="openPurchaseModal(product, price)"
+                                                    [disabled]="hasActiveSubscription(product.id)">
+                                                    <i class="fa fa-plus" style="margin-right: 0.25rem;"></i>
+                                                    {{ hasActiveSubscription(product.id) ? 'Subscribed' : 'Subscribe' }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="empty-state" *ngIf="getSubscriptionProducts().length === 0"
+                                style="padding: 2rem;">
+                                <i class="fa fa-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                                <p>No subscription products available at this time</p>
+                            </div>
                         </div>
-                        <a>
-                            <span>Go to branding</span>
-                            <span class="icon-button">
-                                <i class="fa fa-caret-right-bold"></i>
-                            </span>
-                        </a>
-                    </article>
-                    <article class="tile">
-                        <div class="tile-header">
-                            <i class="fa fa-fire-simple-light"></i>
-                            <h3>
-                                <span>Website</span>
-                                <span>{{ selectedSite }}</span>
+
+                        <!-- One-Time Products -->
+                        <div *ngIf="selectedCompany" style="margin-top: 3rem;">
+                            <h3 class="admin-title" style="margin-bottom: 1.5rem;">
+                                <i class="fa fa-shopping-bag" style="margin-right: 0.5rem;"></i>
+                                One-Time Services
                             </h3>
-                        </div>
-                        <a>
-                            <span>Go to website</span>
-                            <span class="icon-button">
-                                <i class="ph-caret-right-bold"></i>
-                            </span>
-                        </a>
-                    </article>
-                    <article class="tile">
-                        <div class="tile-header">
-                            <i class="fa fa-file-light"></i>
-                            <h3>
-                                <span>Growth</span>
-                                <span>Content Creation</span>
-                            </h3>
-                        </div>
-                        <a>
-                            <span>Go to service</span>
-                            <span class="icon-button">
-                                <i class="fa fa-caret-right-bold"></i>
-                            </span>
-                        </a>
-                    </article>
-                </div>
-                <div class="service-section-footer">
-                    <p>Services are paid according to the current state of the currency and tariff.</p>
-                </div>
-            </section>
-            <section class="transfer-section">
-                <div class="transfer-section-header">
-                    <h2>Latest transfers</h2>
-                    <div class="filter-options">
-                        <p>Filter selected: more than 100 $</p>
-                        <button class="icon-button" (click)="refreshBillingData()" title="Refresh billing data">
-                            <i class="ph-arrow-clockwise" [class.rotating]="isLoading"></i>
-                        </button>
-                        <button class="icon-button">
-                            <i class="ph-funnel"></i>
-                        </button>
-                        <button class="icon-button">
-                            <i class="ph-plus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="transfers">
-                    <div *ngIf="isLoading" class="loading-state">
-                        <i class="ph-spinner spinning"></i>
-                        <p>Loading billing data...</p>
-                    </div>
-                    <div *ngIf="!isLoading && transfers.length === 0" class="empty-state">
-                        <i class="ph-receipt"></i>
-                        <p>No recent transactions found</p>
-                        <small>Transactions will appear here when companies you're associated with make payments</small>
-                    </div>
-                    <div class="transfer" *ngFor="let transfer of transfers" [class.highlight]="transfer.amount > 1000">
-                        <div class="transfer-logo">
-                            <img [src]="transfer.logo" [alt]="transfer.company + ' logo'" />
-                        </div>
-                        <dl class="transfer-details">
-                            <div>
-                                <dt>{{ transfer.company }}</dt>
-                                <dd>{{ transfer.description }}</dd>
+
+                            <div class="row" *ngIf="getOneTimeProducts().length > 0">
+                                <div class="col-md-4" *ngFor="let product of getOneTimeProducts()">
+                                    <div class="product-card">
+                                        <div class="product-header">
+                                            <h4>{{ product.name }}</h4>
+                                        </div>
+                                        <p class="product-description">{{ product.description || 'No description
+                                            available' }}</p>
+
+                                        <!-- Pricing Options -->
+                                        <div class="pricing-options">
+                                            <div class="price-option"
+                                                *ngFor="let price of getOneTimePricesForProduct(product.id)">
+                                                <div class="price-info">
+                                                    <span class="price-amount">{{ formatCurrency((price.unit_amount ||
+                                                        0) / 100) }}</span>
+                                                    <span class="price-interval">one-time</span>
+                                                </div>
+                                                <button class="btn btn-sm btn-primary"
+                                                    (click)="openPurchaseModal(product, price)">
+                                                    <i class="fa fa-shopping-cart" style="margin-right: 0.25rem;"></i>
+                                                    Purchase
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <dt>{{ transfer.lastFour }}</dt>
-                                <dd>Last four digits</dd>
+
+                            <div class="empty-state" *ngIf="getOneTimeProducts().length === 0" style="padding: 2rem;">
+                                <i class="fa fa-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                                <p>No one-time products available at this time</p>
                             </div>
-                            <div>
-                                <dt>{{ transfer.date }}</dt>
-                                <dd>Date payment</dd>
-                            </div>
-                        </dl>
-                        <div class="transfer-number">
-                            - {{ formatCurrency(transfer.amount) }}
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+                <section *ngSwitchCase="'Invoicing'">
+                    <app-generic-h2-title [title]="'Invoicing'" [icon]="'fa fa-file-invoice'"
+                        [subTitle]="'Manage your invoices and billing information'"></app-generic-h2-title>
+                </section>
+                <section *ngSwitchDefault>
+                    <div class="service-section">
+                        <app-generic-h2-title [title]="'Service Overview'" [icon]="'fa fa-home'"
+                            [subTitle]="'Overview of your company services and billing'"></app-generic-h2-title>
+                        <div class="service-section-header mt-5">
+                            <div class="dropdown-field">
+                                <select [(ngModel)]="selectedSite" (ngModelChange)="onSiteChange()" class="px-2">
+                                    <option disabled value="">Select Company</option>
+                                    <option *ngFor="let site of websites" [value]="site">{{ site }}</option>
+                                </select>
+                                <i class="fa fa-dropdown-arrow"></i>
+                            </div>
+                        </div>
+                        <div class="mobile-only">
+                            <button class="flat-button">
+                                Toggle search
+                            </button>
+                        </div>
+                        <div class="tiles">
+                            <article class="tile stat-card">
+                                <div class="tile-header">
+                                    <i class="fa fa-home"></i>
+                                    <h3>
+                                        <span>Site</span>
+                                        <span class="fs-5">{{ companyName || 'Select a site' }}</span>
+                                    </h3>
+                                </div>
+                                <a>
+                                    <span>View Details</span>
+                                    <span class="icon-button">
+                                        <i class="fa fa-chevron-right"></i>
+                                    </span>
+                                </a>
+                            </article>
+                            <article class="tile stat-card">
+                                <div class="tile-header">
+                                    <i class="fa fa-fire"></i>
+                                    <h3>
+                                        <span>Subs</span>
+                                        <span class="fs-5">{{ getActiveSubscriptionCount() }}{{
+                                            getActiveSubscriptionCount() === 1 ?
+                                            ' subscription' : ' subscriptions' }}</span>
+                                    </h3>
+                                </div>
+                                <a>
+                                    <span>Manage Billing</span>
+                                    <span class="icon-button">
+                                        <i class="fa fa-chevron-right"></i>
+                                    </span>
+                                </a>
+                            </article>
+
+                            <article class="tile stat-card">
+                                <div class="tile-header">
+                                    <i class="fa fa-file"></i>
+                                    <h3>
+                                        <span>Services</span>
+                                        <span class="fs-5">{{ getActiveServicesCount() }}{{ getActiveServicesCount() ===
+                                            1 ? '
+                                            active service' : ' active services' }}</span>
+                                    </h3>
+                                </div>
+                                <a>
+                                    <span>View Activity</span>
+                                    <span class="icon-button">
+                                        <i class="fa fa-chevron-right"></i>
+                                    </span>
+                                </a>
+                            </article>
+                        </div>
+                        <div class="service-section-footer">
+                            <p>Services are paid according to the current state of the currency and tariff.</p>
+                        </div>
+                    </div>
+                    <div class="transfer-section">
+                        <div class="transfer-section-header">
+                            <h2 class="admin-title">Latest transfers</h2>
+                            <div class="filter-options">
+                                <p class="m-0">Filter: {{ getFilterSummary() }}</p>
+
+                                <button class="icon-button" (click)="openFilterModal()" title="Filter transactions">
+                                    <i class="fa fa-filter"></i>
+                                </button>
+                                <button class="icon-button" (click)="refreshBillingData()">
+                                    <i class="fa fa-recycle"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="transfers">
+                            <div *ngIf="isLoading" class="loading-state">
+                                <i class="fa fa-spinner spinning"></i>
+                                <p>Loading billing data...</p>
+                            </div>
+                            <div *ngIf="!isLoading && transfers.length === 0" class="empty-state">
+                                <i class="fa fa-receipt"></i>
+                                <p>No recent transactions found</p>
+                                <small>Transactions will appear here when companies you're associated with make
+                                    payments</small>
+                            </div>
+                            <div class="transfer stat-card p-3 rounded" *ngFor="let transfer of transfers"
+                                [class.highlight]="transfer.amount > 1000">
+                                <div class="transfer-logo">
+                                    <img [src]="transfer.logo" [alt]="transfer.company + ' logo'" />
+                                </div>
+                                <dl class="transfer-details mb-0">
+                                    <div>
+                                        <dt>{{ transfer.company }}</dt>
+                                        <dd>{{ transfer.description }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{{ transfer.lastFour }}</dt>
+                                        <dd>Last four digits</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{{ transfer.date }}</dt>
+                                        <dd>Date payment</dd>
+                                    </div>
+                                </dl>
+                                <div class="transfer-number">
+                                    - {{ formatCurrency(transfer.amount) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </ng-switch>
         </div>
-        <div class="col-4">
+        <div class="col-md-3">
             <section class="payment-section">
-                <h2>New Payment</h2>
+                <app-generic-h2-title [title]="'Payment Methods'"></app-generic-h2-title>
                 <div class="payment-section-header">
-                    <p>Choose a card to transfer money</p>
-                    <div>
-                        <button class="card-button mastercard">
-                            <svg width="2001" height="1237" viewBox="0 0 2001 1237" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <g id="a624784f2834e21c94a1c0c9a58bbbaa">
-                                    <path id="7869b07bea546aa59a5ee138adbcfd5a"
-                                        d="M1270.57 1104.15H729.71V132.15H1270.58L1270.57 1104.15Z" fill="currentColor">
-                                    </path>
-                                    <path id="b54e3ab4d7044a9f288082bc6b864ae6"
-                                        d="M764 618.17C764 421 856.32 245.36 1000.08 132.17C891.261 46.3647 756.669 -0.204758 618.09 9.6031e-07C276.72 9.6031e-07 0 276.76 0 618.17C0 959.58 276.72 1236.34 618.09 1236.34C756.672 1236.55 891.268 1189.98 1000.09 1104.17C856.34 991 764 815.35 764 618.17Z"
-                                        fill="currentColor"></path>
-                                    <path id="67f94b4d1b83252a6619ed6e0cc0a3a1"
-                                        d="M2000.25 618.17C2000.25 959.58 1723.53 1236.34 1382.16 1236.34C1243.56 1236.54 1108.95 1189.97 1000.11 1104.17C1143.91 990.98 1236.23 815.35 1236.23 618.17C1236.23 420.99 1143.91 245.36 1000.11 132.17C1108.95 46.3673 1243.56 -0.201169 1382.15 -2.24915e-05C1723.52 -2.24915e-05 2000.24 276.76 2000.24 618.17"
-                                        fill="currentColor"></path>
-                                </g>
-                            </svg>
-                        </button>
-                        <button class="card-button visa active">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2500"
-                                viewBox="0 0 141.732 141.732">
-                                <g fill="currentColor">
+                    <p *ngIf="!selectedCompany">Select a company to manage payment methods</p>
+                    <div class="align-content-center align-items-center d-flex justify-content-between mb-2 p-0 w-100">
+                        <p *ngIf="selectedCompany && selectedCustomerDetails && selectedCustomerDetails.paymentMethods.length > 0"
+                            class="m-0">
+                            Manage your payment cards</p>
+                        <div class="d-flex gap-2 justify-content-between">
+                            <button class="card-button mastercard">
+                                <svg width="2001" height="1237" viewBox="0 0 2001 1237" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <g id="a624784f2834e21c94a1c0c9a58bbbaa">
+                                        <path id="7869b07bea546aa59a5ee138adbcfd5a"
+                                            d="M1270.57 1104.15H729.71V132.15H1270.58L1270.57 1104.15Z"
+                                            fill="currentColor">
+                                        </path>
+                                        <path id="b54e3ab4d7044a9f288082bc6b864ae6"
+                                            d="M764 618.17C764 421 856.32 245.36 1000.08 132.17C891.261 46.3647 756.669 -0.204758 618.09 9.6031e-07C276.72 9.6031e-07 0 276.76 0 618.17C0 959.58 276.72 1236.34 618.09 1236.34C756.672 1236.55 891.268 1189.98 1000.09 1104.17C856.34 991 764 815.35 764 618.17Z"
+                                            fill="currentColor"></path>
+                                        <path id="67f94b4d1b83252a6619ed6e0cc0a3a1"
+                                            d="M2000.25 618.17C2000.25 959.58 1723.53 1236.34 1382.16 1236.34C1243.56 1236.54 1108.95 1189.97 1000.11 1104.17C1143.91 990.98 1236.23 815.35 1236.23 618.17C1236.23 420.99 1143.91 245.36 1000.11 132.17C1108.95 46.3673 1243.56 -0.201169 1382.15 -2.24915e-05C1723.52 -2.24915e-05 2000.24 276.76 2000.24 618.17"
+                                            fill="currentColor"></path>
+                                    </g>
+                                </svg>
+                            </button>
+                            <button class="card-button visa active">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2500"
+                                    viewBox="0 0 141.732 141.732">
+                                    <g fill="currentColor">
+                                        <path
+                                            d="M62.935 89.571h-9.733l6.083-37.384h9.734zM45.014 52.187L35.735 77.9l-1.098-5.537.001.002-3.275-16.812s-.396-3.366-4.617-3.366h-15.34l-.18.633s4.691.976 10.181 4.273l8.456 32.479h10.141l15.485-37.385H45.014zM121.569 89.571h8.937l-7.792-37.385h-7.824c-3.613 0-4.493 2.786-4.493 2.786L95.881 89.571h10.146l2.029-5.553h12.373l1.14 5.553zm-10.71-13.224l5.114-13.99 2.877 13.99h-7.991zM96.642 61.177l1.389-8.028s-4.286-1.63-8.754-1.63c-4.83 0-16.3 2.111-16.3 12.376 0 9.658 13.462 9.778 13.462 14.851s-12.075 4.164-16.06.965l-1.447 8.394s4.346 2.111 10.986 2.111c6.642 0 16.662-3.439 16.662-12.799 0-9.72-13.583-10.625-13.583-14.851.001-4.227 9.48-3.684 13.645-1.389z" />
+                                    </g>
                                     <path
-                                        d="M62.935 89.571h-9.733l6.083-37.384h9.734zM45.014 52.187L35.735 77.9l-1.098-5.537.001.002-3.275-16.812s-.396-3.366-4.617-3.366h-15.34l-.18.633s4.691.976 10.181 4.273l8.456 32.479h10.141l15.485-37.385H45.014zM121.569 89.571h8.937l-7.792-37.385h-7.824c-3.613 0-4.493 2.786-4.493 2.786L95.881 89.571h10.146l2.029-5.553h12.373l1.14 5.553zm-10.71-13.224l5.114-13.99 2.877 13.99h-7.991zM96.642 61.177l1.389-8.028s-4.286-1.63-8.754-1.63c-4.83 0-16.3 2.111-16.3 12.376 0 9.658 13.462 9.778 13.462 14.851s-12.075 4.164-16.06.965l-1.447 8.394s4.346 2.111 10.986 2.111c6.642 0 16.662-3.439 16.662-12.799 0-9.72-13.583-10.625-13.583-14.851.001-4.227 9.48-3.684 13.645-1.389z" />
-                                </g>
-                                <path
-                                    d="M34.638 72.364l-3.275-16.812s-.396-3.366-4.617-3.366h-15.34l-.18.633s7.373 1.528 14.445 7.253c6.762 5.472 8.967 12.292 8.967 12.292z"
-                                    fill="currentColor" />
-                                <path fill="none" d="M0 0h141.732v141.732H0z" />
-                            </svg>
-                        </button>
+                                        d="M34.638 72.364l-3.275-16.812s-.396-3.366-4.617-3.366h-15.34l-.18.633s7.373 1.528 14.445 7.253c6.762 5.472 8.967 12.292 8.967 12.292z"
+                                        fill="currentColor" />
+                                    <path fill="none" d="M0 0h141.732v141.732H0z" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
+                    <p
+                        *ngIf="selectedCompany && (!selectedCustomerDetails || selectedCustomerDetails.paymentMethods.length === 0)">
+                        Add a payment card to get started</p>
                 </div>
-                <div class="payments">
-                    <div class="payment" *ngFor="let payment of payments">
-                        <div class="card" [ngClass]="payment.cardColor">
-                            <span>{{ payment.expiry }}</span>
+
+                <!-- No Company Selected -->
+                <div *ngIf="!selectedCompany" class="empty-card-state" style="text-align: center; padding: 2rem;">
+                    <i class="fa fa-buildings" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p style="margin: 1rem 0; color: #666;">Please select a company from the dropdown above</p>
+                </div>
+
+                <!-- Loading State -->
+                <div *ngIf="selectedCompany && isLoadingCustomerDetails" class="loading-state"
+                    style="text-align: center; padding: 2rem;">
+                    <i class="fa fa-spinner spinning" style="font-size: 2rem;"></i>
+                    <p>Loading payment methods...</p>
+                </div>
+
+                <!-- No Stripe Customer ID OR No Cards - Show Add Card Button -->
+                <div *ngIf="selectedCompany && !isLoadingCustomerDetails && (!selectedCompany.stripeCustomerId || !selectedCustomerDetails || selectedCustomerDetails.paymentMethods.length === 0)"
+                    class="empty-card-state" style="text-align: center; padding: 2rem;">
+                    <i class="fa fa-credit-card" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p style="margin: 1rem 0; color: #666;" *ngIf="!selectedCompany.stripeCustomerId">This company
+                        doesn't have a Stripe customer yet</p>
+                    <p style="margin: 1rem 0; color: #666;"
+                        *ngIf="selectedCompany.stripeCustomerId && (!selectedCustomerDetails || selectedCustomerDetails.paymentMethods.length === 0)">
+                        No payment methods on file</p>
+                    <button class="btn btn-primary" (click)="openAddPaymentMethodModal()"
+                        style="margin-top: 1rem; padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;">
+                        <i class="fa fa-plus" style="margin-right: 0.5rem;"></i> Add Card
+                    </button>
+                    <small *ngIf="!selectedCompany.stripeCustomerId"
+                        style="display: block; margin-top: 1rem; color: #999;">Set up Stripe billing for {{
+                        selectedCompany.name }}</small>
+                </div>
+
+                <!-- Cards List -->
+                <div class="payments"
+                    *ngIf="selectedCompany && !isLoadingCustomerDetails && selectedCustomerDetails && selectedCustomerDetails.paymentMethods.length > 0">
+                    <div class="payment" *ngFor="let pm of selectedCustomerDetails.paymentMethods">
+                        <div class="card" [ngClass]="{
+                                'blue': pm.card?.brand?.toLowerCase() === 'visa',
+                                'orange': pm.card?.brand?.toLowerCase() === 'mastercard',
+                                'green': pm.card?.brand?.toLowerCase() === 'amex',
+                                'purple': pm.card?.brand?.toLowerCase() !== 'visa' && pm.card?.brand?.toLowerCase() !== 'mastercard' && pm.card?.brand?.toLowerCase() !== 'amex'
+                             }">
+                            <div class="d-flex justify-content-between w-100">
+                                <span>{{ pm.card?.exp_month }}/{{ pm.card?.exp_year }}</span>
+                                <span
+                                    *ngIf="pm.id === selectedCustomerDetails.customer?.invoice_settings?.default_payment_method"
+                                    class="badge bg-success"
+                                    style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.7rem;">
+                                    Default
+                                </span>
+                            </div>
                             <span>
-                                •••• {{ payment.lastFour }}
+                                •••• {{ pm.card?.last4 || '****' }}
                             </span>
                         </div>
                         <div class="payment-details">
-                            <h3>{{ payment.service }}</h3>
-                            <div>
-                                <span>{{ formatCurrency(payment.amount) }}</span>
-                                <button class="icon-button">
-                                    <i [ngClass]="payment.icon"></i>
+                            <h3>{{ pm.billing_details?.name || pm.card?.brand || pm.type | titlecase}}</h3>
+                            <!--<div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <p class="m-0" style="font-size: 0.875rem; opacity: 0.8;">
+                                    {{ (pm.billing_details?.address?.line1 && pm.billing_details?.address?.city &&
+                                    pm.billing_details?.address?.state)
+                                    ? (pm.billing_details.address.line1 + ', ' + pm.billing_details.address.city + ' ' +
+                                    pm.billing_details.address.state)
+                                    : 'Enter billing address' }}
+                                </p>
+                            </div>-->
+                            <div class="d-flex gap-2 align-items-center">
+                                <h2 class="m-0 text-tan fs-3">
+                                    {{ getFormattedUpcomingTotal(pm.id) }}
+                                </h2>
+                                <button class="icon-button" (click)="openCardActionsModal(pm)" title="Card actions"
+                                    style="padding: 0.25rem 0.5rem;">
+                                    <i class="fa fa-chevron-right"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Add Another Card Button -->
+                    <app-generic-button [title]="'Add Payment Method'" [width]="'100%'"
+                        [action]="openAddPaymentMethodModal" class="" [icon]="'fa-plus'" *ngIf="selectedCompany"
+                        class="btn-sm"></app-generic-button>
                 </div>
-                <div class="faq">
+
+                <div class="faq" style="margin-top: 2rem;">
                     <p>Most frequently asked questions</p>
                     <div>
-                        <label>Question</label>
+                        <label class="text-tan">Question</label>
                         <input type="text" placeholder="Type here">
                     </div>
                 </div>
@@ -188,10 +379,477 @@
                         Save
                     </button>
                     <button class="settings-button">
-                        <i class="ph-gear"></i>
+                        <i class="fa fa-gear"></i>
                         <span>More settings</span>
                     </button>
                 </div>
             </section>
         </div>
     </div>
+
+    <!-- Card Actions Modal -->
+    <div *ngIf="showCardActionsModal" class="modal-backdrop" (click)="closeCardActionsModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-credit-card"></i>
+                    Card Actions
+                </h2>
+                <button type="button" class="close-btn" (click)="closeCardActionsModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" *ngIf="selectedCardForActions">
+                <div
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                    <h3 style="margin: 0 0 0.5rem 0; color: var(--c-tan-400, #d4a574);">
+                        {{ selectedCardForActions.card?.brand || selectedCardForActions.type | titlecase }}
+                    </h3>
+                    <p style="margin: 0; opacity: 0.8;">•••• {{ selectedCardForActions.card?.last4 || '****' }}</p>
+                    <p style="margin: 0.25rem 0 0 0; opacity: 0.6; font-size: 0.875rem;">
+                        Expires {{ selectedCardForActions.card?.exp_month }}/{{ selectedCardForActions.card?.exp_year }}
+                    </p>
+                </div>
+
+                <div class="user-form">
+                    <button type="button" class="btn btn-outline-primary" (click)="setDefaultPaymentMethodFromModal()"
+                        [disabled]="isSettingDefaultPayment || selectedCardForActions.id === selectedCustomerDetails?.customer?.invoice_settings?.default_payment_method"
+                        style="width: 100%; margin-bottom: 1rem; justify-content: center;">
+                        <i class="fa fa-star" style="margin-right: 0.5rem;"></i>
+                        <span
+                            *ngIf="selectedCardForActions.id === selectedCustomerDetails?.customer?.invoice_settings?.default_payment_method">Already
+                            Default</span>
+                        <span
+                            *ngIf="selectedCardForActions.id !== selectedCustomerDetails?.customer?.invoice_settings?.default_payment_method">Set
+                            as Default</span>
+                    </button>
+
+                    <button type="button" class="btn btn-outline-danger" (click)="deletePaymentMethodFromModal()"
+                        [disabled]="isDeletingPaymentMethod" style="width: 100%; justify-content: center;">
+                        <i class="fa fa-trash" style="margin-right: 0.5rem;"></i>
+                        Delete Card
+                    </button>
+                </div>
+
+                <div class="modal-footer" style="border-top: none; padding-top: 0;">
+                    <button type="button" class="btn btn-secondary" (click)="closeCardActionsModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div *ngIf="showFilterModal" class="modal-backdrop" (click)="closeFilterModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-funnel"></i>
+                    Filter Transactions
+                </h2>
+                <button type="button" class="close-btn" (click)="closeFilterModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form class="user-form">
+                    <!-- Amount Range -->
+                    <div class="form-group">
+                        <label class="form-label">Amount Range</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="minAmount" class="form-label"
+                                    style="font-size: 0.875rem; opacity: 0.8;">Minimum ($)</label>
+                                <input type="number" id="minAmount" [(ngModel)]="filterOptions.minAmount"
+                                    name="minAmount" class="form-control" placeholder="0" min="0" />
+                            </div>
+                            <div class="col-6">
+                                <label for="maxAmount" class="form-label"
+                                    style="font-size: 0.875rem; opacity: 0.8;">Maximum ($)</label>
+                                <input type="number" id="maxAmount" [(ngModel)]="filterOptions.maxAmount"
+                                    name="maxAmount" class="form-control" placeholder="No limit" min="0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="form-group">
+                        <label for="dateRange" class="form-label">Date Range</label>
+                        <select id="dateRange" [(ngModel)]="filterOptions.dateRange" name="dateRange"
+                            class="form-control">
+                            <option value="all">All Time</option>
+                            <option value="7days">Last 7 Days</option>
+                            <option value="30days">Last 30 Days</option>
+                            <option value="90days">Last 90 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="form-group">
+                        <label for="status" class="form-label">Transaction Status</label>
+                        <select id="status" [(ngModel)]="filterOptions.status" name="status" class="form-control">
+                            <option value="all">All Statuses</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+
+                    <!-- Active Filters Summary -->
+                    <div class="form-group"
+                        style="margin-top: 1.5rem; padding: 1rem; background: rgba(212, 165, 116, 0.1); border-radius: 8px;">
+                        <p style="margin: 0; font-weight: 600; color: var(--c-tan-400, #d4a574);">Active Filters:</p>
+                        <p style="margin: 0.5rem 0 0 0; opacity: 0.8; font-size: 0.875rem;">
+                            <span *ngIf="filterOptions.minAmount">Min: ${{ filterOptions.minAmount }}</span>
+                            <span *ngIf="filterOptions.maxAmount"> | Max: ${{ filterOptions.maxAmount }}</span>
+                            <span *ngIf="!filterOptions.minAmount && !filterOptions.maxAmount">No amount filter</span>
+                            <br>
+                            Date: {{ filterOptions.dateRange === 'all' ? 'All Time' :
+                            filterOptions.dateRange === '7days' ? 'Last 7 Days' :
+                            filterOptions.dateRange === '30days' ? 'Last 30 Days' :
+                            filterOptions.dateRange === '90days' ? 'Last 90 Days' : 'Custom' }}
+                            <br>
+                            Status: {{ filterOptions.status === 'all' ? 'All Statuses' : filterOptions.status |
+                            titlecase }}
+                        </p>
+                    </div>
+                </form>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="resetFilters()">
+                        Reset
+                    </button>
+                    <button type="button" class="btn btn-secondary" (click)="closeFilterModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="applyFilters()">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Confirmation Modal -->
+    <div *ngIf="showPurchaseConfirmationModal" class="modal-backdrop" (click)="closePurchaseModal()">
+        <div class="user-modal-container" (click)="$event.stopPropagation()" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fa fa-shopping-cart"></i>
+                    Confirm Purchase
+                </h2>
+                <button type="button" class="close-btn" (click)="closePurchaseModal()" aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" *ngIf="selectedProductForPurchase && selectedPriceForPurchase">
+                <!-- Product Info -->
+                <div
+                    style="margin-bottom: 1.5rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                    <h3
+                        style="margin: 0 0 0.75rem 0; color: var(--c-tan-400, #d4a574); display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa"
+                            [ngClass]="purchaseType === 'subscription' ? 'fa-sync-alt' : 'fa-shopping-bag'"></i>
+                        {{ selectedProductForPurchase.name }}
+                    </h3>
+                    <p style="margin: 0; opacity: 0.8; line-height: 1.6;">
+                        {{ selectedProductForPurchase.description || 'No description available' }}
+                    </p>
+                </div>
+
+                <!-- Pricing Details -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600;">Pricing Details</h4>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(212, 165, 116, 0.1); border-radius: 8px;">
+                        <span style="font-size: 1.125rem; font-weight: 500;">
+                            {{ purchaseType === 'subscription' ? 'Subscription' : 'One-Time Purchase' }}
+                        </span>
+                        <span style="font-size: 1.5rem; font-weight: 700; color: var(--c-tan-400, #d4a574);">
+                            {{ formatCurrency((selectedPriceForPurchase.unit_amount || 0) / 100) }}
+                            <span style="font-size: 0.875rem; font-weight: 400; opacity: 0.8;"
+                                *ngIf="selectedPriceForPurchase.recurring">
+                                / {{ selectedPriceForPurchase.recurring.interval }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Purchase Type Info -->
+                <div
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(33, 150, 243, 0.1); border-left: 3px solid #2196f3; border-radius: 4px;">
+                    <div style="display: flex; align-items: start; gap: 0.75rem;">
+                        <i class="fa fa-info-circle" style="color: #2196f3; margin-top: 0.25rem;"></i>
+                        <div>
+                            <p style="margin: 0; font-weight: 600; color: #2196f3;">
+                                {{ purchaseType === 'subscription' ? 'Recurring Subscription' : 'One-Time Purchase' }}
+                            </p>
+                            <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 0.875rem; line-height: 1.5;">
+                                <span *ngIf="purchaseType === 'subscription'">
+                                    This is a recurring subscription. You will be charged
+                                    <strong>{{ formatCurrency((selectedPriceForPurchase.unit_amount || 0) / 100)
+                                        }}</strong>
+                                    every <strong>{{ selectedPriceForPurchase.recurring?.interval }}</strong>.
+                                    The subscription will automatically renew unless canceled.
+                                </span>
+                                <span *ngIf="purchaseType === 'one-time'">
+                                    This is a one-time purchase. You will be charged
+                                    <strong>{{ formatCurrency((selectedPriceForPurchase.unit_amount || 0) / 100)
+                                        }}</strong>
+                                    once for this service.
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600;">Payment Method</h4>
+                    <div
+                        style="padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fa fa-credit-card" style="font-size: 1.25rem; opacity: 0.6;"></i>
+                        <div>
+                            <span style="font-weight: 500;">{{ getDefaultPaymentMethodDisplay() }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms Notice -->
+                <div
+                    style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255, 193, 7, 0.1); border-radius: 4px; font-size: 0.875rem; opacity: 0.9;">
+                    <i class="fa fa-exclamation-triangle" style="color: #ffc107; margin-right: 0.5rem;"></i>
+                    By confirming this purchase, you agree to our terms of service and billing policies.
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="closePurchaseModal()"
+                        [disabled]="isPurchasing">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="confirmPurchase()" [disabled]="isPurchasing">
+                        <i class="fa" [ngClass]="isPurchasing ? 'fa-spinner spinning' : 'fa-check'"
+                            style="margin-right: 0.5rem;"></i>
+                        <span *ngIf="!isPurchasing">Confirm Purchase</span>
+                        <span *ngIf="isPurchasing">Processing...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<!--<section class="transfer-section" *ngSwitchCase="'selectedCustomerDetails'"
+                    style="margin-left: 16px; margin-right: 16px;">
+                    <div class="transfer-section-header">
+                        <h2>Payment Methods</h2>
+                        <div class="filter-options">
+                            <button class="icon-button" (click)="openAddPaymentMethodModal()"
+                                title="Add Payment Method">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="transfers">
+                        <div *ngIf="isLoadingCustomerDetails" class="loading-state">
+                            <i class="fa fa-spinner spinning"></i>
+                            <p>Loading payment methods...</p>
+                        </div>
+                        <div *ngIf="!isLoadingCustomerDetails && selectedCustomerDetails.paymentMethods.length === 0"
+                            class="empty-state">
+                            <i class="fa fa-credit-card"></i>
+                            <p>No payment methods found</p>
+                            <small>Add a payment method to enable subscriptions and payments</small>
+                        </div>
+                        <div class="transfer" *ngFor="let pm of selectedCustomerDetails.paymentMethods">
+                            <div class="transfer-logo">
+                                <i class="fa fa-credit-card" style="font-size: 2rem;"></i>
+                            </div>
+                            <dl class="transfer-details">
+                                <div>
+                                    <dt>{{ pm.card?.brand || pm.type | titlecase }}</dt>
+                                    <dd>•••• {{ pm.card?.last4 || '****' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>Expires {{ pm.card?.exp_month }}/{{ pm.card?.exp_year }}</dt>
+                                    <dd>Expiration</dd>
+                                </div>
+                                <div
+                                    *ngIf="pm.id === selectedCustomerDetails.customer?.invoice_settings?.default_payment_method">
+                                    <dt><span class="badge bg-success">Default</span></dt>
+                                    <dd>Status</dd>
+                                </div>
+                            </dl>
+                            <div class="transfer-actions" style="display: flex; gap: 0.5rem;">
+                                <button class="icon-button" (click)="setDefaultPaymentMethod(pm.id)"
+                                    [disabled]="isSettingDefaultPayment || pm.id === selectedCustomerDetails.customer?.invoice_settings?.default_payment_method"
+                                    title="Set as default">
+                                    <i class="fa fa-star"></i>
+                                </button>
+                                <button class="icon-button" (click)="deletePaymentMethod(pm.id)"
+                                    [disabled]="isDeletingPaymentMethod" title="Delete">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="transfer-section" *ngIf="selectedCustomerDetails"
+                    style="margin-left: 16px; margin-right: 16px;">
+                    <div class="transfer-section-header">
+                        <h2>Subscriptions</h2>
+                        <div class="filter-options">
+                            <button class="icon-button" (click)="openAddSubscriptionModal()" title="Add Subscription">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="transfers">
+                        <div *ngIf="isLoadingCustomerDetails" class="loading-state">
+                            <i class="fa fa-spinner spinning"></i>
+                            <p>Loading subscriptions...</p>
+                        </div>
+                        <div *ngIf="!isLoadingCustomerDetails && selectedCustomerDetails.subscriptions.length === 0"
+                            class="empty-state">
+                            <i class="fa fa-arrow-clockwise"></i>
+                            <p>No subscriptions found</p>
+                            <small>Create a subscription to start recurring billing</small>
+                        </div>
+                        <div class="transfer" *ngFor="let sub of selectedCustomerDetails.subscriptions">
+                            <div class="transfer-logo">
+                                <i class="fa fa-arrow-clockwise" style="font-size: 2rem;"></i>
+                            </div>
+                            <dl class="transfer-details">
+                                <div>
+                                    <dt>{{ sub.items?.data[0]?.price?.product?.name || 'Subscription' }}</dt>
+                                    <dd>{{ formatCurrency((sub.items?.data[0]?.price?.unit_amount || 0) / 100) }} / {{
+                                        sub.items?.data[0]?.price?.recurring?.interval || 'month' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ sub.status | titlecase }}</dt>
+                                    <dd>Status</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ (sub.current_period_end * 1000) | date:'MMM d, y' }}</dt>
+                                    <dd>Next billing</dd>
+                                </div>
+                            </dl>
+                            <div class="transfer-actions" style="display: flex; gap: 0.5rem;">
+                                <button class="icon-button" (click)="cancelSubscription(sub.id)"
+                                    [disabled]="isCancelingSubscription || sub.status === 'canceled'"
+                                    title="Cancel subscription">
+                                    <i class="fa fa-x-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div *ngIf="showAddPaymentMethodModal" class="modal-backdrop" (click)="closeAddPaymentMethodModal()">
+                    <div class="user-modal-container" (click)="$event.stopPropagation()">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i class="fa fa-credit-card"></i>
+                                Add Payment Method
+                            </h2>
+                            <button type="button" class="close-btn" (click)="closeAddPaymentMethodModal()"
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <form (ngSubmit)="addPaymentMethod()" #pmForm="ngForm" class="user-form">
+                                <div class="form-group">
+                                    <label for="paymentMethodId" class="form-label">Payment Method ID *</label>
+                                    <input type="text" id="paymentMethodId" name="paymentMethodId"
+                                        [(ngModel)]="newPaymentMethod.paymentMethodId" required class="form-control" />
+                                    <small class="form-text">Test: pm_card_visa, pm_card_mastercard</small>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        (click)="closeAddPaymentMethodModal()" [disabled]="isAddingPaymentMethod">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary"
+                                        [disabled]="!pmForm.valid || isAddingPaymentMethod">
+                                        <span *ngIf="!isAddingPaymentMethod">Add</span>
+                                        <span *ngIf="isAddingPaymentMethod">Adding...</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="showAddSubscriptionModal" class="modal-backdrop" (click)="closeAddSubscriptionModal()">
+                    <div class="user-modal-container" (click)="$event.stopPropagation()">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i class="fa fa-sync-alt"></i>
+                                Create Subscription
+                            </h2>
+                            <button type="button" class="close-btn" (click)="closeAddSubscriptionModal()"
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <form (ngSubmit)="createSubscription()" #subForm="ngForm" class="user-form">
+                                <div class="form-group">
+                                    <label for="priceId" class="form-label">Price *</label>
+                                    <select id="priceId" name="priceId" [(ngModel)]="newSubscription.priceId" required
+                                        class="form-control">
+                                        <option value="">Select a price</option>
+                                        <option *ngFor="let price of getAvailablePrices()" [value]="price.id">
+                                            {{ formatPriceDisplay(price) }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="paymentMethod" class="form-label">Payment Method</label>
+                                    <select id="paymentMethod" name="paymentMethodId"
+                                        [(ngModel)]="newSubscription.paymentMethodId" class="form-control">
+                                        <option value="">Use default</option>
+                                        <option *ngFor="let pm of getAvailablePaymentMethods()" [value]="pm.id">
+                                            {{ pm.card?.brand }} •••• {{ pm.card?.last4 }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="trialDays" class="form-label">Trial Days</label>
+                                    <input type="number" id="trialDays" name="trialPeriodDays"
+                                        [(ngModel)]="newSubscription.trialPeriodDays" min="0" class="form-control" />
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        (click)="closeAddSubscriptionModal()" [disabled]="isCreatingSubscription">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary"
+                                        [disabled]="!subForm.valid || isCreatingSubscription">
+                                        <span *ngIf="!isCreatingSubscription">Create</span>
+                                        <span *ngIf="isCreatingSubscription">Creating...</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>-->

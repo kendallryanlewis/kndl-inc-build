@@ -1,18 +1,10 @@
 <ng-container [ngSwitch]="selectedTab">
     <app-on-boarding class="h-100" *ngSwitchCase="'onboarding'"></app-on-boarding>
-    <app-overview *ngSwitchCase="'dashboard'"></app-overview>
-    <app-scheduled *ngSwitchCase="'scheduled'"></app-scheduled>
+    <app-overview *ngSwitchCase="'dashboard'" (childTabs)="setChildTabs($any($event))" [subTab]="subTab"></app-overview>
     <app-welcome *ngSwitchCase="'welcome'"></app-welcome>
     <app-domains *ngSwitchCase="'domains'"></app-domains>
     <app-ob-services *ngSwitchCase="'services'"></app-ob-services>
     <app-payment *ngSwitchCase="'payment'"></app-payment>
-    <div class="p-4" *ngSwitchCase="'invoicing'">
-        <h3>Invoicing</h3>
-        <p>Invoicing component will be available soon.</p>
-    </div>
-    <app-reminders *ngSwitchCase="'reminders'"></app-reminders>
-    <app-billing-management *ngSwitchCase="'billing'"></app-billing-management>
-    <app-scheduling-calander *ngSwitchCase="'scheduling-calendar'"></app-scheduling-calander>
     <app-dashboard-support *ngSwitchCase="'support'"></app-dashboard-support>
     <app-dashboard-designs *ngSwitchCase="'designs'"></app-dashboard-designs>
     <app-admin *ngSwitchCase="'admin'" (childTabs)="setChildTabs($any($event))" [subTab]="subTab"></app-admin>
@@ -28,7 +20,5 @@
     <app-admin-landing-editor (childTabs)="setChildTabs($any($event))" *ngSwitchCase="'adminLandingEditor'"
         [subTab]="subTab"></app-admin-landing-editor>
     <app-landing-editor *ngSwitchCase="'landingEditor'"></app-landing-editor>
-    <app-addons-editor *ngSwitchCase="'addOnsEditor'"></app-addons-editor>
-    <app-service-plans-editor *ngSwitchCase="'servicePlansEditor'"></app-service-plans-editor>
     <app-call-to-action-editor *ngSwitchCase="'callToActionEditor'"></app-call-to-action-editor>
 </ng-container>

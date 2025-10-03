@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { StripeService } from '../../../services/stripe.service';
 import { Observable, forkJoin, BehaviorSubject, of, timer } from 'rxjs';
-import { catchError, map, tap, timeout, takeUntil, switchMap } from 'rxjs/operators';
+import { catchError, map, tap, timeout, takeUntil, switchMap, filter, take } from 'rxjs/operators';
 
 interface StripeTestData {
     connectionStatus: any;
@@ -21,7 +21,7 @@ interface CustomerDetails {
 }
 
 interface ActivityItem {
-    type: 'payment' | 'invoice' | 'subscription' | 'refund' | 'payment_method';
+    type: 'payment' | 'models' | 'invoice' | 'subscription' | 'refund' | 'payment_method';
     title: string;
     description: string;
     amount?: number;
@@ -41,7 +41,7 @@ export class AdminStripeComponent implements OnInit {
     @Input() subTab: string = 'overview';
     @Output() childTabs = new EventEmitter<string[]>();
     @Output() subTabChange = new EventEmitter<string>();
-    sectionIds: string[] = ['overview', 'customers', 'subscriptions', 'services', 'connection', '|', 'refresh'];
+    sectionIds: string[] = ['overview', 'sites', 'models', 'subscriptions', 'services', 'connection', '|', 'refresh'];
     private previousSubTab: string = '';
 
     // Loading states
@@ -77,15 +77,17 @@ export class AdminStripeComponent implements OnInit {
     errors: string[] = [];
 
     // UI State
-    activeTab: 'overview' | 'subscriptions' | 'services' | 'customers' | 'connection' = 'overview';
+    activeTab: 'overview' | 'models' | 'subscriptions' | 'services' | 'sites' | 'connection' = 'overview';
     selectedCustomerId: string | null = null;
     showInactiveSubscriptions = false;
     showInactiveServices = false;
+    showInactiveBusinessModels = false;
     showAllActivity = false;
 
     // Search filters
     subscriptionSearchTerm = '';
     serviceSearchTerm = '';
+    businessModelSearchTerm = '';
     customerSearchTerm = '';
 
     // Invoice filters
@@ -140,10 +142,16 @@ export class AdminStripeComponent implements OnInit {
     isDeletingProduct = false;
     isCreatingPrice = false;
 
+    // Product Customers Modal
+    showProductCustomersModal = false;
+    isLoadingProductCustomers = false;
+    selectedProduct: any = null;
+    productCustomers: any[] = [];
+
     newProduct = {
         name: '',
         description: '',
-        type: 'subscription' as 'subscription' | 'onetime', // subscription or onetime
+        type: 'subscription' as 'subscription' | 'onetime' | 'businessModel', // subscription, onetime, or businessModel
         active: true,
         price: 0,
         currency: 'usd',
@@ -174,7 +182,7 @@ export class AdminStripeComponent implements OnInit {
 
     selectedProductForPrice: any = null;
 
-    constructor(private stripeService: StripeService) { }
+    constructor(public stripeService: StripeService) { }
 
     async ngOnInit(): Promise<void> {
         this.loadStripeData();
@@ -332,6 +340,9 @@ export class AdminStripeComponent implements OnInit {
     private loadPrices() {
         console.log('💰 Loading prices...');
         this.stripeService.getPrices().pipe(
+            // Filter out empty initial values like overview component does
+            filter(prices => Array.isArray(prices) && prices.length > 0),
+            take(1), // Take only the first emission with data
             timeout(30000),
             catchError(err => {
                 console.error('❌ Prices load failed:', err);
@@ -347,10 +358,15 @@ export class AdminStripeComponent implements OnInit {
         ).subscribe({
             next: (data) => {
                 console.log('✅ Prices loaded:', data);
-                this.stripeData.prices = data;
+                // Handle both array and object with data property (like overview component)
+                if (Array.isArray(data)) {
+                    this.stripeData.prices = data;
+                } else if (data && Array.isArray((data as any).data)) {
+                    this.stripeData.prices = (data as any).data;
+                }
                 // Cache the data if we got results
-                if (data && data.length > 0) {
-                    this.cachedPrices = data;
+                if (this.stripeData.prices && this.stripeData.prices.length > 0) {
+                    this.cachedPrices = this.stripeData.prices;
                     this.cacheTimestamp = Date.now();
                     console.log('💾 Prices cached');
                 }
@@ -440,7 +456,7 @@ export class AdminStripeComponent implements OnInit {
         this.loadCustomerSubscriptions(customerId);
         this.loadCustomerPaymentMethods(customerId);
         this.loadCustomerInvoices(customerId);
-        this.activeTab = 'customers';
+        this.activeTab = 'sites';
         this.subTabChange.emit(this.activeTab);
         this.isLoadingCustomerDetails = false;
     }
@@ -634,7 +650,7 @@ export class AdminStripeComponent implements OnInit {
 
 
 
-    setActiveTab(tab: 'overview' | 'subscriptions' | 'services' | 'customers' | 'connection') {
+    setActiveTab(tab: 'overview' | 'subscriptions' | 'services' | 'sites' | 'connection') {
         this.activeTab = tab;
     }
 
@@ -655,7 +671,10 @@ export class AdminStripeComponent implements OnInit {
     }
 
     getPricesForProduct(productId: string): any[] {
-        return this.stripeData.prices.filter(p => p && p.product === productId);
+        // Handle both string product IDs and product objects (matching overview component pattern)
+        return this.stripeData.prices.filter(p => 
+            p && (p.product === productId || p.product?.id === productId)
+        );
     }
 
     hasNoPricesForProduct(productId: string): boolean {
@@ -665,14 +684,24 @@ export class AdminStripeComponent implements OnInit {
     getSubscriptionProducts(): any[] {
         return this.stripeData.products.filter(product => {
             const prices = this.getPricesForProduct(product.id);
-            return prices.some(price => price.recurring);
+            const isBusinessModel = product.metadata?.type === 'businessModel';
+            return prices.some(price => price.recurring) && !isBusinessModel;
+        });
+    }
+
+    getBusinessModelProducts(): any[] {
+        return this.stripeData.products.filter(product => {
+            const isBusinessModel = product.metadata?.type === 'businessModel';
+            // Business models are one-time payments with the businessModel type
+            return isBusinessModel;
         });
     }
 
     getOneTimeProducts(): any[] {
         return this.stripeData.products.filter(product => {
             const prices = this.getPricesForProduct(product.id);
-            return prices.length === 0 || prices.every(price => !price.recurring);
+            const isBusinessModel = product.metadata?.type === 'businessModel';
+            return !isBusinessModel && (prices.length === 0 || prices.every(price => !price.recurring));
         });
     }
 
@@ -696,6 +725,27 @@ export class AdminStripeComponent implements OnInit {
         }
 
         return subscriptions;
+    }
+
+    getFilteredBusinessModelProducts(): any[] {
+        let businessModels = this.getBusinessModelProducts();
+
+        // Filter by active/inactive
+        if (!this.showInactiveBusinessModels) {
+            businessModels = businessModels.filter(product => product.active);
+        }
+
+        // Filter by search term
+        if (this.businessModelSearchTerm.trim()) {
+            const searchLower = this.businessModelSearchTerm.toLowerCase().trim();
+            businessModels = businessModels.filter(product =>
+                product.name?.toLowerCase().includes(searchLower) ||
+                product.description?.toLowerCase().includes(searchLower) ||
+                product.id?.toLowerCase().includes(searchLower)
+            );
+        }
+
+        return businessModels;
     }
 
     getFilteredOneTimeProducts(): any[] {
@@ -739,6 +789,10 @@ export class AdminStripeComponent implements OnInit {
     // Toggle methods for show/hide inactive
     toggleInactiveSubscriptions(): void {
         this.showInactiveSubscriptions = !this.showInactiveSubscriptions;
+    }
+
+    toggleInactiveBusinessModels(): void {
+        this.showInactiveBusinessModels = !this.showInactiveBusinessModels;
     }
 
     toggleInactiveServices(): void {
@@ -907,7 +961,7 @@ export class AdminStripeComponent implements OnInit {
                 this.stripeData.customers.unshift(newCustomer);
                 this.closeAddCustomerModal();
                 alert(`✅ Customer created successfully!\n\nID: ${newCustomer.id}\nName: ${newCustomer.name}`);
-                this.activeTab = 'customers';
+                this.activeTab = 'sites';
                 this.loadCustomerDetails(newCustomer.id);
             }
         });
@@ -1094,7 +1148,7 @@ export class AdminStripeComponent implements OnInit {
 
     // ==================== PRODUCT MANAGEMENT ====================
 
-    openAddProductModal(type: 'subscription' | 'onetime') {
+    openAddProductModal(type: 'subscription' | 'onetime' | 'businessModel') {
         this.showAddProductModal = true;
         this.newProduct = {
             name: '',
@@ -1161,17 +1215,17 @@ export class AdminStripeComponent implements OnInit {
 
                 // Build price data
                 const priceData: any = {
-                    product: productResult.id,
+                    productId: productResult.id,
                     currency: this.newProduct.currency,
-                    unit_amount: this.newProduct.price,
+                    unitAmount: Math.round(this.newProduct.price * 100), // Convert dollars to cents
                     nickname: this.newProduct.priceNickname || undefined
                 };
 
-                // Add recurring billing for subscriptions
+                // Add recurring billing for subscriptions only (business models are one-time)
                 if (this.newProduct.type === 'subscription') {
                     priceData.recurring = {
                         interval: this.newProduct.interval,
-                        interval_count: this.newProduct.intervalCount || 1
+                        intervalCount: this.newProduct.intervalCount || 1
                     };
                 }
 
@@ -1204,8 +1258,8 @@ export class AdminStripeComponent implements OnInit {
 
     openEditProductModal(product: any) {
         this.showEditProductModal = true;
-        // Get the first price for this product if available
-        const productPrices = this.stripeData.prices.filter((p: any) => p.product === product.id);
+        // Get the first price for this product if available using the proper method
+        const productPrices = this.getPricesForProduct(product.id);
         const firstPrice = productPrices.length > 0 ? productPrices[0] : null;
 
         this.editProduct = {
@@ -1213,7 +1267,7 @@ export class AdminStripeComponent implements OnInit {
             name: product.name,
             description: product.description || '',
             active: product.active,
-            price: firstPrice?.unit_amount || 0,
+            price: firstPrice?.unit_amount ? (firstPrice.unit_amount / 100) : 0, // Convert cents to dollars
             currency: firstPrice?.currency || 'usd',
             priceNickname: firstPrice?.nickname || '',
             interval: firstPrice?.recurring?.interval || 'month',
@@ -1250,20 +1304,74 @@ export class AdminStripeComponent implements OnInit {
             active: this.editProduct.active
         };
 
+        // First, update the product
         this.stripeService.updateProduct(this.editProduct.id, updateData).pipe(
             timeout(15000),
             catchError(error => {
                 alert(`❌ Failed to update product: ${error.message}`);
                 return of(null);
+            }),
+            // Then check if we need to create a new price
+            switchMap(productResult => {
+                if (!productResult) {
+                    return of(null);
+                }
+
+                // Check if price has changed and is valid
+                const currentPrices = this.getPricesForProduct(this.editProduct.id);
+                const currentPrice = currentPrices.find(p => p.active) || currentPrices[0];
+                const currentPriceInDollars = currentPrice?.unit_amount ? (currentPrice.unit_amount / 100) : 0;
+
+                // If price has changed and is greater than 0, create a new price
+                if (this.editProduct.price > 0 && this.editProduct.price !== currentPriceInDollars) {
+                    const newPriceData: any = {
+                        productId: this.editProduct.id,
+                        unitAmount: Math.round(this.editProduct.price * 100), // Convert dollars to cents
+                        currency: this.editProduct.currency,
+                        nickname: this.editProduct.priceNickname || undefined
+                    };
+
+                    // Add recurring data if it exists
+                    if (this.editProduct.interval) {
+                        newPriceData.recurring = {
+                            interval: this.editProduct.interval,
+                            intervalCount: this.editProduct.intervalCount || 1
+                        };
+                    }
+
+                    // Create the new price
+                    return this.stripeService.createPrice(newPriceData).pipe(
+                        timeout(15000),
+                        catchError(error => {
+                            alert(`⚠️ Product updated but failed to create new price: ${error.message}\nYou can add a price manually.`);
+                            return of({ product: productResult, price: null, priceChanged: true });
+                        }),
+                        map(priceResult => ({ product: productResult, price: priceResult, priceChanged: true }))
+                    );
+                } else {
+                    // No price change needed
+                    return of({ product: productResult, price: null, priceChanged: false });
+                }
             })
-        ).subscribe(result => {
+        ).subscribe((result: any) => {
             this.isUpdatingProduct = false;
 
-            if (result) {
+            if (result && result.product) {
                 this.invalidateCache(); // Clear cache to force fresh data
-                this.loadStripeData();
                 this.closeEditProductModal();
-                alert(`✅ Product updated successfully!`);
+                
+                // Force the stripe service to reload data
+                this.stripeService.forceDataRefresh().then(() => {
+                    // Then reload the component's data
+                    this.loadStripeData();
+                    
+                    if (result.priceChanged && result.price) {
+                        const amount = this.formatCurrency(result.price.unit_amount, result.price.currency);
+                        alert(`✅ Product updated successfully!\n\nNew price created: ${amount}\n\nNote: The old price was not archived. You can archive it manually if needed.`);
+                    } else {
+                        alert(`✅ Product updated successfully!`);
+                    }
+                });
             }
         });
     }
@@ -1293,6 +1401,67 @@ export class AdminStripeComponent implements OnInit {
                 this.invalidateCache(); // Clear cache to force fresh data
                 this.loadStripeData();
                 alert(`✅ Product archived successfully!`);
+            }
+        });
+    }
+
+    /**
+     * Delete an inactive product (permanent deletion)
+     * NOTE: Stripe only allows deleting products with NO prices
+     */
+    deleteProduct(productId: string, productName: string) {
+        const confirmDelete = confirm(
+            `🗑️ DELETE Product Permanently?\n\n` +
+            `Product: ${productName}\n` +
+            `ID: ${productId}\n\n` +
+            `⚠️ STRIPE LIMITATION:\n` +
+            `• Products with prices (even archived) CANNOT be deleted\n` +
+            `• Only products with ZERO prices can be permanently deleted\n` +
+            `• If this product has prices, you can only ARCHIVE it\n\n` +
+            `⚠️ This action CANNOT be undone!\n\n` +
+            `Are you absolutely sure you want to try deleting this inactive product?`
+        );
+
+        if (!confirmDelete) return;
+
+        // Double confirmation for safety
+        const doubleCheck = confirm(
+            `⚠️ FINAL CONFIRMATION\n\n` +
+            `You are about to PERMANENTLY DELETE:\n` +
+            `"${productName}"\n\n` +
+            `This will only work if the product has NO prices.\n` +
+            `This action is IRREVERSIBLE. Continue?`
+        );
+
+        if (!doubleCheck) return;
+
+        this.isDeletingProduct = true;
+
+        this.stripeService.deleteProduct(productId).pipe(
+            timeout(15000),
+            catchError((error: any) => {
+                const errorMsg = error.message || error;
+                // Check if error is about prices
+                if (errorMsg.includes('price')) {
+                    alert(
+                        `❌ Cannot Delete Product\n\n` +
+                        `${errorMsg}\n\n` +
+                        `💡 SOLUTION: This is a Stripe limitation.\n` +
+                        `You can only ARCHIVE this product, not delete it.\n\n` +
+                        `Use the "Archive" button instead to mark it as inactive.`
+                    );
+                } else {
+                    alert(`❌ Failed to delete product: ${errorMsg}`);
+                }
+                return of(null);
+            })
+        ).subscribe((result: any) => {
+            this.isDeletingProduct = false;
+
+            if (result) {
+                this.invalidateCache(); // Clear cache to force fresh data
+                this.loadStripeData();
+                alert(`✅ Product deleted successfully!\n\nThe product "${productName}" has been permanently removed from Stripe.`);
             }
         });
     }
@@ -1337,7 +1506,7 @@ export class AdminStripeComponent implements OnInit {
 
         const priceData: any = {
             productId: this.newPrice.productId,
-            unitAmount: this.newPrice.unitAmount,
+            unitAmount: Math.round(this.newPrice.unitAmount * 100), // Convert dollars to cents
             currency: this.newPrice.currency,
             nickname: this.newPrice.nickname || undefined
         };
@@ -1406,37 +1575,89 @@ export class AdminStripeComponent implements OnInit {
     convertToCardProduct(stripeProduct: any): any {
         const prices = this.getPricesForProduct(stripeProduct.id);
         const primaryPrice = prices.find(p => p.active) || prices[0];
+        
+        // Determine if this is a recurring or one-time product based on price
+        const isRecurring = primaryPrice?.recurring ? true : false;
+        const priceAmount = primaryPrice ? (primaryPrice.unit_amount / 100) : 0;
+        
+        // Determine product type from metadata
+        const metadataType = stripeProduct.metadata?.type;
+        const isBusinessModel = metadataType === 'businessModel';
 
-        return {
+        // Build the card product object
+        const cardProduct: any = {
             id: stripeProduct.id,
             stripeProductId: stripeProduct.id,
             stripePriceId: primaryPrice?.id,
             name: stripeProduct.name,
             description: stripeProduct.description || '',
-            price: primaryPrice ? (primaryPrice.unit_amount / 100) : 0,
+            // Set price property for general use
+            price: priceAmount,
             currency: primaryPrice?.currency || 'usd',
             status: stripeProduct.active ? 'Active' : 'Inactive',
             lastModified: stripeProduct.created ? new Date(stripeProduct.created * 1000).toISOString() : new Date().toISOString(),
             features: [],
+            // Flag to indicate if it's recurring
+            isRecurring: isRecurring,
             // Include price details for display
             _prices: prices,
             _stripeData: stripeProduct
         };
+
+        // Add type-specific properties based on product type
+        if (isRecurring) {
+            // Subscription product - add planType to trigger isSubscriptionPlan() type guard
+            cardProduct.planType = 'recurring';
+            cardProduct.monthlyPrice = priceAmount;
+        } else if (isBusinessModel) {
+            // Business model - add productType to trigger isOneTimeProduct() type guard
+            cardProduct.productType = 'businessModel';
+            cardProduct.price = priceAmount;
+        } else {
+            // One-time service - add productType to trigger isOneTimeProduct() type guard
+            cardProduct.productType = 'service';
+            cardProduct.price = priceAmount;
+        }
+
+        return cardProduct;
     }
 
     /**
      * Get custom actions for product cards
      */
     getProductActions(product: any): Array<{ icon: string, label: string, class: string, action: string, disabled?: boolean }> {
-        const actions = [
-            {
+        const actions = [];
+
+        // View Customers action - always available
+        actions.push({
+            icon: 'fa-users',
+            label: 'View Customers',
+            class: 'btn-info',
+            action: 'view-customers',
+            disabled: false
+        });
+
+        // Archive action - only for active products
+        if (product.active) {
+            actions.push({
                 icon: 'fa-archive',
                 label: 'Archive Product',
                 class: 'btn-warning',
                 action: 'archive',
-                disabled: !product.active || this.isDeletingProduct
-            }
-        ];
+                disabled: this.isDeletingProduct
+            });
+        }
+
+        // Delete action - only for inactive products
+        if (!product.active) {
+            actions.push({
+                icon: 'fa-trash',
+                label: 'Delete Product',
+                class: 'btn-danger',
+                action: 'delete',
+                disabled: this.isDeletingProduct
+            });
+        }
 
         return actions;
     }
@@ -1510,9 +1731,79 @@ export class AdminStripeComponent implements OnInit {
             case 'archive':
                 this.archiveProduct(product.id, product.name);
                 break;
+            case 'delete':
+                this.deleteProduct(product.id, product.name);
+                break;
+            case 'view-customers':
+                this.viewProductCustomers(product);
+                break;
             default:
                 console.log('Unknown action:', event.action);
         }
+    }
+
+    /**
+     * Open modal to view customers for a specific product
+     */
+    viewProductCustomers(product: any): void {
+        this.selectedProduct = product._stripeData || product;
+        this.showProductCustomersModal = true;
+        this.isLoadingProductCustomers = true;
+        this.productCustomers = [];
+
+        this.stripeService.getProductCustomers(product.id).subscribe({
+            next: (result) => {
+                this.productCustomers = result.data || [];
+                this.isLoadingProductCustomers = false;
+                console.log('✅ Loaded product customers:', this.productCustomers);
+            },
+            error: (error) => {
+                console.error('❌ Error loading product customers:', error);
+                this.isLoadingProductCustomers = false;
+                this.errors.push(`Failed to load customers: ${error.message || 'Unknown error'}`);
+            }
+        });
+    }
+
+    /**
+     * Close product customers modal
+     */
+    closeProductCustomersModal(): void {
+        this.showProductCustomersModal = false;
+        this.selectedProduct = null;
+        this.productCustomers = [];
+    }
+
+    /**
+     * Remove a customer from a product (cancel their subscription)
+     */
+    removeCustomerFromProduct(customer: any): void {
+        const confirmMessage = `Are you sure you want to cancel ${customer.customerName || customer.customerEmail}'s subscription to this product?`;
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        const doubleConfirm = `This will cancel the subscription immediately. Type "CANCEL" to confirm.`;
+        const userInput = prompt(doubleConfirm);
+
+        if (userInput !== 'CANCEL') {
+            alert('Action cancelled. Subscription not removed.');
+            return;
+        }
+
+        this.stripeService.removeCustomerFromProduct(customer.subscriptionId).subscribe({
+            next: (result) => {
+                console.log('✅ Customer removed from product:', result);
+                alert(`✅ Successfully canceled subscription for ${customer.customerName || customer.customerEmail}`);
+                // Refresh the customer list
+                this.viewProductCustomers(this.selectedProduct);
+            },
+            error: (error) => {
+                console.error('❌ Error removing customer:', error);
+                alert(`❌ Failed to cancel subscription: ${error.message || 'Unknown error'}`);
+            }
+        });
     }
 
     /**

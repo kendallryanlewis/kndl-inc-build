@@ -874,10 +874,6 @@ app-tab-viewer>* {
     width: 100%;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--light-gray);
-
-    h2 {
-        font-size: 1.5rem;
-    }
 }
 
 .payments {
@@ -994,7 +990,7 @@ app-tab-viewer>* {
     }
 
     &+* {
-        margin-top: 2rem;
+        margin-top: 1rem;
     }
 }
 
@@ -1045,6 +1041,7 @@ app-tab-viewer>* {
     dd {
         color: var(--c-text-tertiary);
         margin-top: 2px;
+        margin-bottom: 0;
     }
 }
 

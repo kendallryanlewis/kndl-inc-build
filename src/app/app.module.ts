@@ -13,11 +13,7 @@ import { OnBoardingServicesComponent } from "./dashboard/on-boarding/on-boarding
 import { OnBoardingComponent } from "./dashboard/on-boarding/on-boarding.component";
 import { PaymentComponent } from "./dashboard/on-boarding/payment/payment.component";
 import { WelcomeComponent } from "./dashboard/on-boarding/welcome/welcome.component";
-import { AnalyticsComponent } from "./dashboard/overview/analytics/analytics.component";
 import { OverviewComponent } from "./dashboard/overview/overview.component";
-import { RemindersComponent } from "./dashboard/overview/scheduled/reminders/reminders.component";
-import { ScheduledComponent } from "./dashboard/overview/scheduled/scheduled.component";
-import { SchedulingCalanderComponent } from "./dashboard/overview/scheduled/scheduling-calander/scheduling-calander.component";
 import { PaymentSectionComponent } from "./dashboard/payment-section/payment-section.component";
 import { PreferencesComponent } from "./dashboard/preferences/preferences.component";
 import { TabViewerComponent } from "./dashboard/tab-viewer/tab-viewer.component";
@@ -63,10 +59,7 @@ import './firebase-init';
 import { EditableTextComponent } from './dashboard/admin/components/editable-text.component';
 import { AdminLandingEditorComponent } from "./dashboard/admin/admin-landing-editor/admin-landing-editor.component";
 import { LandingEditorComponent } from './dashboard/admin/admin-landing-editor/landing-editor/landing-editor.component';
-import { AddonsEditorComponent } from './dashboard/admin/admin-landing-editor/addons-editor/addons-editor.component';
 import { CallToActionEditorComponent } from './dashboard/admin/admin-landing-editor/call-to-action-editor/call-to-action-editor.component';
-import { SubscriptionEditorComponent } from './dashboard/admin/admin-landing-editor/subscription-editor/subscription-editor.component';
-import { ServicePlansEditorComponent } from './dashboard/admin/admin-landing-editor/service-plans-editor/service-plans-editor.component';
 import { GenericH2TitleComponent } from './reusable/generic-h2-title/generic-h2-title.component';
 import { AdminWikiNewComponent } from './dashboard/admin/admin-wiki/admin-wiki-new/admin-wiki-new.component';
 import { AdminWikiListComponent } from './dashboard/admin/admin-wiki/admin-wiki-list/admin-wiki-list.component';
@@ -96,16 +89,12 @@ import { AdminStripeComponent } from "./dashboard/admin/admin-stripe/admin-strip
     DashboardComponent,
     OnBoardingComponent,
     OverviewComponent,
-    ScheduledComponent,
     WelcomeComponent,
     TabViewerComponent,
     DomainsComponent,
     OnBoardingServicesComponent,
     PaymentComponent,
-    RemindersComponent,
-    SchedulingCalanderComponent,
     PreferencesComponent,
-    AnalyticsComponent,
     PaymentSectionComponent,
     OnePageTemplateComponent,
     OnePageTopNavigationComponent,
@@ -133,10 +122,7 @@ import { AdminStripeComponent } from "./dashboard/admin/admin-stripe/admin-strip
     EditableTextComponent,
     AdminLandingEditorComponent,
     LandingEditorComponent,
-    AddonsEditorComponent,
     CallToActionEditorComponent,
-    SubscriptionEditorComponent,
-    ServicePlansEditorComponent,
     GenericH2TitleComponent,
     AdminWikiNewComponent,
     AdminWikiListComponent,

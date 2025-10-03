@@ -2,10 +2,9 @@ import { Injectable } from '@angular/core';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { BehaviorSubject, Observable, throwError, of, from } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, tap, switchMap } from 'rxjs/operators';
+import { map, catchError, tap, switchMap, retry, timeout } from 'rxjs/operators';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { initializeApp, getApps } from 'firebase/app';
-import { MockStripeFunctionsService } from './mock-stripe-functions.service';
 import { environment } from '../../environments/environment';
 import {
     stripeConfig,
@@ -112,8 +111,7 @@ export class StripeService {
     }
 
     constructor(
-        private http: HttpClient,
-        private mockStripeFunctions: MockStripeFunctionsService
+        private http: HttpClient
     ) {
         // Connect to Functions emulator only when using mock functions
         if (!environment.production && !environment.useRealFirebaseFunctions) {
@@ -130,11 +128,6 @@ export class StripeService {
         this.initializeStripe(stripeConfig.defaultEnvironment);
     }
 
-    // Helper method to determine if we should use mock functions
-    private get useMockFunctions(): boolean {
-        return !environment.production && !environment.useRealFirebaseFunctions;
-    }
-
     // Helper method to get the correct Stripe environment
     private getStripeEnvironment(): 'test' | 'live' {
         // Development: Always use test mode even with real Stripe
@@ -146,87 +139,35 @@ export class StripeService {
             production: environment.production,
             useRealStripe: environment.useRealStripe,
             useRealFirebaseFunctions: environment.useRealFirebaseFunctions,
-            stripeEnvironment: stripeEnv,
-            willUseMocks: this.useMockFunctions
+            stripeEnvironment: stripeEnv
         });
 
         return stripeEnv;
     }
 
-    // Helper method to call Firebase Functions (real or mock)
+    // Helper method to call Firebase Functions
     private callFunction(functionName: string, data: any): Observable<any> {
-        if (this.useMockFunctions) {
-            switch (functionName) {
-                case 'testStripeConnection':
-                    // Simple mock test - always returns success
-                    return of({
-                        data: {
-                            success: true,
-                            environment: data.environment || 'test',
-                            message: `Mock Stripe ${data.environment || 'test'} connection successful`,
-                            productCount: 0
-                        }
-                    });
-                case 'createStripeProduct':
-                    return this.mockStripeFunctions.createStripeProduct(data);
-                case 'updateStripeProduct':
-                    return this.mockStripeFunctions.updateStripeProduct(data);
-                case 'getStripeProducts':
-                    return this.mockStripeFunctions.getStripeProducts(data);
-                case 'createStripePrice':
-                    return this.mockStripeFunctions.createStripePrice(data);
-                case 'updateStripePrice':
-                    return this.mockStripeFunctions.updateStripePrice(data);
-                case 'getStripePrices':
-                    return this.mockStripeFunctions.getStripePrices(data);
-                case 'createStripeProductWithPrice':
-                    return this.mockStripeFunctions.createStripeProductWithPrice(data);
-                case 'getAllStripeCustomers':
-                    // Mock implementation for getAllStripeCustomers
-                    return of({
-                        data: [
-                            {
-                                id: 'cus_mock_1',
-                                email: 'demo@example.com',
-                                name: 'Demo Company',
-                                metadata: { companyName: 'Demo Company' },
-                                created: Date.now() / 1000
-                            },
-                            {
-                                id: 'cus_mock_2',
-                                email: 'test@example.com',
-                                name: 'Test Company',
-                                metadata: { companyName: 'Test Company' },
-                                created: Date.now() / 1000
-                            }
-                        ]
-                    });
-                default:
-                    return throwError(() => new Error(`Mock function ${functionName} not implemented`));
-            }
-        } else {
-            const func = httpsCallable(this.functions, functionName);
-            return from(func(data)).pipe(
-                tap((result) => {
-                    console.log(`✅ Firebase function ${functionName} successful:`, result);
-                }),
-                map((result) => {
-                    // Firebase callable functions wrap the response in a 'data' property
-                    // So if our function returns { success: true, data: [...] }
-                    // Firebase wraps it as { data: { success: true, data: [...] } }
-                    return result.data || result;
-                }),
-                catchError((error: any) => {
-                    console.error(`❌ Firebase function ${functionName} error:`, error);
-                    console.error('Error details:', {
-                        code: error.code,
-                        message: error.message,
-                        details: error.details
-                    });
-                    return throwError(() => error);
-                })
-            );
-        }
+        const func = httpsCallable(this.functions, functionName);
+        return from(func(data)).pipe(
+            tap((result) => {
+                console.log(`✅ Firebase function ${functionName} successful:`, result);
+            }),
+            map((result) => {
+                // Firebase callable functions wrap the response in a 'data' property
+                // So if our function returns { success: true, data: [...] }
+                // Firebase wraps it as { data: { success: true, data: [...] } }
+                return result.data || result;
+            }),
+            catchError((error: any) => {
+                console.error(`❌ Firebase function ${functionName} error:`, error);
+                console.error('Error details:', {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details
+                });
+                return throwError(() => error);
+            })
+        );
     }
 
     // Initialize Stripe with specific environment
@@ -387,6 +328,75 @@ export class StripeService {
         return this.updateProduct(productId, { active: false });
     }
 
+    /**
+     * Delete a product permanently from Stripe
+     * WARNING: This action cannot be undone
+     */
+    deleteProduct(productId: string): Observable<any> {
+        const environment = this.getCurrentEnvironment().mode;
+        console.log(`🗑️ Deleting product ${productId} in ${environment} mode`);
+
+        return this.callFunction('deleteStripeProduct', {
+            productId,
+            environment
+        }).pipe(
+            map((result: any) => {
+                console.log('✅ Product deleted:', result);
+                // Reload products after deletion
+                this.loadProducts();
+                return result;
+            }),
+            catchError((error) => {
+                console.error('❌ Error deleting product:', error);
+                throw error;
+            })
+        );
+    }
+
+    /**
+     * Get all customers subscribed to a specific product
+     */
+    getProductCustomers(productId: string): Observable<any> {
+        const environment = this.getCurrentEnvironment().mode;
+        console.log(`📊 Getting customers for product ${productId} in ${environment} mode`);
+
+        return this.callFunction('getProductCustomers', {
+            productId,
+            environment
+        }).pipe(
+            map((result: any) => {
+                console.log('✅ Product customers retrieved:', result);
+                return result;
+            }),
+            catchError((error) => {
+                console.error('❌ Error getting product customers:', error);
+                throw error;
+            })
+        );
+    }
+
+    /**
+     * Remove a customer from a product by canceling their subscription
+     */
+    removeCustomerFromProduct(subscriptionId: string): Observable<any> {
+        const environment = this.getCurrentEnvironment().mode;
+        console.log(`🚫 Removing customer subscription ${subscriptionId} in ${environment} mode`);
+
+        return this.callFunction('removeCustomerFromProduct', {
+            subscriptionId,
+            environment
+        }).pipe(
+            map((result: any) => {
+                console.log('✅ Customer removed from product:', result);
+                return result;
+            }),
+            catchError((error) => {
+                console.error('❌ Error removing customer from product:', error);
+                throw error;
+            })
+        );
+    }
+
     // Get all products
     getProducts(): Observable<StripeProduct[]> {
         if (!this.productsLoaded) {
@@ -398,10 +408,19 @@ export class StripeService {
 
     // Load products from Stripe
     private loadProducts(): void {
+        // Fetch from Firebase
         const environment = this.getCurrentEnvironment().mode;
 
-        this.callFunction('getStripeProducts', { environment })
+        this.callFunction('getStripeProducts', {
+            environment,
+            active: true // Only fetch active products
+        })
             .pipe(
+                timeout(30000), // 30 second timeout for cold starts
+                retry({
+                    count: 2,
+                    delay: 1000 // Retry after 1 second
+                }),
                 map((result: any) => {
                     // Enhanced data extraction logic
                     let extractedData: any;
@@ -434,17 +453,20 @@ export class StripeService {
                     // Ensure we always return an array of StripeProduct objects
                     const finalData = Array.isArray(extractedData) ? extractedData as StripeProduct[] : [];
 
-                    return finalData;
+                    // Filter out inactive products as an extra safety measure
+                    const activeProducts = finalData.filter((p: StripeProduct) => p.active !== false);
+
+                    return activeProducts;
                 }),
                 catchError((error) => {
-                    console.error('Error loading products:', error);
-                    this.productsLoaded = false;
-                    return of([] as StripeProduct[]);
+                    console.error('❌ Error loading products after retries:', error);
+                    return of([]);
                 })
             )
             .subscribe(products => {
                 this.productsSubject.next(products);
                 this.productsLoaded = true;
+                console.log(`✅ Successfully loaded ${products.length} active products`);
             });
     }
 
@@ -514,10 +536,19 @@ export class StripeService {
 
     // Load prices from Stripe
     private loadPrices(): void {
+        // Fetch from Firebase
         const environment = this.getCurrentEnvironment().mode;
 
-        this.callFunction('getStripePrices', { environment })
+        this.callFunction('getStripePrices', {
+            environment,
+            active: true // Only fetch active prices
+        })
             .pipe(
+                timeout(30000), // 30 second timeout for cold starts
+                retry({
+                    count: 2,
+                    delay: 1000 // Retry after 1 second
+                }),
                 map((result: any) => {
                     // Enhanced data extraction logic
                     let extractedData: any;
@@ -550,17 +581,20 @@ export class StripeService {
                     // Ensure we always return an array of StripePrice objects
                     const finalData = Array.isArray(extractedData) ? extractedData as StripePrice[] : [];
 
-                    return finalData;
+                    // Filter out inactive prices as an extra safety measure
+                    const activePrices = finalData.filter((p: StripePrice) => p.active !== false);
+
+                    return activePrices;
                 }),
                 catchError((error) => {
-                    console.error('Error loading prices:', error);
-                    this.pricesLoaded = false;
-                    return of([] as StripePrice[]);
+                    console.error('❌ Error loading prices after retries:', error);
+                    return of([]);
                 })
             )
             .subscribe(prices => {
                 this.pricesSubject.next(prices);
                 this.pricesLoaded = true;
+                console.log(`✅ Successfully loaded ${prices.length} active prices`);
             });
     }
 
