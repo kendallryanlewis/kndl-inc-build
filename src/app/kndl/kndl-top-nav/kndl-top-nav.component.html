@@ -1,0 +1,12 @@
+<header class="kndl-topbar px-5" [class.kndl-topbar--contact]="activeTab === 'contact'">
+    <button class="kndl-topbar__logo" type="button" (click)="select('home')" aria-label="Go to home section">KNDL
+        INC</button>
+    <nav class="kndl-topbar__primary" aria-label="Primary site navigation">
+        <button type="button" (click)="select('home')" [class.is-active]="activeTab === 'home'">home</button>
+        <button type="button" (click)="select('about')" [class.is-active]="activeTab === 'about'">about</button>
+        <button type="button" (click)="select('products')"
+            [class.is-active]="activeTab === 'products'">products</button>
+        <button type="button" (click)="select('contact')" [class.is-active]="activeTab === 'contact'">contacts</button>
+        <a class="kndl-topbar__signin" [routerLink]="'/login'">sign in</a>
+    </nav>
+</header>

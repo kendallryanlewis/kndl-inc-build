@@ -1,0 +1,1674 @@
+:host {
+    display: contents;
+}
+
+// ─── Backdrop ─────────────────────────────────────────────────────────────────
+.kndl-slideout__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    background: rgba(0 0 0 / 0%);
+    pointer-events: none;
+    transition: background 280ms ease;
+
+    &.is-visible {
+        background: rgba(0 0 0 / 40%);
+        pointer-events: auto;
+    }
+}
+
+// ─── Slideout panel ───────────────────────────────────────────────────────────
+.kndl-slideout {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    width: 420px;
+    max-width: 100vw;
+    display: flex;
+    align-items: stretch;
+    pointer-events: none;
+    transform: translateX(100%);
+    transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.is-open {
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+
+    &__panel {
+        display: flex;
+        flex-direction: column;
+        margin: 12px 12px 12px 0;
+        flex: 1;
+        background: #222222;
+        border-radius: 16px;
+        padding: 10px;
+        box-shadow:
+            0 8px 32px rgba(0 0 0 / 55%),
+            0 2px 8px rgba(0 0 0 / 30%),
+            inset 0 0 0 1px rgba(255 255 255 / 6%);
+        overflow: hidden;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 6px 10px;
+        border-bottom: 1px solid rgba(255 255 255 / 0.07);
+        margin-bottom: 4px;
+    }
+
+    &__label {
+        font-size: 0.65rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        font-weight: 700;
+        font-family: 'Space Grotesk', sans-serif;
+        color: rgba(201, 169, 110, 0.7);
+    }
+
+    &__header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    &__expand-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: rgba(255 255 255 / 5%);
+        border-radius: 6px;
+        color: rgba(225 232 245 / 0.6);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: background 160ms ease, color 160ms ease;
+
+        &:hover {
+            background: rgba(255 255 255 / 10%);
+            color: #fff;
+        }
+    }
+
+    &__close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: rgba(255 255 255 / 5%);
+        border-radius: 6px;
+        color: rgba(225 232 245 / 0.6);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background 160ms ease, color 160ms ease;
+
+        &:hover {
+            background: rgba(255 255 255 / 10%);
+            color: #fff;
+        }
+    }
+
+    &__body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 6px;
+    }
+
+    &__layout {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    &__main {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 6px 80px;
+    }
+
+    &__side {
+        display: none;
+    }
+
+    // ── Expanded (full-width) mode
+    &.is-expanded {
+        width: min(96vw, 1080px);
+
+        .kndl-slideout__panel {
+            margin: 12px;
+        }
+
+        .kndl-slideout__layout {
+            flex-direction: row;
+        }
+
+        .kndl-slideout__main {
+            padding-bottom: 16px;
+            border-right: 1px solid rgba(255 255 255 / 0.07);
+        }
+
+        .kndl-slideout__side {
+            display: flex;
+            flex-direction: column;
+            width: 320px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding: 8px 10px;
+            gap: 12px;
+        }
+
+        .pb-sticky-total {
+            display: none;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kndl-slideout {
+        transition: none;
+    }
+
+    .kndl-slideout__backdrop {
+        transition: none;
+    }
+}
+
+// ─── Package Builder styles ───────────────────────────────────────────────────
+
+$pb-gold: #c9a96e;
+$pb-gold-dim: rgba(201, 169, 110, 0.55);
+$pb-gold-faint: rgba(201, 169, 110, 0.12);
+$pb-card-bg: rgba(255, 255, 255, 0.04);
+$pb-card-bg-featured: rgba(201, 169, 110, 0.07);
+$pb-border: rgba(255, 255, 255, 0.08);
+$pb-border-gold: rgba(201, 169, 110, 0.25);
+$pb-text: rgba(225, 232, 245, 0.88);
+$pb-text-dim: rgba(225, 232, 245, 0.5);
+
+// ─── Tab nav ──────────────────────────────────────────────────────────────────
+.pb-tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 2px;
+    padding: 4px 0 12px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid $pb-border;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    &__btn {
+        flex-shrink: 0;
+        border: none;
+        background: transparent;
+        color: $pb-text-dim;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 160ms ease, color 160ms ease;
+
+        &:hover {
+            background: $pb-card-bg;
+            color: $pb-text;
+        }
+
+        &.is-active {
+            background: $pb-gold-faint;
+            color: $pb-gold;
+        }
+    }
+}
+
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+.pb-section {
+    padding-top: 4px;
+
+    &__title {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: $pb-gold;
+        margin: 0 0 0.5rem;
+
+        &--gap {
+            margin-top: 2rem;
+        }
+    }
+
+    &__intro {
+        font-size: 0.8rem;
+        color: $pb-text-dim;
+        margin: 0 0 1.2rem;
+        line-height: 1.5;
+    }
+}
+
+// ─── Hero intro ───────────────────────────────────────────────────────────────
+.pb-hero {
+    padding: 10px 0 16px;
+    border-bottom: 1px solid $pb-border;
+    margin-bottom: 16px;
+
+    &__title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0 0 0.5rem;
+        line-height: 1.25;
+    }
+
+    &__tagline {
+        font-size: 0.75rem;
+        color: $pb-gold;
+        font-weight: 600;
+        margin: 0 0 0.6rem;
+        line-height: 1.4;
+    }
+
+    &__desc {
+        font-size: 0.78rem;
+        color: $pb-text-dim;
+        margin: 0;
+        line-height: 1.55;
+    }
+}
+
+// ─── Tier cards ───────────────────────────────────────────────────────────────
+.pb-tier-card {
+    background: $pb-card-bg;
+    border: 1px solid $pb-border;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+
+    &--featured {
+        background: $pb-card-bg-featured;
+        border-color: $pb-border-gold;
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    &__badge {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 20px;
+
+        &--gold {
+            background: $pb-gold-faint;
+            color: $pb-gold;
+            border: 1px solid $pb-border-gold;
+        }
+
+        &--muted {
+            background: rgba(255, 255, 255, 0.05);
+            color: $pb-text-dim;
+            border: 1px solid $pb-border;
+        }
+    }
+
+    &__price {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+    }
+
+    &__name {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 5px;
+        letter-spacing: 0.04em;
+    }
+
+    &__desc {
+        font-size: 0.78rem;
+        color: $pb-text;
+        margin: 0 0 6px;
+        line-height: 1.45;
+    }
+
+    &__for {
+        font-size: 0.72rem;
+        color: $pb-text-dim;
+        margin: 0 0 10px;
+        line-height: 1.45;
+    }
+
+    &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0 12px;
+
+        span {
+            font-size: 0.68rem;
+            color: $pb-text-dim;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+
+            i {
+                color: $pb-gold-dim;
+            }
+        }
+    }
+}
+
+// ─── Checklist ────────────────────────────────────────────────────────────────
+.pb-checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    li {
+        font-size: 0.76rem;
+        color: $pb-text;
+        padding-left: 1.2em;
+        position: relative;
+        line-height: 1.4;
+
+        &::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: $pb-gold;
+            font-size: 0.65rem;
+            top: 1px;
+        }
+    }
+}
+
+// ─── Buttons ──────────────────────────────────────────────────────────────────
+.pb-btn {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    border-radius: 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+    margin-bottom: 8px;
+
+    &--gold {
+        background: $pb-gold;
+        color: #0a0c12;
+        border: 1px solid $pb-gold;
+
+        &:hover {
+            background: color-mix(in srgb, $pb-gold 88%, #fff);
+        }
+    }
+
+    &--outline {
+        background: transparent;
+        color: $pb-text;
+        border: 1px solid $pb-border;
+
+        &:hover {
+            border-color: $pb-border-gold;
+            color: $pb-gold;
+        }
+    }
+
+    &--ghost {
+        background: transparent;
+        color: $pb-text-dim;
+        border: 1px solid transparent;
+
+        &:hover {
+            color: $pb-text;
+        }
+    }
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+.pb-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid $pb-border;
+    margin-bottom: 1rem;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+    }
+}
+
+.pb-table {
+    width: 100%;
+    min-width: 480px;
+    border-collapse: collapse;
+    font-size: 0.74rem;
+
+    th,
+    td {
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 1px solid $pb-border;
+        line-height: 1.35;
+    }
+
+    th {
+        color: $pb-gold-dim;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        background: rgba(201, 169, 110, 0.04);
+    }
+
+    td {
+        color: $pb-text;
+
+        &:first-child {
+            color: $pb-text-dim;
+            font-size: 0.72rem;
+        }
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+}
+
+// ─── Tags ─────────────────────────────────────────────────────────────────────
+.pb-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.64rem;
+    font-weight: 700;
+
+    &--yes {
+        background: rgba(69, 255, 188, 0.1);
+        color: #45ffbc;
+    }
+
+    &--add {
+        background: rgba(201, 169, 110, 0.1);
+        color: $pb-gold;
+    }
+}
+
+// ─── Accordion ────────────────────────────────────────────────────────────────
+.pb-accordion {
+    border: 1px solid $pb-border;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    overflow: hidden;
+
+    &__trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 12px;
+        background: $pb-card-bg;
+        border: none;
+        color: $pb-text;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.74rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: left;
+        transition: background 160ms ease;
+        gap: 8px;
+
+        i:first-child {
+            color: $pb-gold-dim;
+        }
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+    }
+
+    &__caret {
+        color: $pb-text-dim;
+        font-size: 0.65rem;
+        flex-shrink: 0;
+        transition: transform 200ms ease;
+
+        &.is-open {
+            transform: rotate(180deg);
+        }
+    }
+
+    &__body {
+        padding: 4px 0;
+        background: rgba(0, 0, 0, 0.15);
+    }
+}
+
+// ─── Add-on rows ──────────────────────────────────────────────────────────────
+.pb-addon-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: 0.76rem;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    span:first-child {
+        color: $pb-text;
+    }
+
+    span:last-child {
+        color: $pb-gold;
+        font-weight: 700;
+        font-size: 0.72rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    &--light {
+        span:first-child {
+            color: $pb-text-dim;
+        }
+    }
+}
+
+// ─── Care plan cards ──────────────────────────────────────────────────────────
+.pb-care-card {
+    background: $pb-card-bg;
+    border: 1px solid $pb-border;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+
+    &--featured {
+        background: $pb-card-bg-featured;
+        border-color: $pb-border-gold;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    &__name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    &__price {
+        font-size: 1rem;
+        font-weight: 800;
+        color: $pb-gold;
+
+        small {
+            font-size: 0.68rem;
+            font-weight: 500;
+            color: $pb-text-dim;
+        }
+    }
+
+    &__for {
+        font-size: 0.72rem;
+        color: $pb-text-dim;
+        margin: 0 0 8px;
+        line-height: 1.4;
+    }
+}
+
+// ─── Retainer cards ───────────────────────────────────────────────────────────
+.pb-retainer-card {
+    background: $pb-card-bg;
+    border: 1px solid $pb-border;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        gap: 8px;
+    }
+
+    &__name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 2px;
+    }
+
+    &__hours {
+        font-size: 0.65rem;
+        color: $pb-gold-dim;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        margin: 0;
+    }
+
+    &__price {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: $pb-gold;
+        white-space: nowrap;
+
+        small {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: $pb-text-dim;
+        }
+    }
+
+    &__for {
+        font-size: 0.72rem;
+        color: $pb-text-dim;
+        margin: 0 0 8px;
+        line-height: 1.4;
+    }
+}
+
+.pb-rate-list {
+    background: $pb-card-bg;
+    border: 1px solid $pb-border;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+// ─── Example cards ────────────────────────────────────────────────────────────
+.pb-example-card {
+    background: $pb-card-bg;
+    border: 1px solid $pb-border;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+
+    &__title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: $pb-gold;
+        margin: 0 0 8px;
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid $pb-border;
+        font-size: 0.74rem;
+        color: $pb-text-dim;
+
+        strong {
+            color: #fff;
+        }
+    }
+}
+
+// ─── Rules list ───────────────────────────────────────────────────────────────
+.pb-rules-list {
+    padding-left: 1.2rem;
+    margin: 0 0 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    li {
+        font-size: 0.78rem;
+        color: $pb-text;
+        line-height: 1.4;
+        padding-left: 4px;
+
+        &::marker {
+            color: $pb-gold;
+            font-weight: 700;
+        }
+    }
+}
+
+// ─── Scope box ────────────────────────────────────────────────────────────────
+.pb-scope-box {
+    background: rgba(255, 80, 80, 0.05);
+    border: 1px solid rgba(255, 100, 100, 0.18);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+
+    &__label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 130, 130, 0.7);
+        margin: 0 0 6px;
+    }
+
+    p {
+        font-size: 0.74rem;
+        color: $pb-text-dim;
+        line-height: 1.5;
+        margin: 0 0 6px;
+
+        &:last-child {
+            margin: 0;
+        }
+    }
+
+    &__note {
+        font-weight: 600;
+        color: rgba(255, 130, 130, 0.6) !important;
+        font-size: 0.72rem !important;
+    }
+}
+
+// ─── CTA strip ────────────────────────────────────────────────────────────────
+.pb-cta-strip {
+    background: $pb-card-bg-featured;
+    border: 1px solid $pb-border-gold;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+
+    &__heading {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 6px;
+    }
+
+    &__sub {
+        font-size: 0.74rem;
+        color: $pb-text-dim;
+        line-height: 1.5;
+        margin: 0 0 12px;
+    }
+}
+
+// ─── Step breadcrumb ──────────────────────────────────────────────────────────
+.pb-stepper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+    gap: 0;
+
+    &__step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        opacity: 0.4;
+        transition: opacity 160ms ease;
+
+        &.is-active {
+            opacity: 1;
+        }
+
+        &.is-done {
+            opacity: 0.7;
+            cursor: pointer;
+        }
+
+        &:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+        }
+    }
+
+    &__num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: $pb-text-dim;
+        background: rgba(255, 255, 255, 0.04);
+        transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+
+        .pb-stepper__step.is-active & {
+            background: $pb-gold;
+            border-color: $pb-gold;
+            color: #0a0c12;
+        }
+
+        .pb-stepper__step.is-done & {
+            background: rgba(201, 169, 110, 0.15);
+            border-color: $pb-border-gold;
+            color: $pb-gold;
+        }
+    }
+
+    &__label {
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: $pb-text-dim;
+        white-space: nowrap;
+
+        .pb-stepper__step.is-active & {
+            color: $pb-gold;
+        }
+    }
+
+    &__line {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 6px;
+        margin-bottom: 16px;
+    }
+}
+
+// ─── Selectable cards (base packages + care plans) ────────────────────────────
+.pb-select-card {
+    background: $pb-card-bg;
+    border: 1.5px solid $pb-border;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease;
+    outline: none;
+
+    &:hover {
+        border-color: rgba(201, 169, 110, 0.35);
+    }
+
+    &.is-selected {
+        border-color: $pb-gold;
+        background: $pb-card-bg-featured;
+    }
+
+    &.is-featured {
+        box-shadow: 0 0 0 1px rgba(201, 169, 110, 0.1);
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+
+    &__radio {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.25);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 180ms ease;
+
+        .pb-select-card.is-selected & {
+            border-color: $pb-gold;
+        }
+    }
+
+    &__radio-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: $pb-gold;
+    }
+
+    &__badge {
+        font-size: 0.58rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.06);
+        color: $pb-text-dim;
+        border: 1px solid $pb-border;
+        flex-shrink: 0;
+
+        &--gold {
+            background: $pb-gold-faint;
+            color: $pb-gold;
+            border-color: $pb-border-gold;
+        }
+    }
+
+    &__price {
+        margin-left: auto;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+    }
+
+    &__name {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 3px;
+
+        &--inline {
+            font-size: 0.8rem;
+        }
+    }
+
+    &__desc {
+        font-size: 0.74rem;
+        color: $pb-text-dim;
+        margin: 0 0 8px;
+        line-height: 1.4;
+    }
+
+    &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 4px;
+
+        span {
+            font-size: 0.64rem;
+            color: $pb-text-dim;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid $pb-border;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+    }
+}
+
+// ─── Add-on category trigger ──────────────────────────────────────────────────
+.pb-addon-cat {
+    border: 1px solid $pb-border;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    overflow: hidden;
+
+    &__trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 12px;
+        background: $pb-card-bg;
+        border: none;
+        color: $pb-text;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.74rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: left;
+        transition: background 160ms ease;
+        gap: 8px;
+
+        i:first-child {
+            color: $pb-gold-dim;
+        }
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+    }
+
+    &__right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    &__count {
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: $pb-gold;
+        background: $pb-gold-faint;
+        padding: 1px 6px;
+        border-radius: 10px;
+    }
+
+    &__body {
+        background: rgba(0, 0, 0, 0.15);
+    }
+}
+
+// ─── Add-on checkbox row ──────────────────────────────────────────────────────
+.pb-addon-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: background 140ms ease;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    &.is-checked {
+        background: rgba(201, 169, 110, 0.04);
+    }
+
+    &__input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    &__box {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        border: 1.5px solid rgba(255, 255, 255, 0.2);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 140ms ease, border-color 140ms ease;
+        background: rgba(255, 255, 255, 0.03);
+
+        .pb-addon-check.is-checked & {
+            background: $pb-gold;
+            border-color: $pb-gold;
+        }
+
+        i {
+            font-size: 0.5rem;
+            color: #0a0c12;
+        }
+    }
+
+    &__label {
+        flex: 1;
+        font-size: 0.76rem;
+        color: $pb-text;
+        line-height: 1.35;
+    }
+
+    &__price {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: $pb-gold;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}
+
+// ─── Step navigation row ──────────────────────────────────────────────────────
+.pb-step-nav {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+
+    .pb-btn {
+        flex: 1;
+        margin-bottom: 0;
+    }
+}
+
+// ─── Summary blocks (step 4) ──────────────────────────────────────────────────
+.pb-summary-block {
+    background: $pb-card-bg;
+    border: 1px solid $pb-border;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 12px;
+        border-bottom: 1px solid $pb-border;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    &__label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: $pb-gold-dim;
+    }
+
+    &__edit {
+        background: none;
+        border: none;
+        color: $pb-text-dim;
+        font-size: 0.68rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        transition: color 150ms ease;
+
+        &:hover {
+            color: $pb-gold;
+        }
+    }
+}
+
+.pb-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 0.76rem;
+    gap: 8px;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    span:first-child {
+        color: $pb-text;
+    }
+
+    span:last-child {
+        color: $pb-gold;
+        font-weight: 700;
+        font-size: 0.72rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    &--base span:first-child {
+        color: #fff;
+        font-weight: 600;
+    }
+
+    &--empty span {
+        color: $pb-text-dim !important;
+        font-weight: 400 !important;
+    }
+}
+
+// ─── Total block ──────────────────────────────────────────────────────────────
+.pb-total-block {
+    background: $pb-card-bg-featured;
+    border: 1px solid $pb-border-gold;
+    border-radius: 10px;
+    padding: 14px;
+    margin: 12px 0;
+
+    &__row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        color: $pb-text-dim;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        &--monthly {
+            margin-bottom: 8px;
+        }
+    }
+
+    &__amount {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+
+        &--monthly {
+            font-size: 1rem;
+            color: $pb-gold;
+        }
+    }
+
+    &__deposit {
+        font-size: 0.7rem;
+        color: $pb-text-dim;
+        padding-top: 8px;
+        border-top: 1px solid $pb-border;
+        margin-top: 8px;
+
+        strong {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    }
+}
+
+// ─── Sticky total bar ─────────────────────────────────────────────────────────
+.pb-sticky-total {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(26, 31, 44, 0.95);
+    border-top: 1px solid $pb-border-gold;
+    border-radius: 0 0 14px 14px;
+    backdrop-filter: blur(6px);
+    margin: 0 -10px -10px;
+
+    &__label {
+        font-size: 0.62rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: $pb-text-dim;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    &__amount {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    &__monthly {
+        font-size: 0.72rem;
+        color: $pb-gold;
+        font-weight: 600;
+    }
+}
+
+// ─── Compare toggle button ────────────────────────────────────────────────────
+.pb-compare-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    padding: 8px 10px;
+    margin: 6px 0 10px;
+    background: rgba(255 255 255 / 3%);
+    border: 1px dashed rgba(255 255 255 / 12%);
+    border-radius: 7px;
+    color: $pb-text-dim;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+
+    i:first-child {
+        color: $pb-gold-dim;
+        font-size: 0.68rem;
+    }
+
+    &:hover {
+        background: rgba(255 255 255 / 6%);
+        border-color: $pb-border-gold;
+        color: $pb-text;
+    }
+
+    .pb-accordion__caret {
+        margin-left: auto;
+        font-size: 0.6rem;
+        transition: transform 200ms ease;
+
+        &.is-open {
+            transform: rotate(180deg);
+        }
+    }
+
+    &--gap {
+        margin-top: 14px;
+    }
+}
+
+.pb-compare-wrap {
+    margin-bottom: 10px;
+}
+
+// ─── Rules note (step 4) ─────────────────────────────────────────────────────
+.pb-rules-note {
+    background: rgba(255 255 255 / 3%);
+    border: 1px solid rgba(255 255 255 / 8%);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+
+    &__title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: rgba(225, 232, 245, 0.7);
+        letter-spacing: 0.04em;
+        margin: 0 0 6px;
+
+        i {
+            color: $pb-gold-dim;
+            margin-right: 5px;
+        }
+    }
+
+    ul {
+        margin: 0;
+        padding-left: 16px;
+
+        li {
+            font-size: 0.72rem;
+            color: $pb-text-dim;
+            line-height: 1.5;
+            margin-bottom: 2px;
+        }
+    }
+}
+
+// ─── Compact care checklist in step 3 cards ───────────────────────────────────
+.pb-checklist--compact {
+    margin: 6px 0 0;
+    padding-left: 14px;
+    list-style: none;
+
+    li {
+        font-size: 0.68rem;
+        color: $pb-text-dim;
+        line-height: 1.4;
+        margin-bottom: 2px;
+        padding-left: 10px;
+        position: relative;
+
+        &::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: $pb-gold-dim;
+            font-size: 0.55rem;
+        }
+    }
+}
+
+// ─── Live summary (right panel) ───────────────────────────────────────────────
+.pb-live-summary {
+    background: rgba(255 255 255 / 3%);
+    border: 1px solid $pb-border-gold;
+    border-radius: 10px;
+    padding: 12px;
+
+    &__header {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: $pb-gold-dim;
+        margin: 0 0 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid $pb-border;
+    }
+
+    &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 20px 0;
+        color: $pb-text-dim;
+        font-size: 0.74rem;
+        text-align: center;
+
+        i {
+            font-size: 1.1rem;
+            color: $pb-gold-dim;
+        }
+    }
+
+    &__section {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255 255 255 / 5%);
+
+        &:last-of-type {
+            border-bottom: none;
+        }
+    }
+
+    &__label {
+        font-size: 0.57rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: $pb-text-dim;
+        margin: 0 0 4px;
+    }
+
+    &__row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.74rem;
+        color: $pb-text;
+        margin-bottom: 2px;
+
+        span:last-child {
+            color: #fff;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+    }
+
+    &__total {
+        background: $pb-card-bg-featured;
+        border: 1px solid $pb-border-gold;
+        border-radius: 7px;
+        padding: 10px;
+        margin: 10px 0 8px;
+    }
+
+    &__total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 0.74rem;
+        color: $pb-text-dim;
+        margin-bottom: 4px;
+
+        strong {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        &--monthly strong {
+            font-size: 0.9rem;
+            color: $pb-gold;
+        }
+    }
+
+    &__deposit {
+        font-size: 0.65rem;
+        color: $pb-text-dim;
+        border-top: 1px solid $pb-border;
+        padding-top: 6px;
+        margin-top: 4px;
+        margin-bottom: 0;
+
+        strong {
+            color: rgba(255, 255, 255, 0.75);
+        }
+    }
+}
+
+// ─── Example builds (right panel) ────────────────────────────────────────────
+.pb-examples-panel {
+    background: rgba(255 255 255 / 2%);
+    border: 1px solid $pb-border;
+    border-radius: 10px;
+    padding: 10px 12px;
+
+    &__header {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: $pb-gold-dim;
+        margin: 0 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid $pb-border;
+
+        i {
+            margin-right: 5px;
+        }
+    }
+}
+
+.pb-example-mini {
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255 255 255 / 5%);
+
+    &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    &__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    &__title {
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: $pb-text;
+    }
+
+    &__price {
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: $pb-gold;
+        flex-shrink: 0;
+    }
+
+    &__base {
+        font-size: 0.66rem;
+        color: $pb-text-dim;
+        margin: 1px 0 4px;
+
+        span {
+            color: rgba(201, 169, 110, 0.6);
+        }
+    }
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+
+        span {
+            font-size: 0.58rem;
+            color: $pb-text-dim;
+            background: rgba(255 255 255 / 4%);
+            border: 1px solid $pb-border;
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+    }
+}
+
+// ─── Section intro gap variant ────────────────────────────────────────────────
+.pb-section__intro--gap {
+    margin-top: 12px;
+}
+
+// ─── Legal pages ─────────────────────────────────────────────────────────────
+.pb-legal {
+    padding: 24px 28px 48px;
+    overflow-y: auto;
+    flex: 1;
+
+    &__section {
+        padding: 20px 0;
+        border-bottom: 1px solid $pb-border;
+
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+
+    &__heading {
+        margin: 0 0 8px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--c-gold);
+    }
+
+    &__body {
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.65;
+        color: $pb-text-dim;
+    }
+
+    &__highlight {
+        color: rgba(220 229 245 / 0.9);
+        font-weight: 600;
+    }
+}

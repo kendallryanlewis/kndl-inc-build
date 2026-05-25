@@ -1,5 +1,7 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const cors = require('cors')({
     origin: [
         'http://localhost:4200',
@@ -24,6 +26,864 @@ require('dotenv').config();
 if (!admin.apps.length) {
     admin.initializeApp();
 }
+
+const APPLE_API_BASE = 'https://api.appstoreconnect.apple.com/v1';
+const APPLE_APP_COLLECTION = 'appleAppPageApps';
+const CONTACT_TO_EMAIL = 'kndl-inc@gmail.com';
+const CONTACT_RATE_LIMIT_MS = 60 * 1000;
+const CONTACT_MIN_FORM_FILL_MS = 2500;
+
+const loadAppleCredentials = () => {
+    const credentialsFromEnv = {
+        keyId: process.env.APPLE_ASC_KEY_ID,
+        issuerId: process.env.APPLE_ASC_ISSUER_ID,
+        privateKey: process.env.APPLE_ASC_PRIVATE_KEY
+    };
+
+    if (credentialsFromEnv.keyId && credentialsFromEnv.issuerId && credentialsFromEnv.privateKey) {
+        return credentialsFromEnv;
+    }
+
+    try {
+        if (typeof functions.config === 'function') {
+            const legacyConfig = functions.config();
+            if (legacyConfig?.apple) {
+                return {
+                    keyId: legacyConfig.apple.asc_key_id,
+                    issuerId: legacyConfig.apple.asc_issuer_id,
+                    privateKey: legacyConfig.apple.asc_private_key
+                };
+            }
+        }
+    } catch (configError) {
+        console.warn('Apple credentials fallback lookup failed:', configError?.message);
+    }
+
+    return credentialsFromEnv;
+};
+
+const toBase64Url = (value) => Buffer.from(value).toString('base64url');
+
+const createAppleToken = () => {
+    const credentials = loadAppleCredentials();
+    if (!credentials.keyId || !credentials.issuerId || !credentials.privateKey) {
+        throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Apple App Store Connect credentials are missing. Configure APPLE_ASC_KEY_ID, APPLE_ASC_ISSUER_ID, and APPLE_ASC_PRIVATE_KEY.'
+        );
+    }
+
+    const normalizedPrivateKey = credentials.privateKey.replace(/\\n/g, '\n');
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    const header = {
+        alg: 'ES256',
+        kid: credentials.keyId,
+        typ: 'JWT'
+    };
+    const payload = {
+        iss: credentials.issuerId,
+        exp: nowInSeconds + 60 * 20,
+        aud: 'appstoreconnect-v1'
+    };
+
+    const encodedHeader = toBase64Url(JSON.stringify(header));
+    const encodedPayload = toBase64Url(JSON.stringify(payload));
+    const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+
+    const signature = crypto.sign('sha256', Buffer.from(unsignedToken), {
+        key: normalizedPrivateKey,
+        dsaEncoding: 'ieee-p1363'
+    });
+
+    return `${unsignedToken}.${signature.toString('base64url')}`;
+};
+
+const getAppleApiJson = async (path, token, searchParams = null) => {
+    const queryString = searchParams ? `?${searchParams.toString()}` : '';
+    const url = `${APPLE_API_BASE}${path}${queryString}`;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Apple API request failed (${response.status}): ${errorBody}`);
+    }
+
+    return response.json();
+};
+
+const getAppleApiPathFromUrl = (url) => {
+    const parsedUrl = new URL(url);
+    const normalizedPath = parsedUrl.pathname.startsWith('/v1')
+        ? parsedUrl.pathname.slice(3)
+        : parsedUrl.pathname;
+
+    return {
+        path: normalizedPath,
+        searchParams: parsedUrl.search ? new URLSearchParams(parsedUrl.search.slice(1)) : null
+    };
+};
+
+const getAppleApiJsonAllPages = async (path, token, searchParams = null) => {
+    const allRows = [];
+    let nextPath = path;
+    let nextParams = searchParams;
+
+    while (nextPath) {
+        const pageResponse = await getAppleApiJson(nextPath, token, nextParams);
+        allRows.push(...(pageResponse.data || []));
+
+        const nextUrl = pageResponse?.links?.next;
+        if (!nextUrl) {
+            break;
+        }
+
+        const parsedNext = getAppleApiPathFromUrl(nextUrl);
+        nextPath = parsedNext.path;
+        nextParams = parsedNext.searchParams;
+    }
+
+    return allRows;
+};
+
+const toSlug = (value) => value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+
+/**
+ * Fetch public iTunes Search API metadata for a given Apple app ID.
+ * Returns rating, review count, file size, OS version, genres, store URL,
+ * release date, and content advisory rating — all from the public lookup endpoint.
+ */
+const fetchItunesMetadata = async (appleAppId) => {
+    try {
+        const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(appleAppId)}&country=us&entity=software`;
+        const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+        if (!response.ok) return {};
+        const json = await response.json();
+        const result = Array.isArray(json.results) ? json.results[0] : null;
+        if (!result) return {};
+        return {
+            averageUserRating: typeof result.averageUserRating === 'number' ? result.averageUserRating : undefined,
+            userRatingCount: typeof result.userRatingCount === 'number' ? result.userRatingCount : undefined,
+            fileSizeBytes: result.fileSizeBytes ? String(result.fileSizeBytes) : undefined,
+            minimumOsVersion: result.minimumOsVersion || undefined,
+            genres: Array.isArray(result.genres) ? result.genres.filter(Boolean) : [],
+            appStoreUrl: result.trackViewUrl || undefined,
+            releaseDate: result.releaseDate || result.currentVersionReleaseDate || undefined,
+            contentAdvisoryRating: result.contentAdvisoryRating || undefined,
+            price: typeof result.price === 'number' ? result.price : undefined,
+            formattedPrice: result.formattedPrice || undefined,
+            currency: result.currency || undefined,
+            primaryGenreName: result.primaryGenreName || undefined,
+            advisories: Array.isArray(result.advisories) ? result.advisories.filter(Boolean) : [],
+            languageCodes: Array.isArray(result.languageCodesISO2A) ? result.languageCodesISO2A.filter(Boolean) : [],
+            ipadScreenshotUrls: Array.isArray(result.ipadScreenshotUrls) ? result.ipadScreenshotUrls : [],
+            screenshotUrlsItunes: Array.isArray(result.screenshotUrls) ? result.screenshotUrls : []
+        };
+    } catch (err) {
+        console.warn(`iTunes lookup failed for ${appleAppId}:`, err?.message);
+        return {};
+    }
+};
+
+const mapAppleStatus = (state) => {
+    const liveStates = new Set(['READY_FOR_SALE', 'READY_FOR_DISTRIBUTION']);
+    const inProgressStates = new Set([
+        'WAITING_FOR_REVIEW',
+        'IN_REVIEW',
+        'PENDING_DEVELOPER_RELEASE',
+        'PREPARE_FOR_SUBMISSION',
+        'PROCESSING_FOR_APP_STORE',
+        'METADATA_REJECTED',
+        'REJECTED',
+        'DEVELOPER_REJECTED'
+    ]);
+
+    if (liveStates.has(state)) {
+        return 'Live';
+    }
+
+    if (inProgressStates.has(state)) {
+        return 'In Progress';
+    }
+
+    return 'Planned';
+};
+
+const buildServiceTags = (keywords) => {
+    if (!keywords || typeof keywords !== 'string') {
+        return ['App Store Listing', 'Product Marketing', 'Release Management'];
+    }
+
+    const tags = keywords
+        .split(',')
+        .map((keyword) => keyword.trim())
+        .filter((keyword) => keyword.length > 0)
+        .slice(0, 4);
+
+    if (tags.length) {
+        return tags;
+    }
+
+    return ['App Store Listing', 'Product Marketing', 'Release Management'];
+};
+
+const pickPreferredLocalization = (localizations, preferredLocale) => {
+    if (!localizations.length) {
+        return null;
+    }
+
+    return localizations.find((item) => item.attributes?.locale === preferredLocale) || localizations[0];
+};
+
+const materializeAppleImageUrl = (templateUrl) => {
+    if (!templateUrl || typeof templateUrl !== 'string') {
+        return null;
+    }
+
+    // App Store template URLs include placeholders like {w}x{h}{c}.{f}.
+    return templateUrl
+        .replace('{w}', '1290')
+        .replace('{h}', '2796')
+        .replace('{f}', 'jpg')
+        .replace('{c}', '');
+};
+
+const fetchAppleScreenshotUrls = async (versionLocalizationId, token) => {
+    if (!versionLocalizationId) {
+        return [];
+    }
+
+    const screenshotSetsResponse = await getAppleApiJson(
+        `/appStoreVersionLocalizations/${versionLocalizationId}/appScreenshotSets`,
+        token,
+        new URLSearchParams({ limit: '50' })
+    );
+    const screenshotSets = screenshotSetsResponse.data || [];
+
+    const screenshotUrls = [];
+
+    for (const screenshotSet of screenshotSets) {
+        const setId = screenshotSet.id;
+        if (!setId) {
+            continue;
+        }
+
+        const screenshotsResponse = await getAppleApiJson(
+            `/appScreenshotSets/${setId}/appScreenshots`,
+            token,
+            new URLSearchParams({ limit: '50' })
+        );
+        const screenshots = screenshotsResponse.data || [];
+
+        for (const screenshotRecord of screenshots) {
+            const screenshotTemplateUrl = screenshotRecord?.attributes?.imageAsset?.templateUrl;
+            const screenshotUrl = materializeAppleImageUrl(screenshotTemplateUrl);
+
+            if (screenshotUrl) {
+                screenshotUrls.push(screenshotUrl);
+            }
+        }
+    }
+
+    return [...new Set(screenshotUrls)].slice(0, 12);
+};
+
+const fetchAppleAppCatalog = async () => {
+    const token = createAppleToken();
+    const appSearchParams = new URLSearchParams({
+        limit: '200',
+        'fields[apps]': 'name,bundleId,sku,primaryLocale'
+    });
+    const apps = await getAppleApiJsonAllPages('/apps', token, appSearchParams);
+
+    const mappedApps = [];
+    for (const appRecord of apps) {
+        const appId = appRecord.id;
+        try {
+            const appAttributes = appRecord.attributes || {};
+            const primaryLocale = appAttributes.primaryLocale || 'en-US';
+
+            // Each sub-resource fetch gets its own fallback so a single 404/403
+            // on one resource doesn't prevent the app from being added at all.
+            let versions = [];
+            try {
+                const versionsParams = new URLSearchParams({
+                    limit: '20',
+                    'fields[appStoreVersions]': 'versionString,appVersionState,platform,earliestReleaseDate,createdDate'
+                });
+                const versionsResponse = await getAppleApiJson(`/apps/${appId}/appStoreVersions`, token, versionsParams);
+                versions = versionsResponse.data || [];
+            } catch (e) {
+                console.warn(`App ${appId}: appStoreVersions fetch failed (${e?.message}) — continuing with empty versions.`);
+            }
+            const preferredVersion = versions.find((v) => v.attributes?.platform === 'IOS') || versions[0] || null;
+
+            let appInfo = null;
+            try {
+                const appInfoParams = new URLSearchParams({
+                    limit: '10',
+                    'fields[appInfos]': 'appStoreState,contentRightsDeclaration'
+                });
+                const appInfosResponse = await getAppleApiJson(`/apps/${appId}/appInfos`, token, appInfoParams);
+                appInfo = (appInfosResponse.data || [])[0] || null;
+            } catch (e) {
+                console.warn(`App ${appId}: appInfos fetch failed (${e?.message}) — continuing without app info.`);
+            }
+
+            let infoLocalization = null;
+            if (appInfo?.id) {
+                try {
+                    const infoLocalizationParams = new URLSearchParams({
+                        limit: '50',
+                        'fields[appInfoLocalizations]': 'locale,name,subtitle,privacyPolicyUrl,keywords,supportUrl'
+                    });
+                    const infoLocalizationResponse = await getAppleApiJson(
+                        `/appInfos/${appInfo.id}/appInfoLocalizations`,
+                        token,
+                        infoLocalizationParams
+                    );
+                    infoLocalization = pickPreferredLocalization(infoLocalizationResponse.data || [], primaryLocale);
+                } catch (e) {
+                    console.warn(`App ${appId}: appInfoLocalizations fetch failed (${e?.message}) — continuing without localization.`);
+                }
+            }
+
+            let versionLocalization = null;
+            if (preferredVersion?.id) {
+                try {
+                    const versionLocalizationParams = new URLSearchParams({
+                        limit: '50',
+                        'fields[appStoreVersionLocalizations]': 'locale,description,promotionalText,whatsNew'
+                    });
+                    const versionLocalizationResponse = await getAppleApiJson(
+                        `/appStoreVersions/${preferredVersion.id}/appStoreVersionLocalizations`,
+                        token,
+                        versionLocalizationParams
+                    );
+                    versionLocalization = pickPreferredLocalization(versionLocalizationResponse.data || [], primaryLocale);
+                } catch (e) {
+                    console.warn(`App ${appId}: appStoreVersionLocalizations fetch failed (${e?.message}) — continuing without version localization.`);
+                }
+            }
+
+            const screenshotUrls = await fetchAppleScreenshotUrls(versionLocalization?.id, token);
+
+            // Public iTunes Search API enrichment (ratings, size, genres, store URL)
+            const itunes = await fetchItunesMetadata(appId);
+
+            // Customer reviews (up to 5 most recent)
+            let customerReviews = [];
+            try {
+                const reviewsRes = await getAppleApiJson(`/apps/${appId}/customerReviews`, token, new URLSearchParams({
+                    limit: '5', sort: '-createdDate',
+                    'fields[customerReviews]': 'rating,title,body,reviewerNickname,createdDate,territory'
+                }));
+                customerReviews = (reviewsRes.data || []).map((r) => ({
+                    rating: r.attributes?.rating ?? null,
+                    title: r.attributes?.title || '',
+                    body: r.attributes?.body || '',
+                    nickname: r.attributes?.reviewerNickname || 'Anonymous',
+                    createdDate: r.attributes?.createdDate || '',
+                    territory: r.attributes?.territory || ''
+                }));
+            } catch (e) {
+                console.warn(`App ${appId}: customerReviews fetch failed (${e?.message})`);
+            }
+
+            // End User License Agreement
+            let eulaText = '';
+            try {
+                const eulaRes = await getAppleApiJson(`/apps/${appId}/endUserLicenseAgreement`, token);
+                eulaText = eulaRes.data?.attributes?.agreementText || '';
+            } catch (e) {
+                console.warn(`App ${appId}: endUserLicenseAgreement fetch failed (${e?.message})`);
+            }
+
+            // In-app purchases
+            let inAppPurchases = [];
+            try {
+                const iapRes = await getAppleApiJson(`/apps/${appId}/inAppPurchasesV2`, token, new URLSearchParams({
+                    limit: '50',
+                    'fields[inAppPurchases]': 'productId,referenceName,inAppPurchaseType,state,familySharable'
+                }));
+                inAppPurchases = (iapRes.data || []).map((i) => ({
+                    productId: i.attributes?.productId || '',
+                    name: i.attributes?.referenceName || '',
+                    type: i.attributes?.inAppPurchaseType || '',
+                    state: i.attributes?.state || '',
+                    familySharable: i.attributes?.familySharable || false
+                }));
+            } catch (e) {
+                console.warn(`App ${appId}: inAppPurchasesV2 fetch failed (${e?.message})`);
+            }
+
+            // Subscription groups and their subscriptions
+            let subscriptionGroups = [];
+            try {
+                const subGroupRes = await getAppleApiJson(`/apps/${appId}/subscriptionGroups`, token, new URLSearchParams({
+                    limit: '10', 'fields[subscriptionGroups]': 'referenceName'
+                }));
+                for (const group of (subGroupRes.data || [])) {
+                    let subs = [];
+                    try {
+                        const subsRes = await getAppleApiJson(`/subscriptionGroups/${group.id}/subscriptions`, token, new URLSearchParams({
+                            limit: '20', 'fields[subscriptions]': 'productId,name,state,subscriptionPeriod,familySharable'
+                        }));
+                        subs = (subsRes.data || []).map((s) => ({
+                            productId: s.attributes?.productId || '',
+                            name: s.attributes?.name || '',
+                            state: s.attributes?.state || '',
+                            period: s.attributes?.subscriptionPeriod || '',
+                            familySharable: s.attributes?.familySharable || false
+                        }));
+                    } catch (e) {
+                        console.warn(`App ${appId}: subscriptions for group ${group.id} failed (${e?.message})`);
+                    }
+                    subscriptionGroups.push({ id: group.id, name: group.attributes?.referenceName || '', subscriptions: subs });
+                }
+            } catch (e) {
+                console.warn(`App ${appId}: subscriptionGroups fetch failed (${e?.message})`);
+            }
+
+            // Territory availability count
+            let availableTerritoryCount = null;
+            try {
+                const availRes = await getAppleApiJson(`/apps/${appId}/appAvailabilityV2`, token);
+                availableTerritoryCount = availRes.data?.relationships?.territories?.meta?.total ?? null;
+            } catch (e) {
+                console.warn(`App ${appId}: appAvailabilityV2 fetch failed (${e?.message})`);
+            }
+
+            // Pricing (from appPriceSchedule)
+            let priceSchedule = null;
+            try {
+                const priceRes = await getAppleApiJson(`/apps/${appId}/appPriceSchedule`, token, new URLSearchParams({
+                    'fields[appPriceSchedules]': 'manualPrices,automaticPrices'
+                }));
+                priceSchedule = priceRes.data || null;
+            } catch (e) {
+                console.warn(`App ${appId}: appPriceSchedule fetch failed (${e?.message})`);
+            }
+
+            // Content rights declaration (already fetched inside appInfo attributes)
+            const contentRightsDeclaration = appInfo?.attributes?.contentRightsDeclaration || '';
+
+            const localizedName = infoLocalization?.attributes?.name;
+            const localizedSubtitle = infoLocalization?.attributes?.subtitle;
+            const localizedDescription = versionLocalization?.attributes?.description;
+            const promotionalText = versionLocalization?.attributes?.promotionalText;
+            const summarySource = localizedSubtitle || promotionalText || localizedDescription || `App Store listing for ${appAttributes.name || 'app'}`;
+            const summary = summarySource.length > 180 ? `${summarySource.slice(0, 177)}...` : summarySource;
+
+            const displayName = localizedName || appAttributes.name || `Apple App ${appId}`;
+            // Use bundleId slug first (most stable), fall back to display name slug, then raw Apple app ID.
+            // Append the Apple app ID when the display-name slug is used to prevent collisions
+            // when two app names normalize to the same string (e.g. "Flakes" vs "Flakes+").
+            const nameSlug = toSlug(displayName);
+            const docId = nameSlug || appId;
+
+            console.log(`Mapped app ${appId} → docId="${docId}" name="${displayName}"`);
+            mappedApps.push({
+                id: docId,
+                provider: 'apple',
+                appleAppId: appId,
+                name: displayName,
+                type: 'iOS App',
+                status: mapAppleStatus(preferredVersion?.attributes?.appVersionState),
+                summary,
+                stack: 'Apple App Store',
+                portfolioIntro: localizedDescription || promotionalText || summary,
+                services: buildServiceTags(infoLocalization?.attributes?.keywords),
+                galleryLabels: [
+                    `Bundle ${appAttributes.bundleId || 'N/A'}`,
+                    preferredVersion?.attributes?.versionString ? `Version ${preferredVersion.attributes.versionString}` : 'Version N/A',
+                    preferredVersion?.attributes?.platform || 'IOS'
+                ],
+                screenImageUrl: screenshotUrls[0] || '',
+                screenshotUrls,
+                bundleId: appAttributes.bundleId || '',
+                sku: appAttributes.sku || '',
+                locale: versionLocalization?.attributes?.locale || infoLocalization?.attributes?.locale || primaryLocale,
+                appVersionState: preferredVersion?.attributes?.appVersionState || '',
+                versionString: preferredVersion?.attributes?.versionString || '',
+                whatsNew: versionLocalization?.attributes?.whatsNew || '',
+                privacyPolicyUrl: infoLocalization?.attributes?.privacyPolicyUrl || '',
+                supportUrl: infoLocalization?.attributes?.supportUrl || '',
+                // iTunes Search API enrichment
+                averageUserRating: itunes.averageUserRating ?? null,
+                userRatingCount: itunes.userRatingCount ?? null,
+                fileSizeBytes: itunes.fileSizeBytes || '',
+                minimumOsVersion: itunes.minimumOsVersion || '',
+                genres: itunes.genres || [],
+                appStoreUrl: itunes.appStoreUrl || '',
+                releaseDate: itunes.releaseDate || preferredVersion?.attributes?.earliestReleaseDate || preferredVersion?.attributes?.createdDate || '',
+                contentAdvisoryRating: itunes.contentAdvisoryRating || '',
+                price: itunes.price ?? null,
+                formattedPrice: itunes.formattedPrice || '',
+                currency: itunes.currency || '',
+                primaryGenreName: itunes.primaryGenreName || '',
+                advisories: itunes.advisories || [],
+                languageCodes: itunes.languageCodes || [],
+                // ASC extended data
+                contentRightsDeclaration,
+                customerReviews,
+                eulaText,
+                inAppPurchases,
+                subscriptionGroups,
+                availableTerritoryCount,
+                hasPriceSchedule: !!priceSchedule
+            });
+        } catch (appErr) {
+            console.error(`Failed to map Apple app ${appId} — skipping but keeping existing Firestore entry:`, appErr?.message);
+        }
+    }
+    console.log(`fetchAppleAppCatalog: mapped ${mappedApps.length} / ${apps.length} apps from Apple API.`);
+    // allAppleIds = every app ID Apple returned — used to distinguish "truly deleted from ASC" vs "failed to process"
+    const allAppleIds = new Set(apps.map((a) => a.attributes?.bundleId ? toSlug(a.attributes.bundleId) : a.id));
+    return { mappedApps, allAppleIds };
+};
+
+const writeAppleAppsToFirestore = async (apps, allAppleIds) => {
+    const firestore = admin.firestore();
+    const collectionRef = firestore.collection(APPLE_APP_COLLECTION);
+    const existingAppleDocs = await collectionRef.where('provider', '==', 'apple').get();
+    const syncedIds = new Set(apps.map((app) => app.id));
+    let deletedCount = 0;
+
+    let batch = firestore.batch();
+    let opCount = 0;
+
+    const flushBatch = async () => {
+        if (opCount === 0) {
+            return;
+        }
+
+        await batch.commit();
+        batch = firestore.batch();
+        opCount = 0;
+    };
+
+    for (const app of apps) {
+        const docRef = collectionRef.doc(app.id);
+        batch.set(docRef, {
+            ...app,
+            syncedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        opCount += 1;
+
+        if (opCount >= 450) {
+            await flushBatch();
+        }
+    }
+
+    for (const existingDoc of existingAppleDocs.docs) {
+        if (syncedIds.has(existingDoc.id)) {
+            continue;
+        }
+        // Only delete if this doc's ID was actually returned by Apple (meaning the app was
+        // truly removed from ASC). If it wasn't in allAppleIds it may have failed to process
+        // this cycle — keep it so the user still sees it.
+        const existingBundleId = existingDoc.data()?.bundleId;
+        const existingBundleSlug = existingBundleId ? toSlug(existingBundleId) : null;
+        const confirmedGone = allAppleIds
+            ? (existingBundleSlug ? allAppleIds.has(existingBundleSlug) : false)
+            : true;
+        if (!confirmedGone) {
+            console.warn(`Keeping existing doc "${existingDoc.id}" — Apple API returned it but processing failed this cycle.`);
+            continue;
+        }
+
+        batch.delete(existingDoc.ref);
+        opCount += 1;
+        deletedCount += 1;
+
+        if (opCount >= 450) {
+            await flushBatch();
+        }
+    }
+
+    await flushBatch();
+
+    return { deletedCount };
+};
+
+const syncAppleCatalog = async () => {
+    const { mappedApps, allAppleIds } = await fetchAppleAppCatalog();
+    const writeResult = await writeAppleAppsToFirestore(mappedApps, allAppleIds);
+
+    return {
+        count: mappedApps.length,
+        deletedCount: writeResult.deletedCount,
+        collection: APPLE_APP_COLLECTION,
+        appIds: mappedApps.map((app) => app.id)
+    };
+};
+
+const readAppleCatalogFromFirestore = async () => {
+    const firestore = admin.firestore();
+    const snapshot = await firestore
+        .collection(APPLE_APP_COLLECTION)
+        .where('provider', '==', 'apple')
+        .get();
+
+    const apps = snapshot.docs
+        .map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data()
+        }))
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+
+    return apps;
+};
+
+exports.getAppleAppsCatalog = functions.https.onCall(async () => {
+    try {
+        let apps = await readAppleCatalogFromFirestore();
+        const hasScreenshots = apps.some((app) => Array.isArray(app.screenshotUrls) && app.screenshotUrls.length > 0);
+
+        if (!apps.length) {
+            // Nothing cached at all — must block on sync before we can return anything.
+            console.log('Apple catalog empty. Triggering blocking sync.');
+            await syncAppleCatalog();
+            apps = await readAppleCatalogFromFirestore();
+        } else if (!hasScreenshots) {
+            // Have apps but no screenshots — block so we return useful data.
+            console.log('Apple catalog missing screenshots. Triggering blocking sync.');
+            await syncAppleCatalog();
+            apps = await readAppleCatalogFromFirestore();
+        } else {
+            // We have usable data — return it immediately and sync in the background
+            // so the next launch always gets fresh Apple API data.
+            console.log(`Serving ${apps.length} cached apps. Kicking off background sync.`);
+            syncAppleCatalog().catch((err) => console.error('Background Apple sync failed:', err.message));
+        }
+
+        return {
+            data: {
+                collection: APPLE_APP_COLLECTION,
+                count: apps.length,
+                apps
+            }
+        };
+    } catch (error) {
+        console.error('Failed to read Apple app catalog:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Unable to load Apple apps catalog.');
+    }
+});
+
+exports.getAppleAppById = functions.https.onCall(async (data) => {
+    try {
+        const appId = String(data?.appId || '').trim();
+        if (!appId) {
+            throw new functions.https.HttpsError('invalid-argument', 'appId is required.');
+        }
+
+        const firestore = admin.firestore();
+        const docSnap = await firestore.collection(APPLE_APP_COLLECTION).doc(appId).get();
+
+        if (!docSnap.exists) {
+            return { data: null };
+        }
+
+        const payload = {
+            id: docSnap.id,
+            ...docSnap.data()
+        };
+
+        return { data: payload };
+    } catch (error) {
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+
+        console.error('Failed to read Apple app by id:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Unable to load Apple app.');
+    }
+});
+
+exports.syncAppleAppsCatalog = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Authentication required to sync Apple apps.');
+    }
+
+    try {
+        const syncResult = await syncAppleCatalog();
+        return { data: syncResult };
+    } catch (error) {
+        console.error('Apple sync failed:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Apple sync failed.');
+    }
+});
+
+exports.syncAppleAppsCatalogDaily = functions.pubsub
+    .schedule('every 24 hours')
+    .timeZone('UTC')
+    .onRun(async () => {
+        try {
+            const syncResult = await syncAppleCatalog();
+            console.log(`Apple app sync completed: ${syncResult.count} apps.`);
+        } catch (error) {
+            console.error('Scheduled Apple sync failed:', error);
+        }
+
+        return null;
+    });
+
+const loadContactMailConfig = () => {
+    const user = process.env.CONTACT_SMTP_USER || process.env.CONTACT_GMAIL_USER || CONTACT_TO_EMAIL;
+    const pass = process.env.CONTACT_SMTP_PASS || process.env.CONTACT_GMAIL_APP_PASSWORD;
+    const host = process.env.CONTACT_SMTP_HOST;
+    const port = Number(process.env.CONTACT_SMTP_PORT || 587);
+    const secure = String(process.env.CONTACT_SMTP_SECURE || 'false').toLowerCase() === 'true';
+
+    if (!pass) {
+        return null;
+    }
+
+    if (host) {
+        return {
+            transport: {
+                host,
+                port,
+                secure,
+                auth: { user, pass }
+            },
+            from: process.env.CONTACT_FROM_EMAIL || user
+        };
+    }
+
+    return {
+        transport: {
+            service: 'gmail',
+            auth: { user, pass }
+        },
+        from: process.env.CONTACT_FROM_EMAIL || user
+    };
+};
+
+const normalizeContactValue = (value, max = 2000) => String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+
+const readClientIp = (context) => {
+    const forwarded = context?.rawRequest?.headers?.['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.trim()) {
+        return forwarded.split(',')[0].trim();
+    }
+
+    return String(context?.rawRequest?.ip || 'unknown');
+};
+
+exports.sendContactEmail = functions.https.onCall(async (data, context) => {
+    const website = normalizeContactValue(data?.website, 256);
+    const formStartedAt = Number(data?.formStartedAt || 0);
+    const now = Date.now();
+
+    // Honeypot field catches simple bots that fill every input.
+    if (website) {
+        return { ok: true };
+    }
+
+    if (!Number.isFinite(formStartedAt) || formStartedAt <= 0 || now - formStartedAt < CONTACT_MIN_FORM_FILL_MS) {
+        throw new functions.https.HttpsError('failed-precondition', 'Bot check failed. Please try again.');
+    }
+
+    const ip = readClientIp(context);
+    const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
+    const rateLimitRef = admin.firestore().collection('contactRateLimit').doc(ipHash);
+    const rateLimitSnap = await rateLimitRef.get();
+    const lastSubmittedAt = Number(rateLimitSnap.data()?.lastSubmittedAt || 0);
+
+    if (lastSubmittedAt && now - lastSubmittedAt < CONTACT_RATE_LIMIT_MS) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Please wait before sending another message.');
+    }
+
+    const name = normalizeContactValue(data?.name, 120);
+    const email = normalizeContactValue(data?.email, 180);
+    const phone = normalizeContactValue(data?.phone, 60);
+    const message = normalizeContactValue(data?.message, 4000);
+
+    if (!name || !email || !message) {
+        throw new functions.https.HttpsError('invalid-argument', 'Name, email, and message are required.');
+    }
+
+    const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!emailLooksValid) {
+        throw new functions.https.HttpsError('invalid-argument', 'A valid email is required.');
+    }
+
+    const subject = `KNDL Contact: ${name}`;
+    const textBody = [
+        `Name: ${name}`,
+        `Email: ${email}`,
+        `Phone: ${phone || 'Not provided'}`,
+        '',
+        'Message:',
+        message,
+        '',
+        `Submitted At: ${new Date(now).toISOString()}`,
+        `IP Hash: ${ipHash}`
+    ].join('\n');
+
+    const htmlBody = `
+      <h2>New Contact Form Submission</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+      <p><strong>Message:</strong></p>
+      <p>${message.replace(/\n/g, '<br>')}</p>
+      <hr>
+      <p><strong>Submitted At:</strong> ${new Date(now).toISOString()}</p>
+      <p><strong>IP Hash:</strong> ${ipHash}</p>
+    `;
+
+    await admin.firestore().collection('contactMessages').add({
+        name,
+        email,
+        phone,
+        message,
+        ipHash,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    await rateLimitRef.set({
+        lastSubmittedAt: now,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    const mailConfig = loadContactMailConfig();
+    if (!mailConfig) {
+        console.warn('Contact email skipped: CONTACT_SMTP_PASS or CONTACT_GMAIL_APP_PASSWORD is not configured.');
+        return { ok: true };
+    }
+
+    try {
+        const transporter = nodemailer.createTransport(mailConfig.transport);
+        await transporter.sendMail({
+            from: mailConfig.from,
+            to: CONTACT_TO_EMAIL,
+            replyTo: email,
+            subject,
+            text: textBody,
+            html: htmlBody
+        });
+    } catch (error) {
+        console.error('Failed to send contact email:', error);
+        throw new functions.https.HttpsError('internal', 'Unable to send email at this time.');
+    }
+
+    return { ok: true };
+});
 
 // Helper to load Stripe secrets with 2nd-gen safe fallbacks
 const loadStripeSecrets = () => {

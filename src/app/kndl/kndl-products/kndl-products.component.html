@@ -1,0 +1,199 @@
+<div class="kp-root">
+    <section class="kp-hero" aria-label="Product showcase" *ngIf="heroApps.length">
+        <!-- Two-column grid: text left · iPhone right -->
+        <div class="kp-hero__grid d-flex align-items-center gap-4 gap-xl-5 px-3 px-md-4 px-xl-5">
+            <div class="col-12 col-lg-6">
+                <!-- LEFT: text + navigation -->
+                <div class="kp-hero__left d-flex flex-column gap-3" [class.is-switching]="isHeroSwitching">
+                    <p class="kp-hero__eyebrow">
+                        KNDL PRODUCT SUITE
+                        <span class="kp-hero__eyebrow-count">/ {{ sortedApps.length.toString().padStart(2, '0') }}
+                            APPS</span>
+                    </p>
+                    <h1 class="kp-hero__title" *ngIf="activeApp">{{ activeApp.name }}</h1>
+                    <p class="kp-hero__desc" *ngIf="activeApp">{{ activeApp.summary }}</p>
+                    <div class="d-flex align-items-center gap-2 flex-wrap" *ngIf="activeApp">
+                        <span class="kp-hero__badge" [ngClass]="'kp-hero__badge--' + statusClass(activeApp.status)">
+                            {{ activeApp.status || 'Planned' }}
+                        </span>
+                        <span class="kp-hero__badge kp-hero__badge--version" *ngIf="activeApp.versionString">
+                            v{{ activeApp.versionString }}
+                        </span>
+                        <span class="kp-hero__badge kp-hero__badge--cat" *ngIf="activeApp.type">
+                            {{ activeApp.type }}
+                        </span>
+                    </div>
+                </div>
+                <div class="kp-hero__actions d-flex justify-content-between pt-5"
+                    [class.is-switching]="isHeroSwitching">
+                    <div class="d-flex align-items-center gap-3 flex-wrap" *ngIf="activeApp">
+                        <a [routerLink]="['/products', activeApp.id]"
+                            class="kp-hero__btn kp-hero__btn--primary px-5 py-4">
+                            Explore App &#8594;
+                        </a>
+                        <a *ngIf="activeApp.appStoreUrl" [href]="activeApp.appStoreUrl" target="_blank"
+                            rel="noopener noreferrer" class="kp-hero__btn kp-hero__btn--secondary px-5 py-4">
+                            <i class="fab fa-apple" aria-hidden="true"></i> App Store
+                        </a>
+                    </div>
+
+                    <!-- Prev / next navigator -->
+                    <div class="d-flex align-items-center gap-3" *ngIf="heroApps.length > 1">
+                        <button type="button" class="kp-hero__arrow p-4" (click)="prevApp()"
+                            aria-label="Previous app">&#8592;</button>
+                        <button type="button" class="kp-hero__arrow p-4" (click)="nextApp()"
+                            aria-label="Next app">&#8594;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <!-- RIGHT: iPhone mockup (hidden below lg breakpoint) -->
+                <div class="kp-hero__right d-none d-lg-flex flex-column align-items-center justify-content-center"
+                    [class.is-switching]="isHeroSwitching" *ngIf="activeApp">
+                    <div class="kp-iphone-wrap d-flex flex-column align-items-center gap-4">
+
+                        <!-- iPhone frame -->
+                        <div class="kp-iphone">
+                            <div class="kp-iphone__island" aria-hidden="true"></div>
+
+                            <div class="kp-iphone__screen">
+                                <!-- Prefer a portrait screenshot; fall back to app icon -->
+                                <ng-container *ngIf="activeApp.screenshotUrls?.length; else iconInPhone">
+                                    <img class="kp-iphone__screenshot" [src]="activeApp.screenshotUrls![0]"
+                                        [alt]="activeApp.name + ' screenshot'" />
+                                </ng-container>
+                                <ng-template #iconInPhone>
+                                    <ng-container
+                                        *ngIf="activeApp.artworkUrl512 || activeApp.artworkUrl100 || activeApp.screenImageUrl; else phoneFallback">
+                                        <img class="kp-iphone__icon"
+                                            [src]="activeApp.artworkUrl512 || activeApp.artworkUrl100 || activeApp.screenImageUrl"
+                                            [alt]="activeApp.name + ' icon'" />
+                                    </ng-container>
+                                    <ng-template #phoneFallback>
+                                        <div class="kp-iphone__fallback">{{ getAppInitials(activeApp.name) }}</div>
+                                    </ng-template>
+                                </ng-template>
+                            </div>
+
+                            <!-- Hardware buttons -->
+                            <div class="kp-iphone__btn-side" aria-hidden="true"></div>
+                            <div class="kp-iphone__btn-vol" aria-hidden="true"></div>
+                        </div>
+
+                        <!-- Gold glow beneath phone -->
+                        <div class="kp-iphone__glow" aria-hidden="true"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll cue -->
+        <div class="kp-hero__scroll-cue" aria-hidden="true">
+            <span>SCROLL TO EXPLORE</span>
+            <div class="kp-hero__scroll-line"></div>
+        </div>
+    </section>
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         CATALOG — full app listing revealed on scroll
+    ────────────────────────────────────────────────────────────────────────── -->
+    <section class="kp-catalog" aria-label="All apps" *ngIf="apps.length">
+
+        <!-- Header + filter pills -->
+        <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-4">
+            <div>
+                <p class="kp-catalog__eyebrow">KNDL INC / iOS APPS</p>
+                <h2 class="kp-catalog__title">All Apps</h2>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap" role="group" aria-label="Filter by status">
+                <button type="button" class="kp-catalog__pill" [class.is-active]="catalogFilter === 'all'"
+                    (click)="catalogFilter = 'all'">ALL</button>
+                <button type="button" class="kp-catalog__pill" [class.is-active]="catalogFilter === 'Live'"
+                    (click)="catalogFilter = 'Live'">LIVE</button>
+                <button type="button" class="kp-catalog__pill" [class.is-active]="catalogFilter === 'In Progress'"
+                    (click)="catalogFilter = 'In Progress'">IN PROGRESS</button>
+                <button type="button" class="kp-catalog__pill" [class.is-active]="catalogFilter === 'Planned'"
+                    (click)="catalogFilter = 'Planned'">PLANNED</button>
+            </div>
+        </div>
+
+        <!-- Card grid: 1-col mobile · 2-col tablet · 3-col wide desktop -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-xxl-3 g-4">
+            <div class="col" *ngFor="let app of filteredApps; let i = index">
+                <a class="kp-catalog__card d-flex flex-column h-100 text-decoration-none"
+                    [routerLink]="['/products', app.id]" [attr.aria-label]="'View details for ' + app.name">
+
+                    <!-- Icon + status chips -->
+                    <div class="d-flex align-items-start gap-3 position-relative mb-2">
+                        <div class="kp-catalog__card-icon flex-shrink-0">
+                            <ng-container
+                                *ngIf="app.artworkUrl512 || app.artworkUrl100 || app.screenImageUrl; else cardFallback">
+                                <img [src]="app.artworkUrl512 || app.artworkUrl100 || app.screenImageUrl"
+                                    [alt]="app.name" />
+                            </ng-container>
+                            <ng-template #cardFallback>
+                                <span>{{ getAppInitials(app.name) }}</span>
+                            </ng-template>
+                        </div>
+                        <div class="d-flex flex-column gap-1 flex-grow-1 pt-1">
+                            <span class="kp-catalog__chip" [ngClass]="'kp-catalog__chip--' + statusClass(app.status)">
+                                {{ app.status || 'Planned' }}
+                            </span>
+                            <span class="kp-catalog__chip kp-catalog__chip--cat" *ngIf="app.type">{{ app.type }}</span>
+                        </div>
+                        <span class="kp-catalog__card-num" aria-hidden="true">{{ (i + 1).toString().padStart(2, '0')
+                            }}</span>
+                    </div>
+
+                    <!-- Name + rating -->
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                        <h3 class="kp-catalog__card-name">{{ app.name }}</h3>
+                        <div class="kp-catalog__card-rating flex-shrink-0" *ngIf="app.averageUserRating">
+                            <i class="fas fa-star" aria-hidden="true"></i>
+                            <span>{{ app.averageUserRating.toFixed(1) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <p class="kp-catalog__card-summary mb-2">{{ app.summary }}</p>
+
+                    <!-- Description excerpt -->
+                    <p class="kp-catalog__card-desc flex-grow-1 mb-0" *ngIf="app.description">
+                        {{ app.description! | slice:0:160 }}{{ app.description!.length > 160 ? '…' : '' }}
+                    </p>
+
+                    <!-- Genre / service tags -->
+                    <div class="d-flex flex-wrap gap-1 mt-auto mb-3 pt-2">
+                        <span class="kp-catalog__tag"
+                            *ngFor="let tag of (app.genres?.length ? app.genres! : app.services ?? []).slice(0, 4)">{{
+                            tag }}</span>
+                    </div>
+
+                    <!-- Footer: version · CTA -->
+                    <div class="kp-catalog__card-footer d-flex align-items-center gap-2">
+                        <span class="kp-catalog__card-ver" *ngIf="app.versionString">v{{ app.versionString }}</span>
+                        <span class="kp-catalog__card-ver" *ngIf="app.minimumOsVersion">iOS {{ app.minimumOsVersion
+                            }}+</span>
+                        <span class="kp-catalog__card-cta ms-auto d-flex align-items-center gap-1">
+                            EXPLORE <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Empty state -->
+            <div class="col-12" *ngIf="!filteredApps.length">
+                <p class="kp-catalog__empty">No apps match this filter yet.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         LOADING STATE
+    ────────────────────────────────────────────────────────────────────────── -->
+    <div class="kp-loading d-flex flex-column align-items-center justify-content-center gap-3" *ngIf="!apps.length"
+        aria-label="Loading apps">
+        <div class="kp-loading__spinner" aria-hidden="true"></div>
+        <p>Loading app catalog…</p>
+    </div>
+</div>

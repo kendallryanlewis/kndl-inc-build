@@ -1,65 +1,105 @@
-<div class="" *ngIf="!isLoading">
-    <div class="p-2 p-md-5 kndl">
-        <div class="landing-wrapper d-flex flex-column h-100 rounded p-8">
-            <app-kndl-about [content]="aboutData"></app-kndl-about>
-            <div class="flex-grow-1 d-none d-lg-flex flex-column">
-                <app-kndl-service class="h-100 w-100"></app-kndl-service>
-                <p appAnimateOnScroll animationClass="fade" style="transition-delay: 0.4s; transition-duration: 4s;"
-                    class="lead my-5 pt-lg-5 col-lg-8 m-auto text-center">
-                    {{ headerSubText }}
-                </p>
-                <button class="btn btn-dark p-2 px-4 rounded d-block d-lg-none" [routerLink]="'/login'">
-                    Login
-                </button>
+<div class="kndl-page" [class.kndl-page--menu-open]="isMegaMenuOpen" [ngStyle]="activeTopThemeStyle"
+    [attr.data-top-tab]="activeTopTab">
+
+    <!-- Contact map background — always in DOM for background preload -->
+    <div class="kndl-contact-bg" [class.kndl-contact-bg--active]="activeTopTab === 'contact'">
+        <iframe title="Central Dallas map"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=-97.0800%2C32.7600%2C-96.8400%2C32.8800&amp;layer=mapnik"
+            (load)="onMapReady()" (error)="onMapReady()" loading="eager"></iframe>
+        <div class="kndl-contact-bg__pin" aria-label="KNDL Inc location, Irving TX" aria-hidden="true"></div>
+    </div>
+
+    <!-- Left rail -->
+    <app-kndl-side-nav [isMegaMenuOpen]="isMegaMenuOpen" (megaMenuToggle)="toggleMegaMenu()"
+        (legalPageOpen)="openSlideout($any($event))">
+    </app-kndl-side-nav>
+
+    <!-- Feature bar (home only) -->
+    <app-kndl-feature-bar [isVisible]="activeTopTab === 'home'" (panelOpen)="onFeatureBarOpen($any($event))">
+    </app-kndl-feature-bar>
+
+    <!-- Package builder / legal slideout -->
+    <app-kndl-slideout [isOpen]="isSlideoutOpen" [page]="slideoutPage" (closePanel)="closeSlideout()">
+    </app-kndl-slideout>
+
+    <!-- Top nav (persistent chrome, outside tab-switch container) -->
+    <app-kndl-top-nav [activeTab]="activeTopTab" (tabChange)="selectTopTab($any($event))">
+    </app-kndl-top-nav>
+
+    <!-- Right panel (floats above the video) -->
+    <div class="kndl-main" [class.kndl-main--tab-switch]="isTopTabTransitioning"
+        [class.kndl-main--scrollable]="activeTopTab !== 'home'"
+        [class.kndl-main--without-bottom]="activeTopTab !== 'home'">
+
+        <!-- Stats bar (home only) -->
+        <app-kndl-stats-bar *ngIf="activeTopTab === 'home'"></app-kndl-stats-bar>
+
+        <!-- Hero -->
+        <main class="kndl-hero" [class.kndl-hero--scrollable]="activeTopTab !== 'home'"
+            [class.kndl-hero--about]="activeTopTab === 'about'" [class.kndl-hero--contact]="activeTopTab === 'contact'">
+
+            <app-kndl-home *ngIf="activeTopTab === 'home'" (panelOpen)="onFeatureBarOpen($any($event))"></app-kndl-home>
+            <app-kndl-about *ngIf="activeTopTab === 'about'" (panelOpen)="selectTopTab($any($event))"
+                (slideoutOpen)="openSlideout('builder')"></app-kndl-about>
+            <app-kndl-products *ngIf="activeTopTab === 'products'" [apps]="productApps"></app-kndl-products>
+            <app-kndl-contact *ngIf="activeTopTab === 'contact'"
+                (tabChange)="selectTopTab($any($event))"></app-kndl-contact>
+
+        </main>
+
+    </div>
+
+    <!-- Two-toned full-screen mega menu -->
+    <div class="kndl-mega" *ngIf="isMegaMenuOpen" role="dialog" aria-modal="true" aria-label="Site Navigation">
+        <section class="kndl-mega__frame">
+            <header class="kndl-mega__top">
+                <p class="kndl-mega__brand">KNDL INC</p>
+                <p class="kndl-mega__eyebrow">Website Systems · Client Growth</p>
+                <button class="kndl-mega__close" (click)="toggleMegaMenu()" aria-label="Close menu">&#9776;</button>
+            </header>
+
+            <div class="kndl-mega__body">
+                <section class="kndl-mega__left">
+                    <p class="kndl-mega__ghost" aria-hidden="true">01</p>
+                    <h2>Most likely, you are here for one of these challenges:</h2>
+                    <ul class="kndl-mega__problem-list" role="list">
+                        <li>Your current website does not convert enough leads.</li>
+                        <li>Your brand feels outdated or inconsistent online.</li>
+                        <li>Your team needs a scalable client-ready web system.</li>
+                    </ul>
+                    <p class="kndl-mega__count">1523</p>
+                </section>
+
+                <section class="kndl-mega__right">
+                    <nav class="kndl-mega__nav" aria-label="Main Navigation">
+                        <button class="kndl-mega__link" type="button" (click)="toggleMegaMenu()">Home</button>
+                        <button class="kndl-mega__link" type="button"
+                            (click)="selectTopTab('products'); toggleMegaMenu()">Products</button>
+                        <button class="kndl-mega__link" type="button"
+                            (click)="selectTopTab('about'); toggleMegaMenu()">About Us</button>
+                        <a class="kndl-mega__link" [routerLink]="'/login'" (click)="toggleMegaMenu()">Client
+                            Login</a>
+                    </nav>
+
+                    <div class="kndl-mega__card">
+                        <h3>What You Get With KNDL</h3>
+                        <p>High-converting website structure, premium visual direction, and clear service messaging
+                            built to turn attention into revenue.</p>
+                    </div>
+
+                    <a class="kndl-mega__cta" [routerLink]="'/login'" (click)="toggleMegaMenu()">
+                        Start Your Project &rarr;
+                    </a>
+                </section>
             </div>
-        </div>
+        </section>
     </div>
-    <div class="p-2 p-md-5 px-0 py-md-0">
-        <!-- Main body -->
-        <app-kndl-about-us [inputContent]="aboutUsData" *ngIf="aboutUsData"></app-kndl-about-us>
-        <app-kndl-about-us *ngIf="!aboutUsData"></app-kndl-about-us>
 
-        <app-kndl-detailed-services [content]="detailedServicesData"
-            *ngIf="detailedServicesData"></app-kndl-detailed-services>
-        <app-kndl-detailed-services *ngIf="!detailedServicesData"></app-kndl-detailed-services>
-
-        <app-kndl-add-ons [content]="addOnsData" *ngIf="addOnsData"></app-kndl-add-ons>
-        <app-kndl-add-ons *ngIf="!addOnsData"></app-kndl-add-ons>
-
-        <app-kndl-call-to-action [content]="callToActionData" *ngIf="callToActionData"></app-kndl-call-to-action>
-        <app-kndl-call-to-action *ngIf="!callToActionData"></app-kndl-call-to-action>
-    </div>
-    <app-kndl-footer [content]="footerData"></app-kndl-footer>
 </div>
 
-<!-- Loading State -->
-<div class="d-flex justify-content-center align-items-center min-vh-100" *ngIf="isLoading">
-    <div class="text-center">
-        <div class="spinner-border text-primary mb-3" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="text-muted">Loading site content...</p>
+<div class="kndl-loader" *ngIf="isLoading">
+    <p class="kndl-loader__mark">KNDL.</p>
+    <div class="kndl-loader__track">
+        <div class="kndl-loader__fill"></div>
     </div>
 </div>
-<script>
-    // Add this script to handle scrollspy functionality
-    window.addEventListener('scroll', () => {
-        const sections = document.querySelectorAll('app-kndl-about-us, app-kndl-detailed-services, app-kndl-pricing, #addons, #subscription-addons');
-        let currentSection = '';
-
-        sections.forEach(section => {
-            const rect = section.getBoundingClientRect();
-            if (rect.top <= 0 && rect.bottom > 0) {
-                currentSection = section.tagName.toLowerCase();
-            }
-        });
-
-        const buttons = document.querySelectorAll('.switcher-btn');
-        buttons.forEach(button => {
-            button.classList.remove('active');
-            if (button.textContent.trim().toLowerCase() === currentSection) {
-                button.classList.add('active');
-            }
-        });
-    });
-</script>

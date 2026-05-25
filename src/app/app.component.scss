@@ -1,3 +1,122 @@
+// ─── App root shell ───────────────────────────────────────────────────────────
+:host {
+    display: block;
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+
+    // Gradient accent tokens used by .kndl-gradient
+    --home-accent: rgb(30 48 55 / 68%);
+    --about-accent: rgb(30 48 55 / 68%);
+    --products-accent: rgb(30 48 55 / 68%);
+    --contact-accent: rgba(32, 32, 32, 0.68);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+// ─── Route animation container ────────────────────────────────────────────────
+// Anchors the absolute-positioned :leave/:enter elements during transitions.
+.route-wrap {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+
+    // Scrollable variant — used by detail/legal routes so content can scroll
+    // while the video/gradient (absolute, relative to :host) stays fixed in view.
+    &--scrollable {
+        overflow-y: auto;
+    }
+}
+
+// ─── Persistent video layer ───────────────────────────────────────────────────
+.kndl-reel {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+
+    video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: grayscale(55%) contrast(0.88) brightness(0.92);
+        opacity: 0;
+        transition: opacity 900ms ease;
+    }
+
+    &.is-loaded video {
+        opacity: 1;
+    }
+
+    &__overlay {
+        position: absolute;
+        inset: 0;
+        background: transparent;
+    }
+
+    &.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+// ─── Persistent gradient overlay ─────────────────────────────────────────────
+.kndl-gradient {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    transition: background 380ms var(--ease);
+
+    &[data-tab='home'] {
+        background:
+            linear-gradient(92deg, transparent, rgba(3, 3, 3, 0), rgba(0, 0, 0, 0.39), rgba(1, 3, 17, 0.51)),
+            linear-gradient(182deg, transparent, transparent, rgb(9 9 10 / 78%)),
+            linear-gradient(90deg, rgb(13 13 13), transparent, transparent, transparent, transparent),
+            linear-gradient(272deg, rgba(0, 0, 0, 0.7882352941), transparent, transparent, transparent, transparent),
+            var(--home-accent);
+    }
+
+    &[data-tab='about'] {
+        background:
+            linear-gradient(92deg, transparent, rgba(3, 3, 3, 0), rgba(0, 0, 0, 0.39), rgba(1, 3, 17, 0.51)),
+            linear-gradient(182deg, transparent, transparent, rgb(9 9 10 / 78%)),
+            linear-gradient(90deg, rgb(13 13 13), transparent, transparent, transparent, transparent),
+            linear-gradient(272deg, rgba(0, 0, 0, 0.7882352941), transparent, transparent, transparent, transparent),
+            var(--about-accent);
+    }
+
+    &[data-tab='products'] {
+        background:
+            linear-gradient(92deg, transparent, rgba(3, 3, 3, 0), rgba(0, 0, 0, 0.39), rgba(1, 3, 17, 0.51)),
+            linear-gradient(182deg, transparent, transparent, rgb(9 9 10 / 78%)),
+            linear-gradient(90deg, rgb(13 13 13), transparent, transparent, transparent, transparent),
+            linear-gradient(272deg, rgba(0, 0, 0, 0.7882352941), transparent, transparent, transparent, transparent),
+            var(--products-accent);
+    }
+
+    &[data-tab='detail'] {
+        background:
+            linear-gradient(92deg, transparent, rgba(3, 3, 3, 0), rgba(0, 0, 0, 0.39), rgba(1, 3, 17, 0.51)),
+            linear-gradient(182deg, transparent, transparent, rgb(9 9 10 / 78%)),
+            linear-gradient(90deg, rgb(13 13 13), transparent, transparent, transparent, transparent),
+            linear-gradient(272deg, rgba(0, 0, 0, 0.7882352941), transparent, transparent, transparent, transparent),
+            rgb(47 69 78 / 90%);
+    }
+
+    &[data-tab='contact'] {
+        background:
+            linear-gradient(92deg, transparent, rgba(3, 3, 3, 0), rgba(0, 0, 0, 0.39), rgba(1, 3, 17, 0.51)),
+            linear-gradient(182deg, transparent, transparent, rgb(9 9 10 / 78%)),
+            linear-gradient(90deg, rgb(13 13 13), transparent, transparent, transparent, transparent),
+            linear-gradient(272deg, rgba(0, 0, 0, 0.7882352941), transparent, transparent, transparent, transparent),
+            var(--contact-accent);
+    }
+}
+
+// ─── Legacy switcher (retained) ───────────────────────────────────────────────
 .main-switcher {
     transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, opacity;

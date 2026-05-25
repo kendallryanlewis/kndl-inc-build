@@ -1,0 +1,166 @@
+:host {
+    display: contents;
+}
+
+// ─── Entrance keyframes ───────────────────────────────────────────────────────
+@keyframes hero-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes hero-title-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scaleY(0.92);
+        letter-spacing: 0.08em;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+        letter-spacing: -0.045em;
+    }
+}
+
+@keyframes hero-eyebrow-in {
+    from {
+        opacity: 0;
+        letter-spacing: 0.55em;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        letter-spacing: 0.28em;
+        transform: translateY(0);
+    }
+}
+
+// ─── Eyebrow ──────────────────────────────────────────────────────────────────
+.kndl-hero__eyebrow {
+    margin: 0;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--c-gold);
+    animation: hero-eyebrow-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.kndl-hero__content {
+    max-width: none;
+    width: 100%;
+    display: grid;
+    gap: 1.15rem;
+    position: relative;
+    z-index: 3;
+}
+
+.kndl-title__main {
+    margin: 0;
+    font-family: 'Sora', sans-serif;
+    margin-left: -0.5rem;
+    font-weight: 800;
+    font-size: clamp(4.2rem, 8vw, 7.5rem);
+    line-height: 0.84;
+    letter-spacing: -0.045em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: transparent;
+    background-image: linear-gradient(112deg, #c8934c, #ffffff 56%, #faf5ee 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 16px 34px rgba(12 16 22 / 0.2);
+    animation: hero-title-reveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+}
+
+.kndl-hero__description {
+    margin: 0;
+    max-width: 52ch;
+    font-size: clamp(0.98rem, 1.1vw, 1.08rem);
+    line-height: 1.7;
+    color: rgba(235 241 250 / 0.9);
+    animation: hero-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.44s both;
+}
+
+.kndl-hero__actions {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+    animation: hero-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.62s both;
+}
+
+.kndl-hero__accent-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.82rem 1.4rem;
+    background: var(--c-gold);
+    color: #0a0c12;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    min-width: 196px;
+    transition: background 200ms var(--ease), color 200ms var(--ease);
+
+    &:hover {
+        background: #dfc08a;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .kndl-title__main {
+        margin-left: 0;
+        white-space: normal;
+        font-size: clamp(2.8rem, 12vw, 4.8rem);
+    }
+
+    .kndl-hero__description {
+        max-width: 100%;
+        font-size: 0.95rem;
+    }
+
+    .kndl-hero__actions {
+        width: 100%;
+    }
+
+    .kndl-hero__accent-btn {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .kndl-hero__eyebrow {
+        font-size: 0.54rem;
+        letter-spacing: 0.2em;
+    }
+
+    .kndl-title__main {
+        font-size: clamp(2.25rem, 12vw, 3.2rem);
+    }
+}
+
+// ─── Accessibility: respect reduced-motion preference ─────────────────────────
+@media (prefers-reduced-motion: reduce) {
+
+    .kndl-hero__eyebrow,
+    .kndl-title__main,
+    .kndl-hero__description,
+    .kndl-hero__actions {
+        animation: none;
+    }
+}

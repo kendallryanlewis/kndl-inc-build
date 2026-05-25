@@ -1,0 +1,92 @@
+<div class="kndl-contact" aria-label="Contact view">
+
+    <!-- Floating form card -->
+    <div class="kndl-contact__card">
+        <div class="kndl-contact__card-header">
+            <span class="kndl-contact__card-eyebrow">Get in touch</span>
+            <h3 class="kndl-contact__card-title">Send us a message</h3>
+        </div>
+        <form class="kndl-contact__form" (ngSubmit)="submitContactForm()">
+
+            <div class="kndl-contact__bot-field" aria-hidden="true">
+                <label for="cf-website">Website</label>
+                <input id="cf-website" type="text" name="website" tabindex="-1" autocomplete="off"
+                    [(ngModel)]="botWebsite" />
+            </div>
+
+            <fieldset class="kndl-contact__fieldset">
+                <legend class="kndl-contact__legend">
+                    <span class="kndl-contact__number">1</span> Your Info
+                </legend>
+                <label class="kndl-contact__label" for="cf-name">Name</label>
+                <input id="cf-name" type="text" name="name" placeholder="Your full name" [(ngModel)]="contactForm.name"
+                    required />
+                <label class="kndl-contact__label" for="cf-email">Email</label>
+                <input id="cf-email" type="email" name="email" placeholder="you@example.com"
+                    [(ngModel)]="contactForm.email" required />
+                <label class="kndl-contact__label" for="cf-phone">Phone
+                    <span class="kndl-contact__optional">(optional)</span>
+                </label>
+                <input id="cf-phone" type="tel" name="phone" placeholder="+1 (000) 000-0000"
+                    [(ngModel)]="contactForm.phone" />
+            </fieldset>
+
+            <fieldset class="kndl-contact__fieldset">
+                <legend class="kndl-contact__legend">
+                    <span class="kndl-contact__number">2</span> Your Message
+                </legend>
+                <label class="kndl-contact__label" for="cf-message">Message</label>
+                <textarea id="cf-message" name="message" placeholder="Tell us about your project…" rows="4"
+                    [(ngModel)]="contactForm.message" required></textarea>
+            </fieldset>
+
+            <div class="kndl-contact__form-actions">
+                <label class="kndl-contact__upload" aria-label="Attach file">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    Attach file
+                </label>
+            </div>
+            <button class="kndl-contact__submit-btn" type="submit" [disabled]="isSubmittingContactForm">
+                {{ isSubmittingContactForm ? 'Sending...' : 'Send Message →' }}
+            </button>
+            <p class="kndl-contact__sent" *ngIf="contactFormSubmitted">&#10003; Message sent — we’ll follow up shortly.
+            </p>
+            <p class="kndl-contact__error" *ngIf="contactFormError">{{ contactFormError }}</p>
+
+        </form>
+    </div>
+
+    <!-- Location overlay — left side of map -->
+    <div class="kndl-contact__location">
+        <div class="kndl-contact__location-dot"></div>
+        <div class="kndl-contact__location-info">
+            <span class="kndl-contact__location-city">Irving, TX 75201</span>
+            <span class="kndl-contact__location-region">Dallas–Fort Worth Metroplex</span>
+        </div>
+    </div>
+
+    <!-- "Contact us" heading — just above the bar -->
+    <h2 class="kndl-contact__bar-title">Contact us</h2>
+
+    <!-- Bottom info bar -->
+    <div class="kndl-contact__bar p-5">
+        <div class="kndl-contact__bar-cols my-auto">
+            <div class="kndl-contact__bar-col">
+                <span class="kndl-contact__bar-label">Our Address</span>
+                <span class="kndl-contact__bar-val">Dallas</span>
+                <span class="kndl-contact__bar-val">DFW Metroplex</span>
+                <span class="kndl-contact__bar-val">Dallas, TX 75201</span>
+            </div>
+            <div class="kndl-contact__bar-col">
+                <span class="kndl-contact__bar-label">Our Contacts</span>
+                <span class="kndl-contact__bar-val">kndl.inc&#64;gmail.com</span>
+            </div>
+        </div>
+    </div>
+
+</div>

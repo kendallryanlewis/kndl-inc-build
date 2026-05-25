@@ -1,0 +1,171 @@
+<div class="wp">
+
+  <!-- ─── HERO ─────────────────────────────────────────────────────────────── -->
+  <section class="wp-hero">
+
+    <nav class="wp-nav" aria-label="Wedding page navigation">
+      <a class="wp-nav__link" href="#wp-savedate">Save the Date</a>
+      <span class="wp-nav__dot" aria-hidden="true">&bull;</span>
+      <a class="wp-nav__link" href="#wp-rsvp">RSVP</a>
+      <span class="wp-nav__dot" aria-hidden="true">&bull;</span>
+      <a class="wp-nav__link" href="#wp-events">Information</a>
+    </nav>
+
+    <div class="wp-hero__inner">
+      <p class="wp-hero__family">Family of Accashia &amp; Family of Kendall</p>
+      <span class="wp-hero__vline" aria-hidden="true"></span>
+
+      <h1 class="wp-hero__names">Accashia &amp; Kendall</h1>
+
+      <p class="wp-hero__date">Saturday, October 10, 2026</p>
+      <p class="wp-hero__location">Dallas, Texas</p>
+
+      <span class="wp-hero__hline" aria-hidden="true"></span>
+
+      <div class="wp-hero__countdown" aria-label="Countdown to the wedding">
+        <div class="wp-hero__unit">
+          <span class="wp-hero__num">{{ countdown.days }}</span>
+          <span class="wp-hero__unit-label">Days</span>
+        </div>
+        <div class="wp-hero__unit">
+          <span class="wp-hero__num">{{ pad(countdown.hours) }}</span>
+          <span class="wp-hero__unit-label">Hours</span>
+        </div>
+        <div class="wp-hero__unit">
+          <span class="wp-hero__num">{{ pad(countdown.minutes) }}</span>
+          <span class="wp-hero__unit-label">Mins</span>
+        </div>
+        <div class="wp-hero__unit">
+          <span class="wp-hero__num">{{ pad(countdown.seconds) }}</span>
+          <span class="wp-hero__unit-label">Secs</span>
+        </div>
+      </div>
+
+      <a class="wp-hero__cta" href="#wp-rsvp">Respond Kindly</a>
+    </div>
+
+  </section>
+
+  <!-- ─── INVITATION ──────────────────────────────────────────────────────── -->
+  <section id="wp-savedate" class="wp-invite">
+    <h2 class="wp-script">Happily Ever After</h2>
+    <div class="wp-invite__body">
+      <p class="wp-invite__request">
+        We, <strong>Accashia &amp; Kendall</strong>, request the pleasure of
+        your company to celebrate our marriage on
+      </p>
+      <p class="wp-invite__big-date">10 October 2026</p>
+      <p class="wp-invite__venue-name">The Grand Magnolia Estate</p>
+      <p class="wp-invite__venue-addr">4520 Magnolia Dr &bull; Dallas, Texas</p>
+      <a class="wp-invite__rsvp-btn" href="#wp-rsvp">RSVP</a>
+    </div>
+  </section>
+
+  <!-- ─── PHOTO BAND 1 ──────────────────────────────────────────────────────── -->
+  <div class="wp-band" role="presentation" aria-hidden="true"></div>
+
+  <!-- ─── OUR STORY ────────────────────────────────────────────────────────── -->
+  <section class="wp-story">
+
+    <div class="wp-story__block">
+      <h2 class="wp-script">Our Story</h2>
+      <p class="wp-story__body">
+        Accashia and Kendall's love story began when two worlds unexpectedly collided.
+        From that very first meeting, it was clear this was something rare &mdash; a
+        connection that deepened with every conversation, every shared laugh, every
+        quiet moment. Their bond grew from a simple spark into an unshakeable flame,
+        and they never looked back.
+      </p>
+    </div>
+
+    <div class="wp-story__block">
+      <h2 class="wp-script">How He Proposed</h2>
+      <p class="wp-story__body">
+        On a warm Texas evening, Kendall planned the perfect moment &mdash; one Accashia
+        never saw coming. In the most heartfelt, intimate setting, he got down on one
+        knee and asked the question that changed everything. With tears of joy and a
+        resounding yes, they celebrated together and began counting down to forever.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- ─── PHOTO BAND 2 ──────────────────────────────────────────────────────── -->
+  <div class="wp-band wp-band--alt" role="presentation" aria-hidden="true"></div>
+
+  <!-- ─── EVENTS ───────────────────────────────────────────────────────────── -->
+  <section id="wp-events" class="wp-events">
+    <h2 class="wp-script">Events</h2>
+
+    <div class="wp-events__row">
+
+      <div class="wp-event-card">
+        <p class="wp-event-card__type">Ceremony</p>
+        <p class="wp-event-card__time">October 10, 2026 &bull; 5:00 PM</p>
+        <div class="wp-event-card__rule" aria-hidden="true"></div>
+        <p class="wp-event-card__venue">Cathedral of the Sacred Heart</p>
+        <p class="wp-event-card__addr">1100 Ross Ave &bull; Dallas, TX 75201</p>
+        <p class="wp-event-card__note">Doors open at 4:30 PM &bull; Black tie optional</p>
+      </div>
+
+      <div class="wp-event-card">
+        <p class="wp-event-card__type">Reception</p>
+        <p class="wp-event-card__time">October 10, 2026 &bull; 7:00 PM</p>
+        <div class="wp-event-card__rule" aria-hidden="true"></div>
+        <p class="wp-event-card__venue">The Grand Magnolia Estate</p>
+        <p class="wp-event-card__addr">4520 Magnolia Dr &bull; Dallas, TX 75204</p>
+        <p class="wp-event-card__note">Dinner &bull; Dancing &bull; Midnight farewell</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── RSVP ─────────────────────────────────────────────────────────────── -->
+  <section id="wp-rsvp" class="wp-rsvp">
+    <h2 class="wp-script wp-script--light">Kindly Reply</h2>
+    <p class="wp-rsvp__deadline">Please respond by September 10, 2026</p>
+
+    <div class="wp-rsvp__form" *ngIf="!rsvpSubmitted">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <input class="wp-field" type="text" [(ngModel)]="rsvp.name"
+                 placeholder="Full Name" autocomplete="name" />
+        </div>
+        <div class="col-md-6">
+          <input class="wp-field" type="email" [(ngModel)]="rsvp.email"
+                 placeholder="Email Address" autocomplete="email" />
+        </div>
+        <div class="col-md-6">
+          <select class="wp-field" [(ngModel)]="rsvp.attending">
+            <option value="">Attendance...</option>
+            <option value="yes">Joyfully Accepts</option>
+            <option value="no">Regretfully Declines</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <input class="wp-field" type="number" [(ngModel)]="rsvp.guests"
+                 min="1" max="6" placeholder="Number of Guests" />
+        </div>
+        <div class="col-12">
+          <textarea class="wp-field wp-field--textarea" [(ngModel)]="rsvp.message"
+                    placeholder="A message for the couple..." rows="3"></textarea>
+        </div>
+        <div class="col-12 text-center pt-2">
+          <button class="wp-rsvp__btn" (click)="submitRsvp()">Send My RSVP</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wp-rsvp__thanks" *ngIf="rsvpSubmitted" role="status">
+      <h3>Thank You, {{ rsvp.name }}!</h3>
+      <p>We cannot wait to celebrate with you.</p>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ───────────────────────────────────────────────────────────── -->
+  <footer class="wp-footer">
+    <p class="wp-footer__script">Accashia &amp; Kendall</p>
+    <p class="wp-footer__date">October 10, 2026 &bull; Dallas, Texas</p>
+  </footer>
+
+</div>

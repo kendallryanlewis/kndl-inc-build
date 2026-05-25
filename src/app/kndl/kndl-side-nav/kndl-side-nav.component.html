@@ -1,0 +1,11 @@
+<aside class="kndl-rail pb-3">
+    <button class="kndl-rail__menu" (click)="toggleMenu()" [attr.aria-expanded]="isMegaMenuOpen"
+        aria-label="Open navigation menu">
+        <i class="kndl-rail__menu-icon fa fa-bars" aria-hidden="true"></i>
+    </button>
+    <div class="kndl-rail__options" role="group" aria-label="Legal pages">
+        <button type="button" (click)="openLegalPage('privacy')">privacy</button>
+        <button type="button" (click)="openLegalPage('terms')">terms</button>
+        <button type="button" (click)="openLegalPage('policy')">policy</button>
+    </div>
+</aside>

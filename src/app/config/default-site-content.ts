@@ -1,13 +1,8 @@
-import { AboutHeader } from '../models/AboutHeader';
-import { AboutUsContent } from '../models/about-us-content';
-import { DetailedServicesContent } from '../models/detailed-service-content';
-import { AddOnsContent } from '../models/AddOnsContent';
-import { CallToActionContent } from '../models/CallToActionContent';
 
 export const DEFAULT_SITE_CONTENT = {
     aboutData: {
         headerText: 'Brand + Web Studio. Real Results.'
-    } as AboutHeader,
+    },
 
     aboutUsData: {
         mainHeading: 'About',
@@ -76,7 +71,7 @@ export const DEFAULT_SITE_CONTENT = {
         author: 'Kndl Inc',
         createdDate: new Date().toISOString(),
         lastModified: new Date().toISOString()
-    } as AboutUsContent,
+    },
 
     detailedServicesData: {
         headerTitle: 'Web Development',
@@ -92,7 +87,7 @@ export const DEFAULT_SITE_CONTENT = {
         styling: {
             hrWidth: '200px'
         }
-    } as DetailedServicesContent,
+    },
 
     addOnsData: {
         subscriptionSection: {
@@ -111,7 +106,7 @@ export const DEFAULT_SITE_CONTENT = {
         styling: {
             hrWidth: '200px'
         }
-    } as AddOnsContent,
+    },
 
     callToActionData: {
         title: 'Ready to Build Your Brand?',
@@ -120,7 +115,7 @@ export const DEFAULT_SITE_CONTENT = {
         styling: {
             hrWidth: '200px'
         }
-    } as CallToActionContent,
+    },
 
     headerSubText: 'We help local businesses and solo founders launch fast, look credible, be found, and grow smart with complete brand kits, high-converting websites, and ongoing digital marketing support.'
 };

@@ -1,0 +1,372 @@
+<div class="kal-page">
+
+    <!-- ──── TOP BAR ──── -->
+    <header class="kal-topbar">
+        <button type="button" class="kal-topbar__back" (click)="closePanel.emit()">
+            <i class="fas fa-close" aria-hidden="true"></i>
+        </button>
+        <span class="kal-topbar__brand">{{ app?.name || 'KNDL INC' }}</span>
+    </header>
+
+    <!-- ──── CONTENT ──── -->
+    <main class="kal-main">
+
+        <!-- Page hero -->
+        <section class="kal-hero">
+            <!-- App artwork -->
+            <img *ngIf="artworkUrl" [src]="artworkUrl" [alt]="app!.name" class="kal-hero__icon" />
+            <div *ngIf="!artworkUrl" class="kal-hero__icon-fallback">
+                <span *ngIf="app">{{ appInitials }}</span>
+                <i *ngIf="!app" class="fas fa-mobile-screen-button"></i>
+            </div>
+
+            <!-- Info -->
+            <div class="kal-hero__info">
+                <p class="kal-hero__eyebrow">{{ pageTitle }}</p>
+                <h1 class="kal-hero__name">{{ app?.name || 'KNDL Inc' }}</h1>
+                <p class="kal-hero__page-title" *ngIf="app">
+                    <span *ngIf="app.versionString">v{{ app.versionString }}</span><span
+                        *ngIf="app.versionString && app.type"> · </span><span *ngIf="app.type">{{ app.type }}</span>
+                </p>
+                <p class="kal-hero__meta">Last updated: {{ formattedReleaseDate }}</p>
+            </div>
+
+            <!-- Page type icon -->
+            <div class="kal-hero__icon-wrap" aria-hidden="true">
+                <i [class]="pageIcon"></i>
+            </div>
+        </section>
+        <!-- Official policy link (shown when the app provides its own URL) -->
+        <a *ngIf="officialUrl" [href]="officialUrl" target="_blank" rel="noopener noreferrer" class="kal-official-link">
+            <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            View Official {{ pageTitle }}
+        </a>
+
+        <!-- ── PRIVACY POLICY ── -->
+        <article class="kal-article" *ngIf="pageType === 'privacy'">
+            <p class="kal-intro">
+                KNDL Inc ("we," "us," or "our") built <strong>{{ app?.name || 'this application' }}</strong> as
+                a commercial app. This page informs you of our policies regarding the collection, use, and
+                disclosure of personal information for users of our app.
+            </p>
+
+            <section class="kal-section">
+                <h2>1. Information Collection and Use</h2>
+                <p>
+                    We do not collect personally identifiable information unless you explicitly provide it —
+                    for example, when contacting support or creating an account inside the app.
+                </p>
+                <p>
+                    The app may request access to certain device features
+                    (such as the camera, photo library, or location) only when needed to provide
+                    the core functionality you request. You can revoke these permissions at any time
+                    through your iOS Settings.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>2. Log Data</h2>
+                <p>
+                    In the event of an error, we may collect data and information on your device through
+                    third-party tools (such as Apple's crash reporter). This "Log Data" may include your
+                    device's IP address, device model and name, operating system version, app configuration,
+                    the time and date of use, and diagnostic information. This data is used solely for
+                    improving the stability and quality of the app.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>3. Third-Party Services</h2>
+                <p>
+                    The app may use third-party services that have their own privacy policies. These may include:
+                </p>
+                <ul>
+                    <li>Apple App Store (analytics and crash reporting)</li>
+                    <li>Firebase by Google (authentication, database, and analytics, if applicable)</li>
+                </ul>
+                <p>
+                    We encourage you to review the privacy policies of any third-party services used in the app.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>4. Cookies</h2>
+                <p>
+                    This app does not use cookies directly. However, third-party services embedded in the app
+                    may use cookies to improve their services. You can either accept or refuse these cookies
+                    through your device settings.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>5. Security</h2>
+                <p>
+                    We value your trust and strive to use commercially acceptable means to protect your
+                    personal information. However, no method of electronic transmission or storage
+                    is 100% secure, and we cannot guarantee its absolute security.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>6. Children's Privacy</h2>
+                <p>
+                    This app is not directed to children under the age of 13. We do not knowingly collect
+                    personally identifiable information from children under 13. If you are a parent or
+                    guardian and you believe your child has provided personal information, please contact us
+                    so we can take appropriate action.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>7. Changes to This Privacy Policy</h2>
+                <p>
+                    We may update this Privacy Policy from time to time. We will notify you of any changes
+                    by posting the new Privacy Policy on this page. Changes are effective immediately upon
+                    posting.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>8. Contact Us</h2>
+                <p>
+                    If you have questions or suggestions about this Privacy Policy, do not hesitate to
+                    contact us at <a href="mailto:kndl-inc@gmail.com" class="kal-link">kndl-inc@gmail.com</a>.
+                </p>
+            </section>
+
+            <section class="kal-section" *ngIf="app?.contentAdvisoryRating || app?.advisories?.length">
+                <h2>Content Rating &amp; Data Practices</h2>
+                <p *ngIf="app?.contentAdvisoryRating">
+                    <strong>{{ app!.name }}</strong> is rated
+                    <strong>{{ app!.contentAdvisoryRating }}</strong> by the developer in App Store
+                    Connect.
+                </p>
+                <ul *ngIf="app?.advisories?.length">
+                    <li *ngFor="let a of app!.advisories">{{ a }}</li>
+                </ul>
+                <p>No additional personally identifiable information is collected by KNDL Inc beyond
+                    what is described in this policy.</p>
+            </section>
+        </article>
+
+        <!-- ── TERMS OF USE ── -->
+        <article class="kal-article" *ngIf="pageType === 'terms'">
+            <p class="kal-intro">
+                By downloading or using <strong>{{ app?.name || 'this application' }}</strong>, these terms
+                automatically apply to you. Please read them carefully before using the app.
+            </p>
+
+            <section class="kal-section">
+                <h2>1. Acceptance of Terms</h2>
+                <p>
+                    By accessing or using this app, you agree to be bound by these Terms of Use and
+                    all applicable laws and regulations. If you do not agree with any of these terms,
+                    you are prohibited from using or accessing the app.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>2. License Grant</h2>
+                <p>
+                    KNDL Inc grants you a limited, non-exclusive, non-transferable, revocable license to
+                    use the app for your personal, non-commercial purposes on Apple-branded devices you
+                    own or control, subject to these Terms.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>3. Restrictions</h2>
+                <p>You agree not to:</p>
+                <ul>
+                    <li>Copy, modify, distribute, sell, or lease any part of the app or its content.</li>
+                    <li>Reverse-engineer, decompile, or attempt to extract the source code of the app.</li>
+                    <li>Transfer the app or your right to use it to another person.</li>
+                    <li>Use the app in any unlawful manner or for any unlawful purpose.</li>
+                </ul>
+            </section>
+
+            <section class="kal-section">
+                <h2>4. Intellectual Property</h2>
+                <p>
+                    The app and all contents, features, and functionality — including but not limited to
+                    information, software, text, graphics, logos, and images — are the exclusive property
+                    of KNDL Inc and are protected by applicable intellectual property laws.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>5. Disclaimer of Warranties</h2>
+                <p>
+                    The app is provided "AS IS" and "AS AVAILABLE" without warranty of any kind, express
+                    or implied. KNDL Inc does not warrant that the app will be uninterrupted, error-free,
+                    or free of viruses or other harmful components.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>6. Limitation of Liability</h2>
+                <p>
+                    To the maximum extent permitted by applicable law, KNDL Inc shall not be liable for
+                    any indirect, incidental, special, consequential, or punitive damages arising from
+                    your use of the app.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>7. Governing Law</h2>
+                <p>
+                    These Terms shall be governed by and construed in accordance with the laws of the
+                    State of Texas, United States, without regard to its conflict of law provisions.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>8. Changes to Terms</h2>
+                <p>
+                    We reserve the right to modify these Terms at any time. Continued use of the app
+                    after changes constitutes acceptance of the new Terms.
+                </p>
+            </section>
+
+            <section class="kal-section">
+                <h2>9. Contact</h2>
+                <p>
+                    Questions regarding these Terms should be sent to
+                    <a href="mailto:kndl-inc@gmail.com" class="kal-link">kndl-inc@gmail.com</a>.
+                </p>
+            </section>
+
+            <section class="kal-section" *ngIf="eulaText">
+                <h2>End User License Agreement</h2>
+                <p class="kal-eula">{{ eulaText }}</p>
+            </section>
+        </article>
+
+        <!-- ── SUPPORT ── -->
+        <article class="kal-article" *ngIf="pageType === 'support'">
+            <p class="kal-intro">
+                Need help with <strong>{{ app?.name || 'this app' }}</strong>? We're here to assist.
+                Read the FAQ below or contact us directly.
+            </p>
+
+            <section class="kal-section">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="kal-faq">
+                    <div class="kal-faq__item">
+                        <h3>How do I download the app?</h3>
+                        <p>
+                            <ng-container *ngIf="app?.appStoreUrl; else noStore">
+                                Download {{ app!.name }} directly from the
+                                <a [href]="app!.appStoreUrl" target="_blank" rel="noopener noreferrer" class="kal-link">
+                                    Apple App Store
+                                </a>.
+                            </ng-container>
+                            <ng-template #noStore>
+                                Search for "{{ app?.name || 'the app' }}" on the Apple App Store and tap "Get" to
+                                download.
+                            </ng-template>
+                        </p>
+                    </div>
+
+                    <div class="kal-faq__item">
+                        <h3>What iOS version is required?</h3>
+                        <p>
+                            <ng-container *ngIf="app?.minimumOsVersion">
+                                {{ app!.name }} requires iOS {{ app!.minimumOsVersion }} or later.
+                            </ng-container>
+                            <ng-container *ngIf="!app?.minimumOsVersion">
+                                Please check the App Store listing for the minimum iOS requirement.
+                            </ng-container>
+                        </p>
+                    </div>
+
+                    <div class="kal-faq__item">
+                        <h3>The app crashed or isn't working. What should I do?</h3>
+                        <p>
+                            First, try closing the app fully and relaunching it. If the issue persists,
+                            try restarting your device. Ensure you're running the latest version of the app
+                            (check the App Store for updates). If the problem continues,
+                            contact us at <a href="mailto:kndl-inc@gmail.com" class="kal-link">kndl-inc@gmail.com</a>
+                            with a description of the issue, your device model, and iOS version.
+                        </p>
+                    </div>
+
+                    <div class="kal-faq__item">
+                        <h3>How do I request a refund?</h3>
+                        <p>
+                            Refunds for App Store purchases are handled by Apple.
+                            Visit <a href="https://reportaproblem.apple.com" target="_blank" rel="noopener noreferrer"
+                                class="kal-link">reportaproblem.apple.com</a>
+                            to request a refund.
+                        </p>
+                    </div>
+
+                    <div class="kal-faq__item">
+                        <h3>How do I delete my account or data?</h3>
+                        <p>
+                            For account and data deletion requests, contact us at
+                            <a href="mailto:kndl-inc@gmail.com" class="kal-link">kndl-inc@gmail.com</a>
+                            with the subject line "Data Deletion Request." We will process your request
+                            within 30 days.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="kal-section">
+                <h2>Contact Support</h2>
+                <div class="kal-contact-card">
+                    <p class="kal-contact-card__title">Get in touch</p>
+                    <div class="kal-contact-card__grid">
+                        <div class="kal-contact-card__item" *ngIf="app?.supportUrl || officialUrl">
+                            <i class="fas fa-life-ring" aria-hidden="true"></i>
+                            <div>
+                                <span class="kal-contact-card__label">Support Page</span>
+                                <a [href]="app?.supportUrl || officialUrl" target="_blank" rel="noopener noreferrer"
+                                    class="kal-contact-card__value kal-link">Visit support page</a>
+                            </div>
+                        </div>
+                        <div class="kal-contact-card__item">
+                            <i class="fas fa-envelope" aria-hidden="true"></i>
+                            <div>
+                                <span class="kal-contact-card__label">Email</span>
+                                <a href="mailto:kndl-inc@gmail.com"
+                                    class="kal-contact-card__value kal-link">kndl-inc@gmail.com</a>
+                            </div>
+                        </div>
+                        <div class="kal-contact-card__item">
+                            <i class="fas fa-clock" aria-hidden="true"></i>
+                            <div>
+                                <span class="kal-contact-card__label">Response Time</span>
+                                <span class="kal-contact-card__value">Within 2 business days</span>
+                            </div>
+                        </div>
+                        <div class="kal-contact-card__item" *ngIf="app?.bundleId">
+                            <i class="fas fa-fingerprint" aria-hidden="true"></i>
+                            <div>
+                                <span class="kal-contact-card__label">Bundle ID (for bug reports)</span>
+                                <span class="kal-contact-card__value">{{ app!.bundleId }}</span>
+                            </div>
+                        </div>
+                        <div class="kal-contact-card__item">
+                            <i class="fas fa-map-pin" aria-hidden="true"></i>
+                            <div>
+                                <span class="kal-contact-card__label">Location</span>
+                                <span class="kal-contact-card__value">Dallas – Fort Worth, TX</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </article>
+
+    </main>
+
+    <!-- ──── FOOTER ──── -->
+    <footer class="kal-footer py-2">
+        <span class="kal-footer__brand">KNDL INC</span>
+        <span class="kal-footer__copy">&copy; {{ currentYear }} KNDL Inc. All rights reserved.</span>
+    </footer>
+
+</div>

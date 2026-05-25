@@ -1,0 +1,572 @@
+<aside class="kndl-slideout" [class.is-open]="isOpen" [class.is-expanded]="isExpanded && page === 'builder'"
+    role="complementary"
+    [attr.aria-label]="page === 'builder' ? 'Package Builder' : page === 'privacy' ? 'Privacy Policy' : page === 'terms' ? 'Terms of Service' : 'Cookie Policy'">
+
+    <div class="kndl-slideout__panel">
+
+        <div class="kndl-slideout__header">
+            <span class="kndl-slideout__label">
+                <ng-container *ngIf="page === 'builder'">PACKAGE BUILDER</ng-container>
+                <ng-container *ngIf="page === 'privacy'">PRIVACY POLICY</ng-container>
+                <ng-container *ngIf="page === 'terms'">TERMS OF SERVICE</ng-container>
+                <ng-container *ngIf="page === 'policy'">COOKIE POLICY</ng-container>
+            </span>
+            <div class="kndl-slideout__header-actions">
+                <button *ngIf="page === 'builder'" class="kndl-slideout__expand-btn" type="button"
+                    (click)="toggleExpand()" [attr.aria-label]="isExpanded ? 'Collapse panel' : 'Expand to full page'">
+                    <i class="fas" [class.fa-expand]="!isExpanded" [class.fa-compress]="isExpanded"
+                        aria-hidden="true"></i>
+                </button>
+                <button class="kndl-slideout__close" type="button" (click)="close()" aria-label="Close panel">
+                    <i class="fas fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="kndl-slideout__layout" *ngIf="page === 'builder'">
+            <div class="kndl-slideout__main">
+
+                <!-- ─── INTERACTIVE BUILDER ────────────────────────────────── -->
+                <div class="pb-section">
+
+                    <!-- Step breadcrumb -->
+                    <div class="pb-stepper">
+                        <button class="pb-stepper__step" [class.is-active]="builderStep===1"
+                            [class.is-done]="builderStep>1" (click)="goToStep(1)" type="button">
+                            <span class="pb-stepper__num">1</span>
+                            <span class="pb-stepper__label">Package</span>
+                        </button>
+                        <div class="pb-stepper__line"></div>
+                        <button class="pb-stepper__step" [class.is-active]="builderStep===2"
+                            [class.is-done]="builderStep>2" [disabled]="!selectedBase" (click)="goToStep(2)"
+                            type="button">
+                            <span class="pb-stepper__num">2</span>
+                            <span class="pb-stepper__label">Add-Ons</span>
+                        </button>
+                        <div class="pb-stepper__line"></div>
+                        <button class="pb-stepper__step" [class.is-active]="builderStep===3"
+                            [class.is-done]="builderStep>3" [disabled]="!selectedBase" (click)="goToStep(3)"
+                            type="button">
+                            <span class="pb-stepper__num">3</span>
+                            <span class="pb-stepper__label">Care</span>
+                        </button>
+                        <div class="pb-stepper__line"></div>
+                        <button class="pb-stepper__step" [class.is-active]="builderStep===4" [disabled]="!selectedBase"
+                            (click)="goToStep(4)" type="button">
+                            <span class="pb-stepper__num">4</span>
+                            <span class="pb-stepper__label">Review</span>
+                        </button>
+                    </div>
+
+                    <!-- ── STEP 1: Choose base package ──────────────────────── -->
+                    <div *ngIf="builderStep===1">
+                        <p class="pb-section__intro">Start by choosing your website foundation.</p>
+
+                        <div class="pb-select-card" *ngFor="let pkg of basePackages"
+                            [class.is-selected]="selectedBase===pkg.id" [class.is-featured]="pkg.featured"
+                            (click)="selectBase(pkg.id)" role="radio" [attr.aria-checked]="selectedBase===pkg.id"
+                            tabindex="0" (keydown.enter)="selectBase(pkg.id)" (keydown.space)="selectBase(pkg.id)">
+                            <div class="pb-select-card__top">
+                                <div class="pb-select-card__radio">
+                                    <span class="pb-select-card__radio-dot" *ngIf="selectedBase===pkg.id"></span>
+                                </div>
+                                <span class="pb-select-card__badge"
+                                    [class.pb-select-card__badge--gold]="pkg.featured">{{pkg.badge}}</span>
+                                <span class="pb-select-card__price">{{pkg.priceDisplay}}</span>
+                            </div>
+                            <p class="pb-select-card__name">{{pkg.name}}</p>
+                            <p class="pb-select-card__desc">{{pkg.desc}}</p>
+                            <div class="pb-select-card__meta">
+                                <span *ngFor="let m of pkg.meta">{{m}}</span>
+                            </div>
+                        </div>
+
+                        <!-- Compare packages inline toggle -->
+                        <button class="pb-compare-toggle" type="button" (click)="toggleCompare()">
+                            <i class="fas fa-table-columns" aria-hidden="true"></i>
+                            {{showCompare ? 'Hide comparison' : 'Compare all packages'}}
+                            <i class="fas fa-chevron-down pb-accordion__caret" [class.is-open]="showCompare"
+                                aria-hidden="true"></i>
+                        </button>
+                        <div class="pb-compare-wrap" *ngIf="showCompare">
+                            <div class="pb-table-wrap">
+                                <table class="pb-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Feature</th>
+                                            <th>Mini Site</th>
+                                            <th>Starter Site</th>
+                                            <th>Local Business</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Starting Price</td>
+                                            <td>$499</td>
+                                            <td>$899</td>
+                                            <td>$1,750</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Pages</td>
+                                            <td>1</td>
+                                            <td>1</td>
+                                            <td>Up to 3</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Sections</td>
+                                            <td>3</td>
+                                            <td>5</td>
+                                            <td>Up to 8</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Images</td>
+                                            <td>Up to 5</td>
+                                            <td>Up to 10</td>
+                                            <td>Up to 15</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Contact Form</td>
+                                            <td><span class="pb-tag pb-tag--add">Add-on</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Basic SEO</td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Local SEO</td>
+                                            <td><span class="pb-tag pb-tag--add">Add-on</span></td>
+                                            <td><span class="pb-tag pb-tag--add">Add-on</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">Basic</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Google Maps</td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">✓</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Analytics</td>
+                                            <td><span class="pb-tag pb-tag--add">Add-on</span></td>
+                                            <td><span class="pb-tag pb-tag--add">Add-on</span></td>
+                                            <td><span class="pb-tag pb-tag--yes">Basic</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Revisions</td>
+                                            <td>1</td>
+                                            <td>2</td>
+                                            <td>2</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Timeline</td>
+                                            <td>3–5 days</td>
+                                            <td>5–7 days</td>
+                                            <td>1–2 weeks</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Monthly Plan</td>
+                                            <td>$49/mo</td>
+                                            <td>$99/mo</td>
+                                            <td>$199/mo</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <button class="pb-btn pb-btn--gold" type="button" [disabled]="!selectedBase"
+                            (click)="goToStep(2)">
+                            Continue to Add-Ons <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <!-- ── STEP 2: Add-ons ──────────────────────────────────── -->
+                    <div *ngIf="builderStep===2">
+                        <p class="pb-section__intro">Select only what your business needs. Each is a one-time cost.</p>
+
+                        <div class="pb-addon-cat" *ngFor="let cat of addonCategories">
+                            <button class="pb-addon-cat__trigger" type="button" (click)="toggleAddon(cat.id)">
+                                <span><i class="fas {{cat.icon}}" aria-hidden="true"></i>&nbsp; {{cat.label}}</span>
+                                <div class="pb-addon-cat__right">
+                                    <span class="pb-addon-cat__count" *ngIf="selectedCountForCategory(cat.id) > 0">
+                                        {{selectedCountForCategory(cat.id)}} selected
+                                    </span>
+                                    <i class="fas fa-chevron-down pb-accordion__caret"
+                                        [class.is-open]="openAddon===cat.id" aria-hidden="true"></i>
+                                </div>
+                            </button>
+                            <div class="pb-addon-cat__body" *ngIf="openAddon===cat.id">
+                                <label class="pb-addon-check" *ngFor="let item of addonsForCategory(cat.id)"
+                                    [class.is-checked]="item.selected">
+                                    <input type="checkbox" [checked]="item.selected" (change)="toggleAddonItem(item)"
+                                        class="pb-addon-check__input" />
+                                    <span class="pb-addon-check__box">
+                                        <i class="fas fa-check" *ngIf="item.selected" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="pb-addon-check__label">{{item.label}}</span>
+                                    <span class="pb-addon-check__price">{{item.priceDisplay}}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pb-step-nav">
+                            <button class="pb-btn pb-btn--ghost" type="button" (click)="goToStep(1)"><i
+                                    class="fas fa-arrow-left"></i> Back</button>
+                            <button class="pb-btn pb-btn--gold" type="button" (click)="goToStep(3)">Continue to Care <i
+                                    class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- ── STEP 3: Care plan ────────────────────────────────── -->
+                    <div *ngIf="builderStep===3">
+                        <p class="pb-section__intro">Choose an optional monthly care plan to keep your site maintained.
+                        </p>
+
+                        <div class="pb-select-card" *ngFor="let plan of carePlans"
+                            [class.is-selected]="selectedCare===plan.id" (click)="selectCare(plan.id)" role="radio"
+                            [attr.aria-checked]="selectedCare===plan.id" tabindex="0"
+                            (keydown.enter)="selectCare(plan.id)" (keydown.space)="selectCare(plan.id)">
+                            <div class="pb-select-card__top">
+                                <div class="pb-select-card__radio">
+                                    <span class="pb-select-card__radio-dot" *ngIf="selectedCare===plan.id"></span>
+                                </div>
+                                <span class="pb-select-card__name pb-select-card__name--inline">{{plan.name}}</span>
+                                <span class="pb-select-card__price">{{plan.priceDisplay}}</span>
+                            </div>
+                            <p class="pb-select-card__desc">{{plan.desc}}</p>
+                            <ul class="pb-checklist pb-checklist--compact"
+                                *ngIf="plan.features && plan.features.length > 0">
+                                <li *ngFor="let f of plan.features">{{f}}</li>
+                            </ul>
+                        </div>
+
+                        <!-- Retainer options toggle -->
+                        <button class="pb-compare-toggle pb-compare-toggle--gap" type="button"
+                            (click)="toggleRetainers()">
+                            <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                            {{showRetainers ? 'Hide retainer &amp; hourly rates' : 'Need more? View retainer &amp;
+                            hourly options'}}
+                            <i class="fas fa-chevron-down pb-accordion__caret" [class.is-open]="showRetainers"
+                                aria-hidden="true"></i>
+                        </button>
+                        <div *ngIf="showRetainers">
+                            <p class="pb-section__intro">For businesses needing consistent monthly work beyond standard
+                                care.</p>
+                            <div class="pb-retainer-card" *ngFor="let r of retainerPlans">
+                                <div class="pb-retainer-card__header">
+                                    <div>
+                                        <p class="pb-retainer-card__name">{{r.name}}</p>
+                                        <p class="pb-retainer-card__hours">{{r.hours}}</p>
+                                    </div>
+                                    <span class="pb-retainer-card__price">{{r.priceDisplay}}</span>
+                                </div>
+                                <p class="pb-retainer-card__for">{{r.desc}}</p>
+                                <ul class="pb-checklist">
+                                    <li *ngFor="let f of r.features">{{f}}</li>
+                                </ul>
+                            </div>
+                            <p class="pb-section__intro pb-section__intro--gap">Extra work hourly rates:</p>
+                            <div class="pb-rate-list">
+                                <div class="pb-addon-row"><span>Standard hourly</span><span>$100/hr</span></div>
+                                <div class="pb-addon-row"><span>Emergency/rush work</span><span>$150/hr</span></div>
+                                <div class="pb-addon-row"><span>Minimum update fee</span><span>$50</span></div>
+                                <div class="pb-addon-row"><span>Extra revision round</span><span>$100</span></div>
+                                <div class="pb-addon-row"><span>Same-day request</span><span>$150+</span></div>
+                                <div class="pb-addon-row"><span>Rush project fee</span><span>+30–50%</span></div>
+                            </div>
+                        </div>
+
+                        <div class="pb-step-nav">
+                            <button class="pb-btn pb-btn--ghost" type="button" (click)="goToStep(2)"><i
+                                    class="fas fa-arrow-left"></i> Back</button>
+                            <button class="pb-btn pb-btn--gold" type="button" (click)="goToStep(4)">Review My Package <i
+                                    class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- ── STEP 4: Review / Summary ─────────────────────────── -->
+                    <div *ngIf="builderStep===4">
+                        <p class="pb-section__intro">Here's your custom website package.</p>
+
+                        <!-- Base -->
+                        <div class="pb-summary-block">
+                            <div class="pb-summary-block__header">
+                                <span class="pb-summary-block__label">BASE PACKAGE</span>
+                                <button class="pb-summary-block__edit" type="button" (click)="goToStep(1)">Edit</button>
+                            </div>
+                            <div class="pb-summary-row pb-summary-row--base">
+                                <span>{{selectedBasePkg?.name}}</span>
+                                <span>{{selectedBasePkg?.priceDisplay}}</span>
+                            </div>
+                        </div>
+
+                        <!-- Add-ons -->
+                        <div class="pb-summary-block" *ngIf="selectedAddons.length > 0">
+                            <div class="pb-summary-block__header">
+                                <span class="pb-summary-block__label">ADD-ONS ({{selectedAddons.length}})</span>
+                                <button class="pb-summary-block__edit" type="button" (click)="goToStep(2)">Edit</button>
+                            </div>
+                            <div class="pb-summary-row" *ngFor="let a of selectedAddons">
+                                <span>{{a.label}}</span>
+                                <span>{{a.priceDisplay}}</span>
+                            </div>
+                        </div>
+                        <div class="pb-summary-block" *ngIf="selectedAddons.length === 0">
+                            <div class="pb-summary-block__header">
+                                <span class="pb-summary-block__label">ADD-ONS</span>
+                                <button class="pb-summary-block__edit" type="button" (click)="goToStep(2)">Add</button>
+                            </div>
+                            <div class="pb-summary-row pb-summary-row--empty"><span>No add-ons
+                                    selected</span><span>$0</span></div>
+                        </div>
+
+                        <!-- Care plan -->
+                        <div class="pb-summary-block">
+                            <div class="pb-summary-block__header">
+                                <span class="pb-summary-block__label">MONTHLY CARE</span>
+                                <button class="pb-summary-block__edit" type="button" (click)="goToStep(3)">Edit</button>
+                            </div>
+                            <div class="pb-summary-row">
+                                <span>{{selectedCarePlan?.name ?? 'None'}}</span>
+                                <span>{{selectedCarePlan?.priceDisplay ?? '$0/mo'}}</span>
+                            </div>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="pb-total-block">
+                            <div class="pb-total-block__row">
+                                <span>One-time total</span>
+                                <span class="pb-total-block__amount">${{oneTimeTotal | number}}</span>
+                            </div>
+                            <div class="pb-total-block__row pb-total-block__row--monthly" *ngIf="carePrice > 0">
+                                <span>Monthly care</span>
+                                <span
+                                    class="pb-total-block__amount pb-total-block__amount--monthly">${{carePrice}}/mo</span>
+                            </div>
+                            <div class="pb-total-block__deposit">
+                                50% deposit: <strong>${{oneTimeTotal / 2 | number:'1.0-0'}}</strong> &nbsp;·&nbsp;
+                                balance at launch: <strong>${{oneTimeTotal / 2 | number:'1.0-0'}}</strong>
+                            </div>
+                        </div>
+
+                        <div class="pb-rules-note">
+                            <p class="pb-rules-note__title"><i class="fas fa-circle-info" aria-hidden="true"></i> Good
+                                to know</p>
+                            <ul>
+                                <li>Timeline starts after all content is received from you.</li>
+                                <li>Add-ons must come from the approved menu.</li>
+                                <li>Monthly care hours don't roll over.</li>
+                                <li>Need something not listed? Custom projects require a separate quote.</li>
+                            </ul>
+                        </div>
+
+                        <button class="pb-btn pb-btn--gold" type="button">Request a Quote for This Package</button>
+                        <button class="pb-btn pb-btn--ghost" type="button" (click)="resetBuilder()">
+                            <i class="fas fa-rotate-left" aria-hidden="true"></i> Start Over
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Sticky running total (compact mode only) -->
+                <div class="pb-sticky-total" *ngIf="!isExpanded && selectedBase && builderStep < 4" aria-live="polite">
+                    <span class="pb-sticky-total__label">Running total</span>
+                    <span class="pb-sticky-total__amount">${{oneTimeTotal | number}}</span>
+                    <span class="pb-sticky-total__monthly" *ngIf="carePrice > 0">+ ${{carePrice}}/mo</span>
+                </div>
+
+            </div><!-- /main -->
+
+            <!-- ── Right panel: live summary + examples (expanded only) ─────── -->
+            <div class="kndl-slideout__side" *ngIf="isExpanded">
+
+                <!-- Live summary -->
+                <div class="pb-live-summary">
+                    <p class="pb-live-summary__header">YOUR PACKAGE</p>
+                    <div class="pb-live-summary__empty" *ngIf="!selectedBasePkg">
+                        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+                        <span>Select a package to get started</span>
+                    </div>
+                    <ng-container *ngIf="selectedBasePkg">
+                        <div class="pb-live-summary__section">
+                            <p class="pb-live-summary__label">BASE</p>
+                            <div class="pb-live-summary__row">
+                                <span>{{selectedBasePkg.name}}</span>
+                                <span>{{selectedBasePkg.priceDisplay}}</span>
+                            </div>
+                        </div>
+                        <div class="pb-live-summary__section" *ngIf="selectedAddons.length > 0">
+                            <p class="pb-live-summary__label">ADD-ONS ({{selectedAddons.length}})</p>
+                            <div class="pb-live-summary__row" *ngFor="let a of selectedAddons">
+                                <span>{{a.label}}</span>
+                                <span>{{a.priceDisplay}}</span>
+                            </div>
+                        </div>
+                        <div class="pb-live-summary__section"
+                            *ngIf="selectedCarePlan && selectedCarePlan.id !== 'none'">
+                            <p class="pb-live-summary__label">CARE / MONTH</p>
+                            <div class="pb-live-summary__row">
+                                <span>{{selectedCarePlan.name}}</span>
+                                <span>{{selectedCarePlan.priceDisplay}}</span>
+                            </div>
+                        </div>
+                        <div class="pb-live-summary__total">
+                            <div class="pb-live-summary__total-row">
+                                <span>One-time total</span>
+                                <strong>${{oneTimeTotal | number}}</strong>
+                            </div>
+                            <div class="pb-live-summary__total-row pb-live-summary__total-row--monthly"
+                                *ngIf="carePrice > 0">
+                                <span>Monthly</span>
+                                <strong>${{carePrice}}/mo</strong>
+                            </div>
+                            <p class="pb-live-summary__deposit" *ngIf="oneTimeTotal > 0">
+                                Deposit: <strong>${{oneTimeTotal / 2 | number:'1.0-0'}}</strong> to start &nbsp;·&nbsp;
+                                <strong>${{oneTimeTotal / 2 | number:'1.0-0'}}</strong> at launch
+                            </p>
+                        </div>
+                        <button class="pb-btn pb-btn--gold" *ngIf="builderStep < 4" (click)="goToStep(4)" type="button">
+                            Review Package <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </ng-container>
+                </div>
+
+                <!-- Example builds -->
+                <div class="pb-examples-panel">
+                    <p class="pb-examples-panel__header">
+                        <i class="fas fa-lightbulb" aria-hidden="true"></i> EXAMPLE BUILDS
+                    </p>
+                    <div class="pb-example-mini" *ngFor="let ex of exampleBuilds">
+                        <div class="pb-example-mini__top">
+                            <span class="pb-example-mini__title">{{ex.title}}</span>
+                            <span class="pb-example-mini__price">${{ex.oneTime | number}}</span>
+                        </div>
+                        <p class="pb-example-mini__base">{{ex.base}}<span *ngIf="ex.monthly > 0"> · ${{ex.monthly}}/mo
+                                care</span></p>
+                        <div class="pb-example-mini__tags" *ngIf="ex.addons.length > 0">
+                            <span *ngFor="let a of ex.addons">{{a}}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scope box -->
+                <div class="pb-scope-box">
+                    <p class="pb-scope-box__label">NOT IN STANDARD PACKAGES</p>
+                    <p>E-commerce stores, booking engines, mobile apps, customer portals, CRM systems, SaaS platforms,
+                        custom APIs, or HIPAA-compliant systems.</p>
+                    <p class="pb-scope-box__note">Need these? <a routerLink="/login">Contact us</a> for a custom quote.
+                    </p>
+                </div>
+
+            </div><!-- /side -->
+
+        </div><!-- /layout -->
+
+        <!-- ─── LEGAL PAGES ──────────────────────────────────────────── -->
+        <div class="pb-legal" *ngIf="page !== 'builder'">
+
+            <!-- Privacy Policy -->
+            <ng-container *ngIf="page === 'privacy'">
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Information We Collect</h3>
+                    <p class="pb-legal__body">We collect information you provide directly, such as your name, email
+                        address, company name, and message when you fill out our contact form. We do not collect payment
+                        information directly — all transactions are processed by Stripe using their secure
+                        infrastructure.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">How We Use Your Information</h3>
+                    <p class="pb-legal__body">We use your information solely to respond to your inquiries, deliver
+                        purchased services, and communicate project updates. We do not sell or share your data with
+                        third parties for marketing purposes.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Data Retention</h3>
+                    <p class="pb-legal__body">We retain client data for the duration of our working relationship and for
+                        a reasonable period thereafter to comply with legal obligations. You may request deletion of
+                        your data at any time by contacting us.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Third-Party Services</h3>
+                    <p class="pb-legal__body">This site uses Firebase (Google) for data storage and authentication, and
+                        Stripe for payment processing. These services operate under their own privacy policies.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Contact</h3>
+                    <p class="pb-legal__body">For privacy-related questions, contact us at <span
+                            class="pb-legal__highlight">hello&#64;kndlinc.com</span>. Last updated: May 2026.</p>
+                </div>
+            </ng-container>
+
+            <!-- Terms of Service -->
+            <ng-container *ngIf="page === 'terms'">
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Acceptance of Terms</h3>
+                    <p class="pb-legal__body">By engaging KNDL Inc for any service, you agree to these Terms of Service.
+                        These terms govern all project work, deliverables, and ongoing care plan relationships between
+                        KNDL Inc and its clients.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Project Scope &amp; Deliverables</h3>
+                    <p class="pb-legal__body">All project scope, timelines, and deliverables are defined in a written
+                        proposal or statement of work agreed upon prior to project start. Changes to scope require
+                        written approval and may affect timeline and pricing.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Payment Terms</h3>
+                    <p class="pb-legal__body">A deposit of 50% is required before project work begins. The remaining
+                        balance is due upon project completion before final files or site access are transferred. Care
+                        plan subscriptions are billed monthly and may be cancelled with 30 days written notice.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Intellectual Property</h3>
+                    <p class="pb-legal__body">Upon receipt of final payment, all custom design and code created for your
+                        project transfers to you. KNDL Inc retains the right to display the work in its portfolio unless
+                        otherwise agreed in writing.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Limitation of Liability</h3>
+                    <p class="pb-legal__body">KNDL Inc is not liable for indirect, incidental, or consequential damages.
+                        Our liability is limited to the amount paid for the specific service in question. Last updated:
+                        May 2026.</p>
+                </div>
+            </ng-container>
+
+            <!-- Cookie Policy -->
+            <ng-container *ngIf="page === 'policy'">
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">What Are Cookies</h3>
+                    <p class="pb-legal__body">Cookies are small text files placed on your device when you visit a
+                        website. They help us understand how visitors interact with our site and improve our user
+                        experience.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">How We Use Cookies</h3>
+                    <p class="pb-legal__body">This site uses session cookies necessary for Firebase authentication to
+                        function. We do not use tracking cookies, advertising cookies, or third-party analytics cookies
+                        beyond basic Firebase performance monitoring.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Managing Cookies</h3>
+                    <p class="pb-legal__body">You can control and delete cookies through your browser settings.
+                        Disabling cookies may affect authentication functionality on the client portal. Most modern
+                        browsers allow you to refuse cookies while still browsing the site.</p>
+                </div>
+                <div class="pb-legal__section">
+                    <h3 class="pb-legal__heading">Contact</h3>
+                    <p class="pb-legal__body">For cookie-related questions, email us at <span
+                            class="pb-legal__highlight">hello&#64;kndlinc.com</span>. Last updated: May 2026.</p>
+                </div>
+            </ng-container>
+
+        </div><!-- /legal -->
+
+    </div><!-- /panel -->
+
+</aside>
+
+<!-- backdrop -->
+<div class="kndl-slideout__backdrop" [class.is-visible]="isOpen" (click)="close()" aria-hidden="true"></div>

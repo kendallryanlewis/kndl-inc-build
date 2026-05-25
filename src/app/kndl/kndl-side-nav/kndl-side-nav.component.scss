@@ -1,0 +1,168 @@
+:host {
+    display: contents;
+}
+
+// ─── Entrance keyframes ───────────────────────────────────────────────────────
+@keyframes rail-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes rail-menu-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes rail-label-fade {
+    from {
+        opacity: 0;
+        transform: rotate(180deg) translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: rotate(180deg) translateY(0);
+    }
+}
+
+// ─── Left rail ────────────────────────────────────────────────────────────────
+.kndl-rail {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--rail-width);
+    z-index: 10;
+    //background: #1e1e1e;
+    border-right: 1px solid rgba(255 255 255 / 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: rail-slide-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+
+    &__menu {
+        width: 100%;
+        height: var(--topbar-height);
+        min-height: var(--topbar-height);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: rgba(232 239 251 / 0.82);
+        transition: color 180ms var(--ease), background 180ms var(--ease);
+        animation: rail-menu-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.42s both;
+
+        &:hover {
+            color: #fff;
+            background: rgba(255 255 255 / 0.04);
+        }
+    }
+
+    &__menu-icon {
+        font-size: 1rem;
+    }
+
+    &__options {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.3rem;
+        padding: 0.8rem 0;
+        position: relative;
+
+        button {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            background: none;
+            border: none;
+            color: rgba(220 229 245 / 0.48);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.56rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: lowercase;
+            padding: 0.4rem 0.16rem;
+            cursor: pointer;
+            height: 90px;
+            width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 2px solid transparent;
+            transition: color 200ms var(--ease), border-color 200ms var(--ease);
+            animation: rail-label-fade 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+            &:nth-child(1) {
+                animation-delay: 0.55s;
+            }
+
+            &:nth-child(2) {
+                animation-delay: 0.68s;
+            }
+
+            &:nth-child(3) {
+                animation-delay: 0.81s;
+            }
+
+            &:hover,
+            &.is-active {
+                color: var(--c-gold);
+                border-color: var(--c-gold);
+            }
+        }
+    }
+}
+
+@media (max-width: 991.98px) {
+    .kndl-rail {
+        width: 0;
+        border-right: none;
+        pointer-events: none;
+
+        &__menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--topbar-height);
+            height: var(--topbar-height);
+            min-height: var(--topbar-height);
+            z-index: 11;
+            pointer-events: auto;
+            background: rgba(11 15 22 / 0.7);
+            border-right: 1px solid rgba(232 239 251 / 0.12);
+        }
+
+        &__options {
+            display: none;
+        }
+    }
+}
+
+// ─── Accessibility: respect reduced-motion preference ─────────────────────────
+@media (prefers-reduced-motion: reduce) {
+
+    .kndl-rail,
+    .kndl-rail__menu,
+    .kndl-rail__options button {
+        animation: none;
+    }
+}

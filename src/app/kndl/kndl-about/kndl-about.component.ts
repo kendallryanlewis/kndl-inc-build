@@ -1,52 +1,64 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { SEOService } from '../../services/seo.service';
 
-export interface KndlAboutData {
-  headerText: string;
-}
+type KndlTopTab = 'home' | 'products' | 'about' | 'contact';
+
+interface Testimonial { quote: string; name: string; company: string; }
 
 @Component({
-  selector: 'app-kndl-about',
-  templateUrl: './kndl-about.component.html',
-  styleUrls: ['./kndl-about.component.scss']
+    selector: 'app-kndl-about',
+    templateUrl: './kndl-about.component.html',
+    styleUrls: ['./kndl-about.component.scss']
 })
-export class KndlAboutComponent implements OnInit {
-  @Input() editMode: boolean = false;
-  @Output() dataChange = new EventEmitter<KndlAboutData>();
+export class KndlAboutComponent implements OnInit, AfterViewInit {
+    @Output() panelOpen = new EventEmitter<KndlTopTab>();
+    @Output() slideoutOpen = new EventEmitter<void>();
+    @ViewChild('exploreTarget') private exploreTarget?: ElementRef<HTMLElement>;
 
-  private _content: KndlAboutData | null = null;
+    constructor(private seoService: SEOService, private el: ElementRef) { }
 
-  @Input()
-  set content(value: KndlAboutData | null) {
-    this._content = value;
-    if (value) {
-      this.headerText = value.headerText;
-      console.log('KndlAboutComponent content updated:', value);
+    ngOnInit(): void {
+        this.seoService.setAboutSEO();
     }
-  }
 
-  get content(): KndlAboutData | null {
-    return this._content;
-  }
-
-  isLoggingIn = localStorage.getItem('administrator') !== 'true';
-  headerText: string = 'Brand + Web Studio. Real Results.';
-
-  ngOnInit(): void {
-    if (this.content) {
-      console.log('KndlAboutComponent initialized');
-      this.headerText = this.content.headerText;
-      console.log('KndlAboutComponent initialized with content:', this.content);
+    ngAfterViewInit(): void {
+        const observer = new IntersectionObserver(
+            (entries) => entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('ab-in-view');
+                    observer.unobserve(e.target);
+                }
+            }),
+            { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+        );
+        this.el.nativeElement.querySelectorAll('.ab-reveal')
+            .forEach((el: Element) => observer.observe(el));
     }
-  }
 
-  onHeaderTextChange(): void {
-    this.emitDataChange();
-  }
+    scrollToExplore(): void {
+        this.exploreTarget?.nativeElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
 
-  private emitDataChange(): void {
-    const data: KndlAboutData = {
-      headerText: this.headerText
-    };
-    this.dataChange.emit(data);
-  }
+    readonly testimonials: Testimonial[] = [
+        {
+            quote: 'KNDL Inc transformed our online presence completely. Within three months we saw a significant increase in inbound inquiries directly from our website — couldn\'t be happier.',
+            name: 'Marcus T.',
+            company: 'MT Landscaping — DFW'
+        },
+        {
+            quote: 'The team was fast, professional, and actually listened. Our new brand identity looks exactly like what we envisioned. They nailed the direction on the first round.',
+            name: 'Priya D.',
+            company: 'Bloomed Floral Studio'
+        },
+        {
+            quote: 'Simple process, beautiful result. They handled everything from logo design to a full website launch in under six weeks. Clear communication the entire time.',
+            name: 'James R.',
+            company: 'Riverside Auto Detailing'
+        }
+    ];
 }
+
+

@@ -1,0 +1,594 @@
+:host {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.kndl-contact {
+    --contact-form-bg: #ffffff;
+    --contact-form-surface: #f7f7f7;
+    --contact-form-border: #e6e6e6;
+    --contact-form-border-strong: #d7d7d7;
+    --contact-form-text: #656565;
+    --contact-form-heading: #3f3f3f;
+    --contact-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+    // ── Floating form card ────────────────────────────────────────────────
+    &__card {
+        position: absolute;
+        bottom: calc(var(--contact-bar-h) / 2);
+        right: 5%;
+        width: min(92vw, 420px);
+        background: var(--contact-form-bg);
+        border: 1px solid var(--contact-form-border);
+        border-radius: 16px;
+        box-shadow:
+            0 10px 28px rgba(0 0 0 / 0.18),
+            0 2px 8px rgba(0 0 0 / 0.12);
+        overflow: hidden;
+        animation: kc-slide-from-bottom-form-centered 820ms 1500ms var(--contact-motion-ease) both;
+        z-index: 5;
+
+        @media (max-width: 767.98px) {
+            width: calc(100% - 2rem);
+            bottom: calc(var(--contact-bar-h, 180px) + 1rem);
+        }
+    }
+
+    &__card-header {
+        padding: 1rem 1.25rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
+        border-bottom: 1px solid var(--contact-form-border);
+    }
+
+    &__card-eyebrow {
+        display: block;
+        font-size: 0.56rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #8a8a8a;
+        margin-bottom: 0.35rem;
+    }
+
+    &__card-title {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--contact-form-heading);
+        letter-spacing: -0.01em;
+    }
+
+    &__form {
+        padding: 1rem 1.15rem 1.1rem;
+    }
+
+    &__bot-field {
+        position: absolute;
+        left: -10000px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &__fieldset {
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--contact-form-border);
+        background: var(--contact-form-surface);
+        border-radius: 10px;
+        padding: 0.8rem;
+    }
+
+    &__legend {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--contact-form-heading);
+        margin-bottom: 0.65rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    &__number {
+        background-color: #ffffff;
+        color: #7d7d7d;
+        height: 21px;
+        width: 21px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.62rem;
+        font-weight: 600;
+        border: 1px solid var(--contact-form-border-strong);
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    &__label {
+        display: block;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #6f6f6f;
+        margin-bottom: 0.4rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    &__optional {
+        font-weight: 400;
+        color: #9a9a9a;
+    }
+
+    // inputs + textarea — reference style
+    &__form input[type="text"],
+    &__form input[type="email"],
+    &__form input[type="tel"],
+    &__form textarea {
+        background-color: #ffffff;
+        border: 1px solid var(--contact-form-border);
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.78rem;
+        height: auto;
+        margin: 0 0 0.7rem;
+        outline: 0;
+        padding: 0.65rem 0.75rem;
+        width: 100%;
+        color: var(--contact-form-text);
+        box-shadow: 0 1px 0 rgba(255 255 255 / 0.8) inset;
+        border-radius: 8px;
+        transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+        resize: none;
+
+        &::placeholder {
+            color: #b0b0b0;
+        }
+
+        &:focus {
+            background-color: #fcfcfc;
+            border-color: var(--contact-form-border-strong);
+            box-shadow: 0 0 0 3px rgba(236 236 236 / 0.95);
+            outline: none;
+        }
+    }
+
+    &__form textarea {
+        min-height: 92px;
+    }
+
+    &__form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-bottom: 0.7rem;
+    }
+
+    &__upload {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.65rem;
+        color: #9a9a9a;
+        cursor: pointer;
+        transition: color 180ms ease;
+        user-select: none;
+
+        svg {
+            flex-shrink: 0;
+        }
+
+        &:hover {
+            color: #6a6a6a;
+        }
+    }
+
+    &__submit-btn {
+        display: block;
+        width: 100%;
+        margin: 0 0 0.45rem;
+        padding: 0.78rem;
+        color: #5f5f5f;
+        background: linear-gradient(180deg, #ffffff 0%, #ececec 100%);
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-align: center;
+        text-transform: uppercase;
+        border: 1px solid var(--contact-form-border-strong);
+        border-radius: 8px;
+        box-shadow: 0 1px 0 rgba(255 255 255 / 0.9) inset;
+        cursor: pointer;
+        transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+
+        &:hover {
+            background: #efefef;
+            border-color: #cdcdcd;
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+
+        &:disabled {
+            opacity: 0.75;
+            cursor: wait;
+            transform: none;
+        }
+    }
+
+    &__sent {
+        margin: 0;
+        padding: 0.52rem 0.62rem;
+        background: #f5f5f5;
+        border: 1px solid var(--contact-form-border);
+        border-radius: 7px;
+        font-size: 0.68rem;
+        color: #7a7a7a;
+    }
+
+    &__error {
+        margin: 0;
+        padding: 0.52rem 0.62rem;
+        background: #f5f5f5;
+        border: 1px solid var(--contact-form-border);
+        border-radius: 7px;
+        font-size: 0.68rem;
+        color: #747474;
+    }
+
+    // ── "Contact us" heading — just above the bar ──────────────────────
+    &__bar-title {
+        position: absolute;
+        bottom: calc(var(--contact-bar-h, 180px) + 0.75rem);
+        left: 1.6rem;
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-weight: 700;
+        font-size: clamp(1.8rem, 3vw, 2.8rem);
+        color: #fff;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        z-index: 4;
+        pointer-events: none;
+        animation: kc-fade-up 640ms 760ms var(--contact-motion-ease) both;
+    }
+
+    // ── Location overlay — left side of map ──────────────────────────────
+    &__location {
+        position: absolute;
+        left: 2rem;
+        top: 42%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        z-index: 4;
+        pointer-events: none;
+        animation: kc-slide-from-left 760ms 1200ms var(--contact-motion-ease) both;
+    }
+
+    &__location-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #c9a96e;
+        box-shadow: 0 0 0 5px rgba(201 169 110 / 0.22);
+        flex-shrink: 0;
+    }
+
+    &__location-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+    }
+
+    &__location-city {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: rgba(255 255 255 / 0.9);
+        letter-spacing: 0.04em;
+    }
+
+    &__location-region {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.65rem;
+        color: rgba(255 255 255 / 0.45);
+        letter-spacing: 0.04em;
+    }
+
+    // ── Bottom info bar ───────────────────────────────────────────────
+    &__bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--contact-bar-h, 180px);
+        background: #262626;
+        border-top: 1px solid rgba(255 255 255 / 0.06);
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        pointer-events: auto;
+        animation: kc-slide-from-bottom 900ms 120ms var(--contact-motion-ease) both;
+    }
+
+    &__bar-cols {
+        display: flex;
+        align-items: flex-start;
+        gap: 4rem;
+    }
+
+    &__bar-col {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    &__bar-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(255 255 255 / 0.3);
+        white-space: nowrap;
+        margin-bottom: 1rem;
+    }
+
+    &__bar-val {
+        color: rgba(255 255 255 / 0.65);
+        white-space: nowrap;
+        line-height: 1.65;
+    }
+
+    &__bar-nav {
+        display: flex;
+        align-items: center;
+        gap: 1.6rem;
+        justify-content: flex-end;
+
+        button {
+            background: none;
+            border: none;
+            color: rgba(220 229 245 / 0.55);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            text-transform: lowercase;
+            padding: 0.3rem 0;
+            cursor: pointer;
+            transition: color 180ms ease;
+
+            &:hover,
+            &.is-active {
+                color: rgba(244 248 255 / 0.96);
+            }
+        }
+    }
+
+    &__bar-signin {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.38rem 0.9rem;
+        border: 1px solid rgba(201 169 110 / 0.55);
+        color: rgba(201 169 110 / 0.85);
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.66rem;
+        letter-spacing: 0.06em;
+        text-transform: lowercase;
+        text-decoration: none;
+        transition: border-color 180ms ease, color 180ms ease;
+
+        &:hover {
+            border-color: #dfc08a;
+            color: #dfc08a;
+        }
+    }
+}
+
+// ── Keyframe animations ────────────────────────────────────────────────────────
+@keyframes kc-slide-from-bottom {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes kc-slide-from-bottom-form-centered {
+    from {
+        opacity: 0;
+        transform: translateY(26px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes kc-slide-from-left {
+    from {
+        opacity: 0;
+        transform: translate(-32px, -50%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(0, -50%);
+    }
+}
+
+@keyframes kc-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .kndl-contact {
+        &__card {
+            right: 2.5%;
+            width: min(92vw, 400px);
+        }
+
+        &__bar {
+            height: var(--contact-bar-h, 220px);
+        }
+
+        &__bar-cols {
+            gap: 2rem;
+        }
+    }
+}
+
+@media (max-width: 991.98px) {
+    .kndl-contact {
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 1rem;
+        height: auto;
+        min-height: 100%;
+
+        &__card {
+            position: relative;
+            right: auto;
+            bottom: auto;
+            margin: calc(var(--topbar-height, 72px) + 0.75rem) auto 0.9rem;
+            width: min(92vw, 540px);
+            animation-delay: 600ms;
+        }
+
+        &__bar-title {
+            position: relative;
+            left: auto;
+            bottom: auto;
+            margin: 0 auto 0.75rem;
+            max-width: min(92vw, 540px);
+            padding: 0 0.25rem;
+            pointer-events: auto;
+        }
+
+        &__location {
+            position: relative;
+            left: auto;
+            top: auto;
+            transform: none;
+            margin: 0 auto 0.75rem;
+            max-width: min(92vw, 540px);
+        }
+
+        &__bar {
+            position: relative;
+            height: auto;
+            padding: 1rem !important;
+        }
+
+        &__bar-cols {
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        &__bar-nav {
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 0.9rem;
+        }
+
+        &__bar-label {
+            margin-bottom: 0.45rem;
+            letter-spacing: 0.14em;
+        }
+
+        &__bar-val {
+            white-space: normal;
+            line-height: 1.45;
+        }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .kndl-contact {
+
+        &__card,
+        &__bar-title,
+        &__location {
+            width: calc(100% - 1.5rem);
+            max-width: none;
+        }
+
+        &__card-header,
+        &__form {
+            padding-left: 0.9rem;
+            padding-right: 0.9rem;
+        }
+
+        &__form-actions {
+            justify-content: flex-start;
+        }
+
+        &__legend {
+            font-size: 0.74rem;
+        }
+
+        &__label {
+            font-size: 0.62rem;
+        }
+
+        &__bar-title {
+            font-size: clamp(1.5rem, 8vw, 2rem);
+        }
+
+        &__location-city {
+            font-size: 0.72rem;
+        }
+
+        &__location-region {
+            font-size: 0.6rem;
+        }
+
+        &__bar-label {
+            font-size: 0.66rem;
+            letter-spacing: 0.12em;
+            margin-bottom: 0.3rem;
+        }
+
+        &__bar-val {
+            font-size: 0.82rem;
+        }
+
+        &__bar {
+            padding: 0.85rem !important;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .kndl-contact__card,
+    .kndl-contact__bar,
+    .kndl-contact__location,
+    .kndl-contact__bar-title {
+        animation: none;
+    }
+}

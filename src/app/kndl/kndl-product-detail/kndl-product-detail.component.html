@@ -1,0 +1,314 @@
+<div class="kpd">
+
+    <!-- ─── Loading ─── -->
+    <div class="kpd-loading" *ngIf="isLoading">
+        <div class="kpd-loading__ring" aria-hidden="true"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- ─── 404 ─── -->
+    <div class="kpd-404" *ngIf="notFound && !isLoading">
+        <h1>404</h1>
+        <p>App not found.</p>
+        <button type="button" (click)="goBack()">← Back to KNDL Inc</button>
+    </div>
+
+    <!-- ─── Main layout ─── -->
+    <div class="kpd-layout" *ngIf="app && !isLoading" role="main">
+
+        <!-- Sidebar -->
+        <aside class="kpd-sidebar" aria-label="Navigation">
+            <button class="kpd-sidebar__back" (click)="goBack()" aria-label="Back to KNDL Inc">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            </button>
+            <div class="kpd-sidebar__legal">
+                <button type="button" class="kpd-sidebar__legal-link" (click)="openLegalPanel('privacy')"
+                    aria-label="Privacy Policy">Privacy</button>
+                <button type="button" class="kpd-sidebar__legal-link" (click)="openLegalPanel('terms')"
+                    aria-label="Terms of Use">Terms</button>
+                <button type="button" class="kpd-sidebar__legal-link" (click)="openLegalPanel('support')"
+                    aria-label="Support">Support</button>
+            </div>
+        </aside>
+
+        <!-- Main scroll area -->
+        <main class="kpd-main">
+            <!-- HERO -->
+            <section class="kpd-hero">
+                <div class="kpd-container py-5 h-100 d-flex justify-content-center">
+                    <div class="row align-items-center g-5 kpd-hero__row">
+                        <div class="col-12 col-md-7 kpd-hero__content">
+                            <small class="kpd-eyebrow kpd-reveal">{{ app.type || 'iOS App' }}</small>
+                            <h1 class="kpd-title kpd-reveal">{{ app.name }}</h1>
+
+                            <div class="kpd-rating kpd-reveal mb-3" *ngIf="app.averageUserRating">
+                                <span class="kpd-rating__stars">
+                                    <i class="fas fa-star" *ngFor="let s of ratingStars"
+                                        [class.is-half]="app.averageUserRating - s > 0 && app.averageUserRating - s < 1"
+                                        [class.is-empty]="app.averageUserRating - s <= 0" aria-hidden="true"></i>
+                                </span>
+                                <span class="kpd-rating__score">{{ app.averageUserRating | number:'1.1-1' }}</span>
+                                <span class="kpd-rating__count" *ngIf="app.userRatingCount">({{ app.userRatingCount |
+                                    number }} ratings)</span>
+                            </div>
+
+                            <p class="kpd-desc kpd-reveal">{{ primaryTagline | slice:0:220 }}</p>
+
+                            <div class="d-flex gap-3 flex-wrap kpd-reveal kpd-hero__actions">
+                                <a *ngIf="app.appStoreUrl" [href]="app.appStoreUrl" target="_blank"
+                                    rel="noopener noreferrer" class="kpd-btn kpd-btn--primary">
+                                    <i class="fab fa-apple" aria-hidden="true"></i> Download
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-5 d-none d-md-flex justify-content-center" *ngIf="screenshots.length">
+                            <div class="kpd-iphone-group">
+                                <!-- Back phone — peeks out on the right, shows 2nd screenshot -->
+                                <div class="kpd-iphone kpd-iphone--hero kpd-iphone--back"
+                                    *ngIf="screenshots.length > 1">
+                                    <div class="kpd-iphone__frame">
+                                        <div class="kpd-iphone__notch" aria-hidden="true"></div>
+                                        <img [src]="screenshots[1]" [alt]="app.name + ' screenshot 2'" loading="lazy" />
+                                    </div>
+                                </div>
+                                <!-- Front (main) phone -->
+                                <div class="kpd-iphone kpd-iphone--hero">
+                                    <div class="kpd-iphone__frame">
+                                        <div class="kpd-iphone__notch" aria-hidden="true"></div>
+                                        <img [src]="screenshots[0]" [alt]="app.name + ' preview'" loading="lazy" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-md-none" *ngIf="screenshots.length">
+                            <div class="kpd-carousel kpd-carousel--hero-mobile">
+                                <button class="kpd-carousel__btn" (click)="prevScreenshot()" type="button"
+                                    aria-label="Previous screenshot" [disabled]="activePanelScreenIdx === 0">
+                                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                                </button>
+
+                                <div class="kpd-carousel__stage">
+                                    <div class="kpd-carousel__card" *ngFor="let src of screenshots.slice(0, 6); let i = index"
+                                        [ngClass]="getCarouselCardClass(i)" (click)="onCarouselCardClick(i)">
+                                        <div class="kpd-carousel__notch" aria-hidden="true"></div>
+                                        <img [src]="src" [alt]="app.name + ' screenshot ' + (i + 1)" loading="lazy" />
+                                    </div>
+                                </div>
+
+                                <button class="kpd-carousel__btn" (click)="nextScreenshot()" type="button"
+                                    aria-label="Next screenshot"
+                                    [disabled]="activePanelScreenIdx === screenshots.slice(0, 6).length - 1">
+                                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Scroll cue -->
+                <div class="kpd-scroll-cue" aria-hidden="true">
+                    <span>SCROLL TO EXPLORE</span>
+                    <div class="kpd-scroll-line"></div>
+                </div>
+
+            </section>
+
+            <!-- FEATURES -->
+            <section class="kpd-section kpd-reveal" *ngIf="keyFeatures.length">
+                <div class="kpd-container py-5">
+
+                    <div class="kpd-feat-header">
+                        <small class="kpd-eyebrow">What Makes It Great</small>
+                        <h2 class="kpd-section-title">{{ app.name }}</h2>
+                        <div class="kpd-genres" *ngIf="genres.length">
+                            <span class="kpd-genre-chip" *ngFor="let g of genres">{{ g }}</span>
+                        </div>
+                    </div>
+
+                    <div class="kpd-feat-grid">
+                        <div class="kpd-feat-card" *ngFor="let f of keyFeatures.slice(0, 6)">
+                            <div class="kpd-feat-card__icon">
+                                <i class="fas" [ngClass]="f.icon" aria-hidden="true"></i>
+                            </div>
+                            <div class="kpd-feat-card__content">
+                                <strong class="kpd-feat-card__title">{{ f.title }}</strong>
+                                <p class="kpd-feat-card__body">{{ f.body }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kpd-wn mt-4" *ngIf="whatsNewText">
+                        <div class="kpd-wn__inner">
+                            <span class="kpd-wn__badge" *ngIf="app.versionString">v{{ app.versionString }} — New</span>
+                            <p class="kpd-wn__text">{{ whatsNewText | slice:0:180 }}<span
+                                    *ngIf="whatsNewText.length > 180">…</span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GALLERY -->
+            <section class="kpd-section kpd-reveal" *ngIf="screenshots.length">
+                <div class="kpd-container py-5">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <small class="kpd-eyebrow mb-0">Gallery</small>
+                        <span class="kpd-gallery-counter">{{ activePanelScreenIdx + 1 }} / {{ screenshots.slice(0,
+                            6).length }}</span>
+                    </div>
+
+                    <div class="kpd-carousel">
+                        <button class="kpd-carousel__btn" (click)="prevScreenshot()" type="button"
+                            aria-label="Previous screenshot" [disabled]="activePanelScreenIdx === 0">
+                            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                        </button>
+
+                        <div class="kpd-carousel__stage">
+                            <div class="kpd-carousel__card" *ngFor="let src of screenshots.slice(0, 6); let i = index"
+                                [ngClass]="getCarouselCardClass(i)" (click)="onCarouselCardClick(i)">
+                                <div class="kpd-carousel__notch" aria-hidden="true"></div>
+                                <img [src]="src" [alt]="app.name + ' screenshot ' + (i + 1)" loading="lazy" />
+                            </div>
+                        </div>
+
+                        <button class="kpd-carousel__btn" (click)="nextScreenshot()" type="button"
+                            aria-label="Next screenshot"
+                            [disabled]="activePanelScreenIdx === screenshots.slice(0, 6).length - 1">
+                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <div class="kpd-filmstrip mt-3" role="list">
+                        <button class="kpd-filmstrip__thumb" *ngFor="let src of screenshots.slice(0, 6); let i = index"
+                            [class.is-active]="activePanelScreenIdx === i" (click)="activePanelScreenIdx = i"
+                            type="button" [attr.aria-label]="'View screenshot ' + (i + 1)" role="listitem">
+                            <img [src]="src" [alt]="app.name + ' screenshot ' + (i + 1)" loading="lazy" />
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DETAILS -->
+            <section class="kpd-section kpd-reveal">
+                <div class="kpd-container py-5">
+                    <div class="row g-5 align-items-start">
+
+                        <div class="col-12">
+
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <img *ngIf="artworkUrl" [src]="artworkUrl" [alt]="app.name" class="kpd-app-icon" />
+                                <div *ngIf="!artworkUrl" class="kpd-app-icon-fallback">{{ getAppInitials(app.name) }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="kpd-app-name mb-0">{{ app.name }}</p>
+                                    <small class="kpd-eyebrow mb-0">{{ app.type || 'iOS App' }}</small>
+                                </div>
+                                <a *ngIf="app.appStoreUrl" [href]="app.appStoreUrl" target="_blank"
+                                    rel="noopener noreferrer" class="kpd-btn kpd-btn--primary kpd-btn--sm">
+                                    <i class="fab fa-apple" aria-hidden="true"></i> Download
+                                </a>
+                            </div>
+
+                            <div class="kpd-rating mb-2" *ngIf="app.averageUserRating">
+                                <span class="kpd-rating__stars">
+                                    <i class="fas fa-star" *ngFor="let s of ratingStars"
+                                        [class.is-half]="app.averageUserRating - s > 0 && app.averageUserRating - s < 1"
+                                        [class.is-empty]="app.averageUserRating - s <= 0" aria-hidden="true"></i>
+                                </span>
+                                <span class="kpd-rating__score">{{ app.averageUserRating | number:'1.1-1' }}</span>
+                                <span class="kpd-rating__count" *ngIf="app.userRatingCount">({{ app.userRatingCount |
+                                    number }})</span>
+                            </div>
+
+                            <p class="kpd-tagline">{{ primaryTagline | slice:0:160 }}</p>
+
+                            <div class="kpd-genres mb-4" *ngIf="genres.length">
+                                <span class="kpd-genre-chip" *ngFor="let g of genres">{{ g }}</span>
+                            </div>
+
+                            <div class="kpd-stats" *ngIf="detailsStats.length">
+                                <div class="kpd-stat" *ngFor="let s of detailsStats">
+                                    <span class="kpd-stat__label">{{ s.label }}</span>
+                                    <span class="kpd-stat__value">{{ s.value }}</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4" *ngIf="customerReviews.length">
+                                <p class="kpd-sect-title"><i class="fas fa-star" aria-hidden="true"></i> Reviews</p>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="kpd-review" *ngFor="let r of customerReviews">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="kpd-review__nick">{{ r.nickname }}</span>
+                                            <span class="kpd-review__stars">
+                                                <i class="fas fa-star" *ngFor="let _ of [].constructor(r.rating)"
+                                                    aria-hidden="true"></i>
+                                            </span>
+                                        </div>
+                                        <p class="kpd-review__title" *ngIf="r.title">{{ r.title }}</p>
+                                        <p class="kpd-review__body">{{ r.body }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4" *ngIf="app.inAppPurchases?.length">
+                                <p class="kpd-sect-title"><i class="fas fa-bag-shopping" aria-hidden="true"></i> In-App
+                                    Purchases</p>
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="kpd-iap" *ngFor="let iap of app.inAppPurchases">
+                                        <span class="kpd-iap__name">{{ iap.name || iap.productId }}</span>
+                                        <span class="kpd-iap__type">{{ iap.type | titlecase }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4" *ngIf="app.subscriptionGroups?.length">
+                                <p class="kpd-sect-title"><i class="fas fa-rotate" aria-hidden="true"></i> Subscriptions
+                                </p>
+                                <div *ngFor="let group of app.subscriptionGroups">
+                                    <p class="kpd-sub-group" *ngIf="group.name">{{ group.name }}</p>
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="kpd-iap" *ngFor="let sub of group.subscriptions">
+                                            <span class="kpd-iap__name">{{ sub.name || sub.productId }}</span>
+                                            <span class="kpd-iap__type">{{ sub.period }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4" *ngIf="faqItems.length">
+                                <p class="kpd-sect-title">FAQ</p>
+                                <div class="kpd-faq-item" *ngFor="let item of faqItems">
+                                    <p class="kpd-faq-item__q">{{ item.question }}</p>
+                                    <p class="kpd-faq-item__a">{{ item.answer }}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4" *ngIf="app.eulaText">
+                                <p class="kpd-sect-title"><i class="fas fa-file-lines" aria-hidden="true"></i> License
+                                    Agreement</p>
+                                <p class="kpd-eula">{{ app.eulaText | slice:0:600 }}<span
+                                        *ngIf="app.eulaText.length > 600">...</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="kpd-footer">&copy; {{ currentYear }} KNDL Inc. — All rights reserved.</footer>
+
+        </main>
+    </div>
+
+    <!-- ─── Legal slide panel ─── -->
+    <div class="kpd-legal-panel" [class.is-open]="legalPanelType !== null" role="dialog" aria-modal="true"
+        [attr.aria-label]="legalPanelType ? 'Legal — ' + legalPanelType : null">
+        <div class="kpd-legal-panel__backdrop" (click)="closeLegalPanel()" aria-hidden="true"></div>
+        <div class="kpd-legal-panel__drawer">
+            <app-kndl-app-legal *ngIf="legalPanelType !== null" [app]="app" [pageType]="legalPanelType"
+                (closePanel)="closeLegalPanel()">
+            </app-kndl-app-legal>
+        </div>
+    </div>
+</div>

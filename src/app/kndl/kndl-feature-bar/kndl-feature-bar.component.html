@@ -1,0 +1,55 @@
+<section class="kndl-bottom-blur" *ngIf="isVisible" aria-label="Featured content">
+
+    <!-- Left: editorial overview -->
+    <article class="kndl-bottom-blur__item kndl-bottom-blur__item--editorial">
+        <span class="kndl-bottom-blur__label">KNDL · STUDIO</span>
+        <h3 class="kndl-bottom-blur__title">Studio Overview</h3>
+        <p class="kndl-bottom-blur__body">How we think, build, and grow with you.</p>
+        <button class="kndl-bottom-blur__action" type="button" (click)="open('about')">
+            EXPLORE
+            <i class="fas fa-arrow-right kndl-bottom-blur__action-icon" aria-hidden="true"></i>
+        </button>
+    </article>
+
+    <!-- Middle: three pillars -->
+    <article class="kndl-bottom-blur__item kndl-bottom-blur__item--pillar">
+        <i class="fas fa-chess-rook kndl-bottom-blur__icon" aria-hidden="true"></i>
+        <div class="kndl-bottom-blur__pillar-content">
+            <h4 class="kndl-bottom-blur__pillar-title">STRATEGY FIRST</h4>
+            <p class="kndl-bottom-blur__pillar-body">Research-driven plans aligned with your goals.</p>
+        </div>
+    </article>
+    <article class="kndl-bottom-blur__item kndl-bottom-blur__item--pillar">
+        <i class="fas fa-tablet-screen-button kndl-bottom-blur__icon" aria-hidden="true"></i>
+        <div class="kndl-bottom-blur__pillar-content">
+            <h4 class="kndl-bottom-blur__pillar-title">MODERN DESIGN</h4>
+            <p class="kndl-bottom-blur__pillar-body">User-focused design that drives real results.</p>
+        </div>
+    </article>
+    <article class="kndl-bottom-blur__item kndl-bottom-blur__item--pillar">
+        <i class="fas fa-chart-line kndl-bottom-blur__icon" aria-hidden="true"></i>
+        <div class="kndl-bottom-blur__pillar-content">
+            <h4 class="kndl-bottom-blur__pillar-title">SCALABLE SOLUTIONS</h4>
+            <p class="kndl-bottom-blur__pillar-body">Built to grow with your business over time.</p>
+        </div>
+    </article>
+
+    <!-- Right: editorial featured work -->
+    <article class="kndl-bottom-blur__item kndl-bottom-blur__item--editorial kndl-bottom-blur__item--right">
+        <span class="kndl-bottom-blur__label">Packages Builder</span>
+        <h3 class="kndl-bottom-blur__title">Build Your Own Website Plan</h3>
+        <p class="kndl-bottom-blur__body">Start with a base package. Add only what you need. Launch with a professional
+            website built for your business.</p>
+        <button class="kndl-bottom-blur__action" type="button" (click)="open('products')">
+            Package Builder
+            <i class="fas fa-arrow-right kndl-bottom-blur__action-icon" aria-hidden="true"></i>
+        </button>
+    </article>
+
+    <!-- Last column: package builder tab -->
+    <button class="kndl-bottom-blur__item kndl-bottom-blur__item--view-blog kndl-view-blog" type="button"
+        (click)="open('builder')" aria-label="Open Package Builder">
+        Start
+    </button>
+
+</section>

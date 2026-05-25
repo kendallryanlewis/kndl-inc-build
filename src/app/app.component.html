@@ -1,1 +1,16 @@
-<router-outlet></router-outlet>
+<!-- Persistent background video — never unmounts during route navigation -->
+<div class="kndl-reel" [class.is-hidden]="bgState.videoHidden" [class.is-loaded]="videoLoaded" aria-hidden="true">
+    <video autoplay muted loop playsinline (canplay)="videoLoaded = true">
+        <source src="assets/Video/office.mp4" type="video/mp4" />
+    </video>
+    <div class="kndl-reel__overlay"></div>
+</div>
+
+<!-- Color-control gradient overlay — tab driven via BackgroundService -->
+<div class="kndl-gradient" [attr.data-tab]="bgState.tab" aria-hidden="true"></div>
+
+<!-- Route animation wrapper -->
+<div class="route-wrap" [class.route-wrap--scrollable]="bgState.tab === 'detail'"
+    [@routeAnimations]="prepareRoute(outlet)">
+    <router-outlet #outlet="outlet"></router-outlet>
+</div>

@@ -1,33 +1,655 @@
-.service-page {
-    background-color: rgb(39, 39, 39);
-    color: white;
-    width: 100vw;
+:host {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
-h1 {
-    font-size: clamp(28px, 16px + 3vw, 200px);
+// ─── Design tokens matching kp- products page ─────────────────────────────────
+$gold: var(--c-gold, #c9a96e);
+$ink: rgba(244 248 255 / 0.96);
+$muted: rgba(200 214 234 / 0.68);
+$border: rgba(232 239 251 / 0.13);
+$ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+.ab {
+    min-height: 100%;
+    overflow-y: visible;
+    box-sizing: border-box;
 }
 
-.card {
-    min-height: 400px;
-    background-color: rgb(60 60 60);
+.ab-eyebrow {
+    margin: 0 0 0.9rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: $gold;
+    border-left: 2px solid $gold;
+    padding-left: 0.65rem;
+    animation: heroFadeUp 1100ms $ease both;
+    animation-delay: 260ms;
+}
 
-    &:hover {
-        transform: scale(1.1);
-        transition: 1s ease-in-out;
+.ab-section__eyebrow {
+    margin: 0 0 0.4rem;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: $gold;
+}
+
+.ab-section__title {
+    margin: 0 0 0.75rem;
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 3.5vw, 3rem);
+    letter-spacing: -0.03em;
+    color: $ink;
+}
+
+.ab-section__head {
+    margin-bottom: 2rem;
+
+    .ab-section__desc {
+        margin: 0;
+        font-size: 0.84rem;
+        line-height: 1.72;
+        color: $muted;
+        max-width: 600px;
     }
 }
 
-.card-container {
-    width: 1200px;
+.ab-hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: calc(var(--topbar-height, 90px) + 2rem) clamp(1.5rem, 4vw, 3rem) 4.5rem;
+    overflow: hidden;
 }
 
-.action-button {
-    padding: 2rem;
-    color: white;
+.ab-headline {
+    margin: 0;
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    color: $ink;
 
-    .inside-button {
-        background-color: red;
-        border: green;
+    span {
+        color: $gold;
+    }
+
+    animation: heroTitleIn 1150ms $ease both;
+    animation-delay: 520ms;
+}
+
+.ab-lead {
+    margin: 1.4rem 0 0;
+    max-width: 600px;
+    font-size: clamp(0.84rem, 1.1vw, 0.98rem);
+    line-height: 1.8;
+    color: $muted;
+    animation: heroFadeUp 1100ms $ease both;
+    animation-delay: 760ms;
+}
+
+.ab-hero__cta-row {
+    animation: heroFadeUp 1100ms $ease both;
+    animation-delay: 980ms;
+}
+
+.ab-scroll-cue {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 3;
+
+    span {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.52rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(200 214 234 / 0.32);
+    }
+}
+
+.ab-scroll-cue__line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, rgba(201 169 110 / 0.5), transparent);
+    animation: scrollPulse 2.2s ease-in-out infinite;
+}
+
+.ab-accent-btn,
+.ab-ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.72rem 1.5rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 220ms $ease, color 220ms $ease, border-color 220ms $ease;
+}
+
+.ab-accent-btn {
+    background: rgba(201 169 110 / 0.14);
+    color: $gold;
+    border: 1px solid rgba(201 169 110 / 0.4);
+
+    &:hover {
+        background: rgba(201 169 110 / 0.24);
+        border-color: rgba(201 169 110 / 0.68);
+    }
+}
+
+.ab-ghost-btn {
+    background: rgba(232 239 251 / 0.06);
+    color: rgba(220 229 245 / 0.72);
+    border: 1px solid $border;
+
+    &:hover {
+        border-color: rgba(201 169 110 / 0.38);
+        color: $gold;
+        background: rgba(201 169 110 / 0.08);
+    }
+}
+
+.ab-section {
+    padding: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3rem);
+    border-top: 1px solid $border;
+}
+
+// ─── Card shared style (matching kp-catalog__card) ──────────────────────────────
+%ab-card {
+    padding: 1.6rem;
+    background: rgb(59 66 78 / 63%);
+    border: 1px solid rgba(232 239 251 / 0.18);
+    backdrop-filter: blur(12px);
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+    transition: background 260ms $ease, border-color 260ms $ease, transform 280ms $ease, box-shadow 280ms $ease;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 2px;
+        background: $gold;
+        transform: scaleY(0);
+        transform-origin: bottom;
+        transition: transform 300ms $ease;
+    }
+
+    &:hover {
+        background: rgb(71 80 98 / 63%);
+        border-color: rgba(201 169 110 / 0.5);
+        transform: translateY(-4px);
+        box-shadow: 0 20px 56px rgba(0 0 0 / 0.5), 0 0 40px rgba(201 169 110 / 0.08);
+
+        &::before {
+            transform: scaleY(1);
+        }
+    }
+}
+
+.ab-mini-card {
+    @extend %ab-card;
+
+    h3 {
+        margin: 0.75rem 0 0;
+        font-family: 'Sora', sans-serif;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: $ink;
+        transition: color 240ms $ease;
+    }
+
+    p {
+        margin: 0.55rem 0 0;
+        font-size: 0.82rem;
+        line-height: 1.68;
+        color: $muted;
+    }
+
+    &:hover h3 {
+        color: $gold;
+    }
+}
+
+.ab-mini-card__icon {
+    display: block;
+    color: $gold;
+    font-size: 1.2rem;
+}
+
+.ab-tier-card {
+    @extend %ab-card;
+
+    h3 {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: $ink;
+    }
+
+    ul {
+        margin: 0.8rem 0 0;
+        padding-left: 1rem;
+        display: grid;
+        gap: 0.24rem;
+    }
+
+    li {
+        font-size: 0.74rem;
+        line-height: 1.45;
+        color: $muted;
+    }
+}
+
+.ab-tier-card__badge {
+    display: inline-block;
+    padding: 0.22rem 0.6rem;
+    margin: 0 0 0.85rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: rgba(201 169 110 / 0.16);
+    color: $gold;
+    border: 1px solid rgba(201 169 110 / 0.4);
+    border-radius: 2px;
+}
+
+.ab-tier-card__label {
+    margin: 0.25rem 0 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(200 214 234 / 0.45);
+}
+
+.ab-tier-card__price {
+    margin: 0.4rem 0 0.6rem;
+    font-family: 'Sora', sans-serif;
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 800;
+    color: $gold;
+}
+
+.ab-tier-card__meta {
+    margin: 0.9rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(232 239 251 / 0.16);
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: rgba(200 214 234 / 0.5);
+}
+
+.ab-tier-card--featured {
+    border-color: rgba(201 169 110 / 0.48);
+    box-shadow: 0 0 0 1px rgba(201 169 110 / 0.2) inset;
+}
+
+.ab-addon-card {
+    @extend %ab-card;
+
+    h3 {
+        margin: 0 0 0.85rem;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: $gold;
+    }
+
+    ul {
+        margin: 0;
+        padding-left: 1rem;
+        display: grid;
+        gap: 0.28rem;
+    }
+
+    li {
+        font-size: 0.74rem;
+        line-height: 1.45;
+        color: $muted;
+    }
+}
+
+.ab-step {
+    @extend %ab-card;
+
+    h3 {
+        margin: 0.65rem 0 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: $ink;
+    }
+
+    p {
+        margin: 0.45rem 0 0;
+        font-size: 0.82rem;
+        line-height: 1.68;
+        color: $muted;
+    }
+}
+
+.ab-step__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 1px solid rgba(201 169 110 / 0.5);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: $gold;
+}
+
+// ── Why KNDL Inc ────────────────────────────────────────────
+.ab-why__heading {
+    margin: 0.5rem 0 1rem;
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    color: $ink;
+
+    span {
+        color: $gold;
+    }
+}
+
+.ab-why__body {
+    margin: 0 0 1.2rem;
+    font-size: 0.86rem;
+    line-height: 1.78;
+    color: $muted;
+}
+
+.ab-why__points {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    display: grid;
+    gap: 0.6rem;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.77rem;
+        color: rgba(220 234 255 / 0.84);
+
+        i {
+            color: $gold;
+            font-size: 0.58rem;
+            flex-shrink: 0;
+        }
+    }
+}
+
+.ab-why__visual {
+    position: relative;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 440px;
+        object-fit: cover;
+        object-position: center 20%;
+        filter: brightness(0.65) saturate(0.5);
+        display: block;
+        transition: filter 480ms $ease, transform 480ms $ease;
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: 1px solid rgba(201 169 110 / 0.28);
+        pointer-events: none;
+    }
+
+    &:hover img {
+        filter: brightness(0.78) saturate(0.65);
+        transform: scale(1.025);
+    }
+}
+
+// ── Testimonials ─────────────────────────────────────────────
+.ab-testimonial-card {
+    @extend %ab-card;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.ab-testimonial-card__icon {
+    color: $gold;
+    font-size: 0.85rem;
+    opacity: 0.6;
+}
+
+.ab-testimonial-card__quote {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.68;
+    color: rgba(220 234 255 / 0.88);
+    flex: 1;
+    font-style: italic;
+}
+
+.ab-testimonial-card__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(232 239 251 / 0.16);
+}
+
+.ab-testimonial-card__name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: $ink;
+    text-transform: uppercase;
+}
+
+.ab-testimonial-card__company {
+    font-size: 0.65rem;
+    color: $muted;
+}
+
+// ── Scroll reveal ─────────────────────────────────────────────
+.ab-reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+        opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &.ab-in-view {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.ab-cta-band {
+    padding: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3rem);
+    border-top: 1px solid $border;
+    background: rgb(59 66 78 / 40%);
+    backdrop-filter: blur(12px);
+}
+
+.ab-cta-band__content {
+    h3 {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: clamp(1.6rem, 2.8vw, 2.5rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: $ink;
+        text-transform: uppercase;
+    }
+
+    p {
+        margin: 0.5rem 0 0;
+        font-size: 0.84rem;
+        line-height: 1.7;
+        color: $muted;
+        max-width: 560px;
+    }
+}
+
+@keyframes heroFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes heroTitleIn {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.985);
+        letter-spacing: -0.01em;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        letter-spacing: -0.04em;
+    }
+}
+
+@keyframes scrollPulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: scaleY(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scaleY(1.15);
+    }
+}
+
+@media (max-width: 991.98px) {
+    .ab-hero {
+        min-height: calc(100dvh - var(--topbar-height, 90px));
+        padding: calc(var(--topbar-height, 90px) + 1.4rem) clamp(1rem, 3vw, 1.5rem) 4rem;
+    }
+
+    .ab-headline {
+        font-size: clamp(2rem, 9vw, 3.6rem);
+    }
+
+    .ab-lead {
+        max-width: 100%;
+        font-size: 0.9rem;
+        line-height: 1.7;
+    }
+
+    .ab-section {
+        padding: 2rem 1rem;
+    }
+
+    .ab-scroll-cue {
+        bottom: 0.4rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .ab-why__visual img {
+        height: 260px;
+    }
+
+    .ab-cta-band__actions,
+    .ab-accent-btn,
+    .ab-ghost-btn {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ab-accent-btn,
+    .ab-ghost-btn,
+    .ab-mini-card,
+    .ab-tier-card,
+    .ab-testimonial-card,
+    .ab-addon-card,
+    .ab-step,
+    .ab-why__visual img {
+        transition: none;
+
+        &::before {
+            transition: none;
+        }
+    }
+
+    .ab-eyebrow,
+    .ab-headline,
+    .ab-lead,
+    .ab-hero__cta-row {
+        animation: none;
+    }
+
+    .ab-scroll-cue__line {
+        animation: none;
+    }
+
+    .ab-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
     }
 }

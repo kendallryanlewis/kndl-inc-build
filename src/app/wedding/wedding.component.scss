@@ -1,0 +1,587 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Lato:wght@300;400;700&display=swap');
+
+// ─── Palette ──────────────────────────────────────────────────────────────────
+$maroon:      #800020;
+$maroon-m:    #9B1C2E;
+$dark:        #0C0608;
+$dark-mid:    #1A0C0F;
+$cream:       #FAF8F5;
+$ivory:       #F5F0E8;
+$white:       #ffffff;
+$text-dark:   #1C0A0D;
+$text-mid:    #5A3035;
+$text-muted:  #9A7878;
+
+$ff-script: 'Great Vibes', cursive;
+$ff-serif:  'Cormorant Garamond', Georgia, serif;
+$ff-sans:   'Lato', system-ui, -apple-system, sans-serif;
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+.wp {
+  font-family: $ff-serif;
+  overflow-x: hidden;
+  background: $cream;
+  color: $text-dark;
+}
+
+// ─── Shared script heading ────────────────────────────────────────────────────
+.wp-script {
+  font-family: $ff-script;
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  font-weight: 400;
+  line-height: 1.1;
+  color: $text-dark;
+  text-align: center;
+  margin: 0 0 1.75rem;
+
+  &--light { color: $white; }
+}
+
+// ─── HERO ─────────────────────────────────────────────────────────────────────
+.wp-hero {
+  position: relative;
+  min-height: 100svh;
+  // Drop your hero photo here:
+  // background-image: url('/assets/Images/hero.jpg');
+  background-color: $dark;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 1.5rem 5rem;
+  overflow: hidden;
+
+  // Ambient botanical glow
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 65% 55% at 20% 25%, rgba($maroon, 0.22) 0%, transparent 65%),
+      radial-gradient(ellipse 55% 45% at 80% 75%, rgba($maroon, 0.14) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba($maroon, 0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+}
+
+// ─── Nav (inside hero) ────────────────────────────────────────────────────────
+.wp-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.75rem 1rem;
+  z-index: 10;
+
+  &__link {
+    font-family: $ff-sans;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba($white, 0.65);
+    text-decoration: none;
+    transition: color 180ms ease;
+
+    &:hover { color: $white; }
+  }
+
+  &__dot {
+    font-size: 0.5rem;
+    color: rgba($white, 0.25);
+    line-height: 1;
+  }
+}
+
+// ─── Hero inner ────────────────────────────────────────────────────────────────
+.wp-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.wp-hero__family {
+  font-family: $ff-sans;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba($white, 0.4);
+  margin: 0 0 1.25rem;
+}
+
+.wp-hero__vline {
+  display: block;
+  width: 1px;
+  height: 54px;
+  background: linear-gradient(to bottom, transparent, rgba($white, 0.3), transparent);
+  margin-bottom: 1.5rem;
+}
+
+.wp-hero__names {
+  font-family: $ff-script;
+  font-size: clamp(3.75rem, 15vw, 10rem);
+  font-weight: 400;
+  line-height: 1;
+  color: $white;
+  margin: 0 0 1.1rem;
+  letter-spacing: 0.01em;
+}
+
+.wp-hero__date {
+  font-family: $ff-serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(0.82rem, 1.8vw, 1rem);
+  letter-spacing: 0.1em;
+  color: rgba($white, 0.6);
+  margin: 0 0 0.3rem;
+}
+
+.wp-hero__location {
+  font-family: $ff-serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(0.8rem, 1.6vw, 0.95rem);
+  letter-spacing: 0.1em;
+  color: rgba($white, 0.42);
+  margin: 0 0 1.75rem;
+}
+
+.wp-hero__hline {
+  display: block;
+  width: 64px;
+  height: 1px;
+  background: rgba($white, 0.18);
+  margin-bottom: 2rem;
+}
+
+// ─── Countdown ────────────────────────────────────────────────────────────────
+.wp-hero__countdown {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(1.5rem, 6vw, 4rem);
+  margin-bottom: 2.75rem;
+}
+
+.wp-hero__unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.wp-hero__num {
+  font-family: $ff-serif;
+  font-weight: 300;
+  font-size: clamp(2.75rem, 9vw, 5.5rem);
+  line-height: 1;
+  color: $white;
+  letter-spacing: -0.02em;
+}
+
+.wp-hero__unit-label {
+  font-family: $ff-sans;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba($white, 0.38);
+}
+
+// ─── Hero CTA pill ────────────────────────────────────────────────────────────
+.wp-hero__cta {
+  font-family: $ff-sans;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: $white;
+  background: rgba($white, 0.08);
+  border: 1.5px solid rgba($white, 0.28);
+  border-radius: 100px;
+  padding: 0.9rem 2.5rem;
+  text-decoration: none;
+  transition: background 220ms ease, border-color 220ms ease, transform 160ms ease;
+
+  &:hover {
+    background: rgba($maroon, 0.5);
+    border-color: rgba($white, 0.5);
+    color: $white;
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  &:active { transform: translateY(0); }
+}
+
+// ─── INVITATION ───────────────────────────────────────────────────────────────
+.wp-invite {
+  background: $white;
+  padding: 6rem 1.5rem;
+  text-align: center;
+
+  &__body {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  &__request {
+    font-family: $ff-sans;
+    font-size: 0.68rem;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: $text-mid;
+    line-height: 2;
+    margin: 0 0 1.5rem;
+
+    strong {
+      color: $text-dark;
+      font-weight: 700;
+    }
+  }
+
+  &__big-date {
+    font-family: $ff-serif;
+    font-weight: 600;
+    font-size: clamp(1.25rem, 3.5vw, 1.85rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: $text-dark;
+    margin: 0 0 1rem;
+  }
+
+  &__venue-name {
+    font-family: $ff-serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: $text-mid;
+    margin: 0 0 0.25rem;
+  }
+
+  &__venue-addr {
+    font-family: $ff-sans;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: $text-muted;
+    margin: 0 0 2.25rem;
+  }
+
+  &__rsvp-btn {
+    display: inline-block;
+    font-family: $ff-sans;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: $text-dark;
+    border: 1.5px solid $text-dark;
+    padding: 0.8rem 2.75rem;
+    text-decoration: none;
+    transition: background 200ms ease, color 200ms ease;
+
+    &:hover {
+      background: $text-dark;
+      color: $white;
+      text-decoration: none;
+    }
+  }
+}
+
+// ─── PHOTO BANDS ──────────────────────────────────────────────────────────────
+.wp-band {
+  height: 380px;
+  // Add your couple photo: background-image: url('/assets/Images/hands.jpg');
+  background-color: $dark;
+  background-image: linear-gradient(120deg, #1A0C0F 0%, #3A000F 45%, #0C0608 100%);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba($dark, 0.25) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba($dark, 0.25) 100%
+    );
+  }
+
+  &--alt {
+    // Add your couple photo: background-image: url('/assets/Images/couple.jpg');
+    background-image: linear-gradient(240deg, #1A0C0F 0%, #3A000F 45%, #0C0608 100%);
+    background-position: 60% center;
+  }
+}
+
+// ─── OUR STORY ────────────────────────────────────────────────────────────────
+.wp-story {
+  background: $cream;
+  padding: 6rem 1.5rem;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  &__block {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 4.5rem;
+
+    &:last-child { margin-bottom: 0; }
+  }
+
+  &__body {
+    font-family: $ff-serif;
+    font-size: clamp(0.95rem, 2vw, 1.1rem);
+    line-height: 1.9;
+    color: $text-mid;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+.wp-events {
+  background: $white;
+  padding: 6rem 1.5rem;
+  text-align: center;
+
+  &__row {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    border-top: 1px solid rgba($text-muted, 0.15);
+  }
+}
+
+.wp-event-card {
+  flex: 1 1 260px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 2rem;
+  border-right: 1px solid rgba($text-muted, 0.15);
+
+  &:last-child { border-right: none; }
+
+  @media (max-width: 575px) {
+    border-right: none;
+    border-bottom: 1px solid rgba($text-muted, 0.15);
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__type {
+    font-family: $ff-sans;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: $maroon;
+    margin: 0 0 0.5rem;
+  }
+
+  &__time {
+    font-family: $ff-serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: $text-mid;
+    margin: 0 0 1.25rem;
+  }
+
+  &__rule {
+    width: 36px;
+    height: 1px;
+    background: rgba($maroon, 0.35);
+    margin-bottom: 1.25rem;
+  }
+
+  &__venue {
+    font-family: $ff-serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: $text-dark;
+    margin: 0 0 0.3rem;
+  }
+
+  &__addr {
+    font-family: $ff-sans;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: $text-muted;
+    margin: 0 0 1rem;
+  }
+
+  &__note {
+    font-family: $ff-serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: $text-muted;
+    margin: auto 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid rgba($text-muted, 0.15);
+    width: 100%;
+  }
+}
+
+// ─── RSVP ─────────────────────────────────────────────────────────────────────
+.wp-rsvp {
+  background: $dark;
+  padding: 6rem 1.5rem;
+  text-align: center;
+
+  &__deadline {
+    font-family: $ff-sans;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba($white, 0.3);
+    margin: 0 0 3rem;
+  }
+
+  &__form {
+    max-width: 580px;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  &__btn {
+    font-family: $ff-sans;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: $dark;
+    background: $white;
+    border: none;
+    border-radius: 100px;
+    padding: 0.9rem 2.75rem;
+    cursor: pointer;
+    transition: background 200ms ease, transform 160ms ease;
+
+    &:hover {
+      background: $cream;
+      transform: translateY(-2px);
+    }
+
+    &:active { transform: translateY(0); }
+  }
+
+  &__thanks {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    color: $white;
+
+    h3 {
+      font-family: $ff-script;
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 400;
+      color: $white;
+      margin: 0;
+    }
+
+    p {
+      font-family: $ff-serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: rgba($white, 0.6);
+      margin: 0;
+    }
+  }
+}
+
+// ─── Form fields (dark bg) ────────────────────────────────────────────────────
+.wp-field {
+  display: block;
+  width: 100%;
+  font-family: $ff-serif;
+  font-size: 1rem;
+  color: $white;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba($white, 0.16);
+  padding: 0.75rem 0;
+  outline: none;
+  appearance: none;
+  transition: border-color 180ms ease;
+  border-radius: 0;
+  margin-bottom: 0;
+
+  &::placeholder { color: rgba($white, 0.28); }
+
+  &:focus { border-bottom-color: rgba($maroon, 0.7); }
+
+  option { background: $dark-mid; color: $white; }
+
+  &--textarea {
+    resize: vertical;
+    min-height: 80px;
+    background: rgba($white, 0.04);
+    border: 1px solid rgba($white, 0.12);
+    padding: 0.75rem;
+    border-radius: 0;
+
+    &::placeholder { color: rgba($white, 0.28); }
+    &:focus { border-color: rgba($maroon, 0.5); outline: none; }
+  }
+}
+
+// ─── FOOTER ───────────────────────────────────────────────────────────────────
+.wp-footer {
+  background: $dark-mid;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+
+  &__script {
+    font-family: $ff-script;
+    font-size: 2.75rem;
+    font-weight: 400;
+    color: $white;
+    margin: 0;
+    line-height: 1;
+  }
+
+  &__date {
+    font-family: $ff-sans;
+    font-size: 0.56rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba($white, 0.28);
+    margin: 0;
+  }
+}
+
+// ─── Reduced motion ───────────────────────────────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .wp-hero__cta,
+  .wp-invite__rsvp-btn,
+  .wp-rsvp__btn { transition: none; }
+}

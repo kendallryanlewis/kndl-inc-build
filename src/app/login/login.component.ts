@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, Unsubscribe } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { User, UserPlatform } from '../models/User';
 
 @Component({
   selector: 'app-login',
@@ -66,7 +65,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const user: User = {
+        const user = {
           id: uid,
           firstName: userData['firstName'] || '',
           lastName: userData['lastName'] || '',

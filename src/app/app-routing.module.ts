@@ -1,36 +1,43 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { HomeComponent } from './standard-model/home.component';
 import { LoginComponent } from './login/login.component';
-import { PriceOptionComponent } from './standard-model/pricing/price-option/price-option.component';
-import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { KndlComponent } from './kndl/kndl.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { OnBoardingComponent } from './dashboard/on-boarding/on-boarding.component';
-import { PackageDetailComponent } from './package-detail/package-detail.component';
+import { WeddingComponent } from './wedding/wedding.component';
+import { KndlProductDetailComponent } from './kndl/kndl-product-detail/kndl-product-detail.component';
 
 const routes: Routes = [
   {
     path: '',
-    component: KndlComponent
+    component: KndlComponent,
+    data: { animation: 'kndl' }
   }, {
     path: 'login',
     component: LoginComponent,
-  }, {
-    path: 'price/:item',
-    component: PriceOptionComponent,
+    data: { animation: 'login' }
   }, {
     path: 'logout',
     component: LoginComponent,
+    data: { animation: 'login' }
   }, {
-    path: 'package/:id',
-    component: PackageDetailComponent,
+    path: 'wedding',
+    component: WeddingComponent,
+    data: { animation: 'wedding' }
   }, {
-    path: 'dashboard',
-    component: DashboardComponent,
+    path: 'products/:id',
+    component: KndlProductDetailComponent,
+    data: { animation: 'detail' }
   }, {
-    path: '**',
-    component: PageNotFoundComponent,
+    path: 'products/:id/privacy',
+    component: KndlProductDetailComponent,
+    data: { animation: 'detail', legalPage: 'privacy' }
+  }, {
+    path: 'products/:id/terms',
+    component: KndlProductDetailComponent,
+    data: { animation: 'detail', legalPage: 'terms' }
+  }, {
+    path: 'products/:id/support',
+    component: KndlProductDetailComponent,
+    data: { animation: 'detail', legalPage: 'support' }
   }
 ];
 
