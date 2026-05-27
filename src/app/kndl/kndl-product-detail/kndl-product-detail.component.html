@@ -90,7 +90,8 @@
                                 </button>
 
                                 <div class="kpd-carousel__stage">
-                                    <div class="kpd-carousel__card" *ngFor="let src of screenshots.slice(0, 6); let i = index"
+                                    <div class="kpd-carousel__card"
+                                        *ngFor="let src of screenshots.slice(0, 6); let i = index"
                                         [ngClass]="getCarouselCardClass(i)" (click)="onCarouselCardClick(i)">
                                         <div class="kpd-carousel__notch" aria-hidden="true"></div>
                                         <img [src]="src" [alt]="app.name + ' screenshot ' + (i + 1)" loading="lazy" />

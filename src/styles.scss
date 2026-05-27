@@ -79,6 +79,8 @@ html {
 
 body {
     overflow-x: hidden; // Prevent horizontal scroll
+    background: radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.05) 35%, transparent 58%),
+        linear-gradient(90deg, #cfcfcf 0%, #eeeeee 50%, #cfcfcf 100%);
 }
 
 a {

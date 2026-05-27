@@ -1,171 +1,194 @@
-<div class="wp">
+<!-- ═══ COVER PAGE ═══ -->
+<div class="wedding-cover" *ngIf="showCover" [class.wedding-cover--fading]="coverFading" aria-label="Loading"
+  role="status">
+  <svg class="wedding-cover__envelope" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g class="envelope-outline" fill="none">
+      <rect x="10" y="38" width="180" height="102" rx="3" />
+      <polyline points="10,38 100,94 190,38" />
+      <line x1="10" y1="140" x2="64" y2="98" />
+      <line x1="190" y1="140" x2="136" y2="98" />
+    </g>
+  </svg>
+  <p class="wedding-cover__names">Accashia &amp; Kendall</p>
+  <p class="wedding-cover__date">August 16, 2025 · Charleston</p>
+</div>
 
-  <!-- ─── HERO ─────────────────────────────────────────────────────────────── -->
-  <section class="wp-hero">
-
-    <nav class="wp-nav" aria-label="Wedding page navigation">
-      <a class="wp-nav__link" href="#wp-savedate">Save the Date</a>
-      <span class="wp-nav__dot" aria-hidden="true">&bull;</span>
-      <a class="wp-nav__link" href="#wp-rsvp">RSVP</a>
-      <span class="wp-nav__dot" aria-hidden="true">&bull;</span>
-      <a class="wp-nav__link" href="#wp-events">Information</a>
+<main class="wedding-page" [class.wedding-page--fading]="!showCover" [class.wedding-page--ready]="pageReady"
+  [attr.aria-hidden]="showCover ? 'true' : null">
+  <!-- ═══ HEADER ═══ -->
+  <header class="site-header">
+    <a (click)="scrollToSection('home')" class="monogram" role="button" aria-label="Accashia and Kendall home">
+      <img src="assets/wedding/AK_Maroon.png" alt="A|K" />
+    </a>
+    <nav class="nav" aria-label="Primary navigation">
+      <a [class.active]="activeSection === 'home'" (click)="scrollToSection('home')">Home</a>
+      <a [class.active]="activeSection === 'story'" (click)="scrollToSection('story')">Our Story</a>
+      <a [class.active]="activeSection === 'weekend'" (click)="scrollToSection('weekend')">Weekend</a>
+      <a [class.active]="activeSection === 'travel'" (click)="scrollToSection('travel')">Travel</a>
+      <a [class.active]="activeSection === 'gallery'" (click)="scrollToSection('gallery')">Gallery</a>
+      <a [class.active]="activeSection === 'rsvp'" (click)="scrollToSection('rsvp')">RSVP</a>
     </nav>
+  </header>
 
-    <div class="wp-hero__inner">
-      <p class="wp-hero__family">Family of Accashia &amp; Family of Kendall</p>
-      <span class="wp-hero__vline" aria-hidden="true"></span>
-
-      <h1 class="wp-hero__names">Accashia &amp; Kendall</h1>
-
-      <p class="wp-hero__date">Saturday, October 10, 2026</p>
-      <p class="wp-hero__location">Dallas, Texas</p>
-
-      <span class="wp-hero__hline" aria-hidden="true"></span>
-
-      <div class="wp-hero__countdown" aria-label="Countdown to the wedding">
-        <div class="wp-hero__unit">
-          <span class="wp-hero__num">{{ countdown.days }}</span>
-          <span class="wp-hero__unit-label">Days</span>
-        </div>
-        <div class="wp-hero__unit">
-          <span class="wp-hero__num">{{ pad(countdown.hours) }}</span>
-          <span class="wp-hero__unit-label">Hours</span>
-        </div>
-        <div class="wp-hero__unit">
-          <span class="wp-hero__num">{{ pad(countdown.minutes) }}</span>
-          <span class="wp-hero__unit-label">Mins</span>
-        </div>
-        <div class="wp-hero__unit">
-          <span class="wp-hero__num">{{ pad(countdown.seconds) }}</span>
-          <span class="wp-hero__unit-label">Secs</span>
-        </div>
-      </div>
-
-      <a class="wp-hero__cta" href="#wp-rsvp">Respond Kindly</a>
+  <!-- ═══ HERO ═══ -->
+  <section class="hero" id="home" aria-label="Wedding hero section">
+    <div class="wallpaper-parallax" aria-hidden="true">
+      <img class="wallpaper-parallax__fg" #parallaxFg src="assets/wedding/BG_2.jpg" alt="" />
+      <div class="wallpaper-parallax__gradient"></div>
     </div>
-
-  </section>
-
-  <!-- ─── INVITATION ──────────────────────────────────────────────────────── -->
-  <section id="wp-savedate" class="wp-invite">
-    <h2 class="wp-script">Happily Ever After</h2>
-    <div class="wp-invite__body">
-      <p class="wp-invite__request">
-        We, <strong>Accashia &amp; Kendall</strong>, request the pleasure of
-        your company to celebrate our marriage on
+    <div class="hero-copy">
+      <p class="eyebrow">Welcome to our wedding</p>
+      <h1 class="hero-title">Accashia<br />&amp; Kendall</h1>
+      <p class="hero-script">forever starts here</p>
+      <p class="date-block">
+        {{ weddingDate }}
+        <small>{{ weddingLocation }}</small>
       </p>
-      <p class="wp-invite__big-date">10 October 2026</p>
-      <p class="wp-invite__venue-name">The Grand Magnolia Estate</p>
-      <p class="wp-invite__venue-addr">4520 Magnolia Dr &bull; Dallas, Texas</p>
-      <a class="wp-invite__rsvp-btn" href="#wp-rsvp">RSVP</a>
+      <button class="btn" (click)="scrollToSection('rsvp')">RSVP <span aria-hidden="true">→</span></button>
     </div>
   </section>
 
-  <!-- ─── PHOTO BAND 1 ──────────────────────────────────────────────────────── -->
-  <div class="wp-band" role="presentation" aria-hidden="true"></div>
-
-  <!-- ─── OUR STORY ────────────────────────────────────────────────────────── -->
-  <section class="wp-story">
-
-    <div class="wp-story__block">
-      <h2 class="wp-script">Our Story</h2>
-      <p class="wp-story__body">
-        Accashia and Kendall's love story began when two worlds unexpectedly collided.
-        From that very first meeting, it was clear this was something rare &mdash; a
-        connection that deepened with every conversation, every shared laugh, every
-        quiet moment. Their bond grew from a simple spark into an unshakeable flame,
-        and they never looked back.
+  <!-- ═══ OUR STORY ═══ -->
+  <section class="section story" id="story">
+    <figure class="story-image">
+      <img src="assets/wedding/images/story-walking.jpg"
+        alt="Accashia and Kendall walking together in wedding attire" />
+    </figure>
+    <div class="story-text">
+      <h2 class="section-title">Our Story</h2>
+      <p class="script">how it all began</p>
+      <p class="section-copy">
+        From a chance meeting over coffee to countless adventures together, our story is one of faith,
+        friendship, and a love that keeps growing.
+        <br /><br />
+        We are so excited to celebrate this next chapter with you.
       </p>
+      <a class="text-link" role="button" (click)="scrollToSection('story')">Read Our Story <span
+          aria-hidden="true">→</span></a>
     </div>
+  </section>
 
-    <div class="wp-story__block">
-      <h2 class="wp-script">How He Proposed</h2>
-      <p class="wp-story__body">
-        On a warm Texas evening, Kendall planned the perfect moment &mdash; one Accashia
-        never saw coming. In the most heartfelt, intimate setting, he got down on one
-        knee and asked the question that changed everything. With tears of joy and a
-        resounding yes, they celebrated together and began counting down to forever.
+  <!-- ═══ WEDDING WEEKEND ═══ -->
+  <section class="section weekend" id="weekend">
+    <h2 class="section-title">Wedding Weekend</h2>
+    <span class="script">join us as we celebrate</span>
+    <div class="events-grid">
+
+      <article class="event-card">
+        <svg class="event-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 4c3 6 8 11 15 15-7 4-12 9-15 15-3-6-8-11-15-15 7-4 12-9 15-15Z" fill="none" stroke="currentColor"
+            stroke-width="1.8" />
+          <path d="M24 13v22M13 24h22" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        <p class="event-date">Friday, August 15</p>
+        <h3 class="event-name">Welcome Party</h3>
+        <p class="event-detail">6:00 PM<br />The Rooftop at Vendue</p>
+      </article>
+
+      <article class="event-card">
+        <svg class="event-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 6c3.5 5.4 8.6 10.1 15 14-6.4 3.9-11.5 8.6-15 14-3.5-5.4-8.6-10.1-15-14 6.4-3.9 11.5-8.6 15-14Z"
+            fill="none" stroke="currentColor" stroke-width="1.8" />
+          <circle cx="24" cy="20" r="5" fill="none" stroke="currentColor" stroke-width="1.5" />
+          <path d="M24 25v12" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        <p class="event-date">Saturday, August 16</p>
+        <h3 class="event-name">Wedding Day</h3>
+        <p class="event-detail">5:30 PM<br />Lowndes Grove</p>
+      </article>
+
+      <article class="event-card">
+        <svg class="event-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 4c3 6 8 11 15 15-7 4-12 9-15 15-3-6-8-11-15-15 7-4 12-9 15-15Z" fill="none" stroke="currentColor"
+            stroke-width="1.8" />
+          <path d="M18 19c4-4 8-4 12 0M16 28c5 4 11 4 16 0" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        <p class="event-date">Sunday, August 17</p>
+        <h3 class="event-name">Farewell Brunch</h3>
+        <p class="event-detail">10:00 AM<br />The Dewberry Restaurant</p>
+      </article>
+
+    </div>
+    <a class="text-link" role="button" (click)="scrollToSection('weekend')">View Full Schedule <span
+        aria-hidden="true">→</span></a>
+  </section>
+
+  <!-- ═══ TRAVEL & STAY ═══ -->
+  <section class="travel" id="travel">
+    <div class="travel-copy">
+      <h2 class="section-title">Travel &amp; Stay</h2>
+      <p class="script">plan your stay</p>
+      <p class="section-copy">
+        We have reserved a room block for our guests at a nearby hotel. Please book by <strong>June 15</strong>
+        to receive our special group rate!
       </p>
+      <a class="text-link" role="button" (click)="scrollToSection('travel')">View Full Details <span
+          aria-hidden="true">→</span></a>
     </div>
-
+    <figure class="travel-photo">
+      <img src="assets/wedding/images/charleston-street.jpg"
+        alt="Charleston street with classic architecture and vintage car" />
+    </figure>
   </section>
 
-  <!-- ─── PHOTO BAND 2 ──────────────────────────────────────────────────────── -->
-  <div class="wp-band wp-band--alt" role="presentation" aria-hidden="true"></div>
-
-  <!-- ─── EVENTS ───────────────────────────────────────────────────────────── -->
-  <section id="wp-events" class="wp-events">
-    <h2 class="wp-script">Events</h2>
-
-    <div class="wp-events__row">
-
-      <div class="wp-event-card">
-        <p class="wp-event-card__type">Ceremony</p>
-        <p class="wp-event-card__time">October 10, 2026 &bull; 5:00 PM</p>
-        <div class="wp-event-card__rule" aria-hidden="true"></div>
-        <p class="wp-event-card__venue">Cathedral of the Sacred Heart</p>
-        <p class="wp-event-card__addr">1100 Ross Ave &bull; Dallas, TX 75201</p>
-        <p class="wp-event-card__note">Doors open at 4:30 PM &bull; Black tie optional</p>
-      </div>
-
-      <div class="wp-event-card">
-        <p class="wp-event-card__type">Reception</p>
-        <p class="wp-event-card__time">October 10, 2026 &bull; 7:00 PM</p>
-        <div class="wp-event-card__rule" aria-hidden="true"></div>
-        <p class="wp-event-card__venue">The Grand Magnolia Estate</p>
-        <p class="wp-event-card__addr">4520 Magnolia Dr &bull; Dallas, TX 75204</p>
-        <p class="wp-event-card__note">Dinner &bull; Dancing &bull; Midnight farewell</p>
-      </div>
-
+  <!-- ═══ GALLERY ═══ -->
+  <section class="gallery" id="gallery">
+    <h2 class="section-title">A Glimpse of Us</h2>
+    <div class="gallery-strip" aria-label="Wedding gallery preview">
+      <figure class="gallery-item"><img src="assets/wedding/images/gallery-dinner.jpg"
+          alt="Elegant reception table setting" /></figure>
+      <figure class="gallery-item"><img src="assets/wedding/images/gallery-back-view.jpg"
+          alt="Bride and groom standing together" /></figure>
+      <figure class="gallery-item"><img src="assets/wedding/images/gallery-rings.jpg"
+          alt="Wedding rings and delicate florals" /></figure>
+      <figure class="gallery-item"><img src="assets/wedding/images/gallery-embrace.jpg"
+          alt="Accashia and Kendall embracing" /></figure>
+      <figure class="gallery-item"><img src="assets/wedding/images/gallery-walk.jpg"
+          alt="Accashia and Kendall walking through the city" /></figure>
+      <figure class="gallery-item"><img src="assets/wedding/images/gallery-bouquet.jpg"
+          alt="Soft neutral bridal bouquet" /></figure>
     </div>
+    <button class="btn" (click)="scrollToSection('gallery')">View Gallery</button>
   </section>
 
-  <!-- ─── RSVP ─────────────────────────────────────────────────────────────── -->
-  <section id="wp-rsvp" class="wp-rsvp">
-    <h2 class="wp-script wp-script--light">Kindly Reply</h2>
-    <p class="wp-rsvp__deadline">Please respond by September 10, 2026</p>
-
-    <div class="wp-rsvp__form" *ngIf="!rsvpSubmitted">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <input class="wp-field" type="text" [(ngModel)]="rsvp.name"
-                 placeholder="Full Name" autocomplete="name" />
-        </div>
-        <div class="col-md-6">
-          <input class="wp-field" type="email" [(ngModel)]="rsvp.email"
-                 placeholder="Email Address" autocomplete="email" />
-        </div>
-        <div class="col-md-6">
-          <select class="wp-field" [(ngModel)]="rsvp.attending">
-            <option value="">Attendance...</option>
-            <option value="yes">Joyfully Accepts</option>
-            <option value="no">Regretfully Declines</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <input class="wp-field" type="number" [(ngModel)]="rsvp.guests"
-                 min="1" max="6" placeholder="Number of Guests" />
-        </div>
-        <div class="col-12">
-          <textarea class="wp-field wp-field--textarea" [(ngModel)]="rsvp.message"
-                    placeholder="A message for the couple..." rows="3"></textarea>
-        </div>
-        <div class="col-12 text-center pt-2">
-          <button class="wp-rsvp__btn" (click)="submitRsvp()">Send My RSVP</button>
-        </div>
-      </div>
+  <!-- ═══ REGISTRY ═══ -->
+  <section class="registry" id="registry">
+    <div class="registry-copy">
+      <h2 class="registry-title">Registry</h2>
+      <p class="registry-script">with love</p>
+      <p class="registry-copy-text">
+        Your love and support mean the world to us.<br />
+        If you'd like to give a gift, we are registered<br />
+        at the stores below.
+      </p>
+      <hr class="registry-rule" />
+      <a class="registry-link" href="#" target="_blank" rel="noopener">View Our Registry <span
+          aria-hidden="true">→</span></a>
     </div>
-
-    <div class="wp-rsvp__thanks" *ngIf="rsvpSubmitted" role="status">
-      <h3>Thank You, {{ rsvp.name }}!</h3>
-      <p>We cannot wait to celebrate with you.</p>
-    </div>
+    <div class="registry-floral" aria-hidden="true"></div>
   </section>
 
-  <!-- ─── FOOTER ───────────────────────────────────────────────────────────── -->
-  <footer class="wp-footer">
-    <p class="wp-footer__script">Accashia &amp; Kendall</p>
-    <p class="wp-footer__date">October 10, 2026 &bull; Dallas, Texas</p>
+  <!-- ═══ RSVP ═══ -->
+  <section class="rsvp-final" id="rsvp">
+    <figure class="rsvp-arch" aria-hidden="true">
+      <img src="assets/wedding/images/arches.jpg" alt="" />
+    </figure>
+    <div class="rsvp-content">
+      <h2 class="section-title">We Can't Wait To<br />Celebrate With You</h2>
+      <span class="script">kindly reply by July 15</span>
+      <a class="btn" href="mailto:hello@example.com?subject=Wedding%20RSVP">RSVP Now</a>
+    </div>
+    <div class="rsvp-floral" aria-hidden="true"></div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="monogram" aria-hidden="true">
+      <span>A</span><i class="divider"></i><span>K</span>
+    </div>
+    <p class="footer-title">Accashia &amp; Kendall</p>
+    <p class="footer-sub">August 16, 2025 | {{ weddingLocation }}</p>
+    <p class="heart" aria-hidden="true">♡</p>
   </footer>
 
-</div>
+</main>

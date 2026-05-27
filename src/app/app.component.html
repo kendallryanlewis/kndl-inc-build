@@ -10,7 +10,7 @@
 <div class="kndl-gradient" [attr.data-tab]="bgState.tab" aria-hidden="true"></div>
 
 <!-- Route animation wrapper -->
-<div class="route-wrap" [class.route-wrap--scrollable]="bgState.tab === 'detail'"
+<div class="route-wrap" [class.route-wrap--scrollable]="isScrollableRoute(outlet)"
     [@routeAnimations]="prepareRoute(outlet)">
     <router-outlet #outlet="outlet"></router-outlet>
 </div>

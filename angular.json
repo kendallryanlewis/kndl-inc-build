@@ -37,7 +37,12 @@
               "src/CNAME",
               "src/robots.txt",
               "src/sitemap.xml",
-              "src/404.html"
+              "src/404.html",
+              {
+                "glob": "**/*",
+                "input": "src/app/wedding/Assets",
+                "output": "assets/wedding"
+              }
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",

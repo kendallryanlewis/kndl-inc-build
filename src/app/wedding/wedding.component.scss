@@ -1,587 +1,885 @@
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Lato:wght@300;400;700&display=swap');
+// ─── Color variables ───────────────────────────────────────────────────────────
+$champagne-light: #f5ede0;
+$maroon: #6f1f2b;
+$maroon-dark: #511720;
+$maroon-soft: #8c3b46;
+$ivory: #f7f1e9;
+$ivory-2: #fbf7f1;
+$champagne: #d8c3aa;
+$taupe: #b9a58f;
 
-// ─── Palette ──────────────────────────────────────────────────────────────────
-$maroon:      #800020;
-$maroon-m:    #9B1C2E;
-$dark:        #0C0608;
-$dark-mid:    #1A0C0F;
-$cream:       #FAF8F5;
-$ivory:       #F5F0E8;
-$white:       #ffffff;
-$text-dark:   #1C0A0D;
-$text-mid:    #5A3035;
-$text-muted:  #9A7878;
+// ─── Typography variables ──────────────────────────────────────────────────────
+$serif: 'Cormorant Garamond', Georgia, serif;
+$sans: 'Inter', Arial, sans-serif;
+$script: 'Parisienne', cursive;
 
-$ff-script: 'Great Vibes', cursive;
-$ff-serif:  'Cormorant Garamond', Georgia, serif;
-$ff-sans:   'Lato', system-ui, -apple-system, sans-serif;
+// ─── Host ─────────────────────────────────────────────────────────────────────
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: $sans;
+  padding: 2rem;
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
-.wp {
-  font-family: $ff-serif;
-  overflow-x: hidden;
-  background: $cream;
-  color: $text-dark;
+  @media (max-width: 980px) {
+    padding: 0;
+  }
 }
 
-// ─── Shared script heading ────────────────────────────────────────────────────
-.wp-script {
-  font-family: $ff-script;
-  font-size: clamp(2.75rem, 8vw, 5.5rem);
-  font-weight: 400;
-  line-height: 1.1;
-  color: $text-dark;
-  text-align: center;
-  margin: 0 0 1.75rem;
-
-  &--light { color: $white; }
-}
-
-// ─── HERO ─────────────────────────────────────────────────────────────────────
-.wp-hero {
-  position: relative;
-  min-height: 100svh;
-  // Drop your hero photo here:
-  // background-image: url('/assets/Images/hero.jpg');
-  background-color: $dark;
-  background-size: cover;
-  background-position: center;
+// ─── Cover page ───────────────────────────────────────────────────────────────
+.wedding-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: $champagne-light;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6rem 1.5rem 5rem;
+  gap: 28px;
+  opacity: 1;
+  transition: opacity 700ms ease;
+
+  &--fading {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__envelope {
+    width: clamp(90px, 16vw, 130px);
+    height: auto;
+    overflow: visible;
+  }
+
+  &__names {
+    font-family: $serif;
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: $maroon;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  &__date {
+    font-family: $sans;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #a08070;
+    margin: 0;
+  }
+}
+
+.envelope-outline {
+  stroke: #e8d8c0;
+  stroke-width: 2.2;
+  animation: envelope-stroke-maroon 1.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+}
+
+@keyframes envelope-stroke-maroon {
+  to {
+    stroke: #6f1f2b;
+  }
+}
+
+// Envelope scales down and fades when the cover begins dismissing
+.wedding-cover--fading {
+  .wedding-cover__envelope {
+    animation: envelope-exit 500ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+
+  .wedding-cover__names,
+  .wedding-cover__date {
+    animation: text-fade-out 320ms ease forwards;
+  }
+}
+
+@keyframes envelope-exit {
+  to {
+    transform: scale(0.55) translateY(18px);
+    opacity: 0;
+  }
+}
+
+@keyframes text-fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+// ─── Page shell ───────────────────────────────────────────────────────────────
+.wedding-page {
+  margin: 0 auto;
+  background: $ivory-2;
+  overflow: hidden;
+  position: relative;
+  transform: scale(0.995);
+
+  opacity: 0;
+  box-shadow: none;
+
+  &--fading {
+    opacity: 1;
+  }
+
+  &--ready {
+    transform: scale(1);
+    transition: 0.5s ease;
+    box-shadow: 0px 8px 10px 2px rgba(52, 44, 40, 0.28);
+  }
+
+  // Inline floral SVG as a CSS custom property
+  --floral-svg: url("data:image/svg+xml,%3Csvg width='420' height='520' viewBox='0 0 420 520' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%23bda48a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'%3E%3Cpath d='M71 477C131 398 151 315 139 232C129 164 100 104 55 43'/%3E%3Cpath d='M141 245C187 223 222 185 240 132'/%3E%3Cpath d='M143 287C197 276 246 296 291 344'/%3E%3Cpath d='M116 372C157 362 191 377 218 416'/%3E%3Cpath d='M97 161C67 165 44 153 29 124C55 112 82 125 97 161Z'/%3E%3Cpath d='M123 211C94 233 65 234 36 214C54 188 87 186 123 211Z'/%3E%3Cpath d='M136 309C105 332 73 333 40 313C62 281 96 279 136 309Z'/%3E%3Cpath d='M128 392C98 408 70 402 44 373C73 357 101 363 128 392Z'/%3E%3Cpath d='M240 132C218 102 218 70 238 36C266 65 267 96 240 132Z'/%3E%3Cpath d='M236 143C270 126 302 132 333 161C300 183 267 176 236 143Z'/%3E%3Cpath d='M208 176C221 137 249 115 293 108C295 149 267 173 208 176Z'/%3E%3Cpath d='M285 344C287 303 309 276 351 263C360 303 338 330 285 344Z'/%3E%3Cpath d='M286 348C326 344 356 361 377 399C337 410 306 393 286 348Z'/%3E%3Cpath d='M216 416C239 384 269 372 306 381C291 418 261 430 216 416Z'/%3E%3Cpath d='M190 86C173 43 190 16 241 5C250 50 233 77 190 86Z'/%3E%3Cpath d='M176 91C132 80 112 52 115 8C157 14 178 42 176 91Z'/%3E%3Cpath d='M196 95C229 68 263 65 299 85C274 119 240 122 196 95Z'/%3E%3Ccircle cx='189' cy='93' r='13'/%3E%3Cpath d='M183 93C188 86 194 86 199 93C194 100 188 100 183 93Z'/%3E%3Cpath d='M250 244C222 214 222 181 250 145C281 180 281 213 250 244Z'/%3E%3Cpath d='M249 244C289 226 323 233 352 266C314 287 280 280 249 244Z'/%3E%3Cpath d='M249 244C212 263 178 255 147 221C186 201 220 209 249 244Z'/%3E%3Cpath d='M250 244C275 282 270 316 236 348C211 311 216 276 250 244Z'/%3E%3Ccircle cx='250' cy='244' r='17'/%3E%3Cpath d='M243 244C249 235 256 235 263 244C256 253 249 253 243 244Z'/%3E%3C/g%3E%3C/svg%3E");
+
+  @media (max-width: 980px) {
+    width: 100%;
+    box-shadow: none !important;
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// ─── Parallax Wallpaper ───────────────────────────────────────────────────────
+.wallpaper-parallax {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 
-  // Ambient botanical glow
+  &__gradient {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(90deg,
+        rgba(251, 247, 241, 0.96) 0%,
+        rgba(251, 247, 241, 0.72) 38%,
+        rgba(251, 247, 241, 0) 60%);
+  }
+
+  &__fg {
+    position: absolute;
+    inset: -15% 0;
+    z-index: 0;
+    width: 100%;
+    height: 130%;
+    object-fit: cover;
+    object-position: center;
+    will-change: transform;
+  }
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+.site-header {
+  height: 76px;
+  display: flex;
+  justify-content: space-between;
+  grid-template-columns: 160px 1fr;
+  align-items: center;
+  padding: 0 30px;
+  background: rgba(250, 246, 240, 0.96);
+  border-bottom: 1px solid rgba(80, 50, 42, 0.08);
+  position: relative;
+  z-index: 10;
+
+  img {
+    opacity: 0.75;
+    display: block;
+    width: 12%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    height: auto;
+    padding: 22px 20px;
+    gap: 18px;
+    text-align: center;
+
+    .monogram {
+      justify-content: center;
+    }
+  }
+}
+
+.monogram {
+  font-family: $serif;
+  font-size: 34px;
+  letter-spacing: 0.06em;
+  color: $maroon;
+  font-weight: 500;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+
+  span {
+    display: inline-block;
+  }
+
+  .divider {
+    width: 1px;
+    height: 36px;
+    background: $champagne;
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 4vw, 3rem);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #6f1f2b8c;
+
+  a {
+    position: relative;
+    padding: 9px 0;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 0;
+      height: 1px;
+      background: $maroon;
+      transform: translateX(-50%);
+      transition: width 180ms ease;
+    }
+
+    &:hover::after,
+    &.active::after {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 980px) {
+    flex-wrap: wrap;
+    gap: 16px 26px;
+  }
+
+  @media (max-width: 620px) {
+    font-size: 9px;
+    letter-spacing: 0.16em;
+  }
+}
+
+// ─── Hero ─────────────────────────────────────────────────────────────────────
+.hero {
+  min-height: 580px;
+  position: relative;
+  overflow: hidden;
+
+  @media (max-width: 980px) {
+    min-height: auto;
+
+    &::before {
+      left: -90px;
+      top: 470px;
+    }
+  }
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 4;
+  padding: 132px 56px 78px 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  @media (max-width: 980px) {
+    padding: 54px 34px 70px;
+    text-align: center;
+    align-items: center;
+  }
+}
+
+.eyebrow {
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #7b6961;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.hero-title {
+  font-family: $serif;
+  font-weight: 500;
+  line-height: 0.93;
+  color: $maroon;
+  font-size: clamp(58px, 6.2vw, 94px);
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+
+  @media (max-width: 620px) {
+    font-size: 50px;
+  }
+}
+
+.hero-script,
+.script {
+  font-family: $script;
+  color: $maroon-soft;
+  font-size: 31px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.hero-script {
+  margin-bottom: 32px;
+  transform: rotate(-1deg);
+}
+
+.date-block {
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #4e3c39;
+  line-height: 2.1;
+  margin-bottom: 24px;
+
+  small {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.26em;
+    color: #776a66;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-width: 138px;
+  height: 46px;
+  padding: 0 25px;
+  border: 1px solid $maroon;
+  background: $maroon;
+  color: #fff7ef;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  transition: transform 180ms ease, background 180ms ease;
+  cursor: pointer;
+  width: fit-content;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: $maroon-dark;
+  }
+
+  &.outline {
+    background: transparent;
+    color: $maroon;
+  }
+}
+
+// ─── Section base ─────────────────────────────────────────────────────────────
+.section {
+  position: relative;
+  padding: 88px clamp(42px, 7vw, 120px);
+  background: $ivory-2;
+
+  @media (max-width: 620px) {
+    padding: 66px 28px;
+  }
+}
+
+.section-title {
+  font-family: $serif;
+  font-size: clamp(42px, 4vw, 58px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  color: $maroon;
+  margin-bottom: 4px;
+}
+
+.section-copy {
+  font-size: 14px;
+  line-height: 2;
+  color: #5f5551;
+  max-width: 380px;
+  margin-top: 26px;
+
+  @media (max-width: 980px) {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 28px;
+  color: $maroon;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+// ─── Our Story ────────────────────────────────────────────────────────────────
+.story {
+  min-height: 430px;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: clamp(48px, 7vw, 110px);
+  align-items: center;
+  border-top: 1px solid rgba(80, 50, 42, 0.05);
+
   &::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 65% 55% at 20% 25%, rgba($maroon, 0.22) 0%, transparent 65%),
-      radial-gradient(ellipse 55% 45% at 80% 75%, rgba($maroon, 0.14) 0%, transparent 65%),
-      radial-gradient(ellipse 40% 30% at 50% 50%, rgba($maroon, 0.06) 0%, transparent 60%);
-    pointer-events: none;
+    left: 105px;
+    bottom: 84px;
+    width: 260px;
+    height: 240px;
+    background-image: var(--floral-svg);
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.34;
+    transform: rotate(-14deg);
   }
-}
-
-// ─── Nav (inside hero) ────────────────────────────────────────────────────────
-.wp-nav {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1.75rem 1rem;
-  z-index: 10;
-
-  &__link {
-    font-family: $ff-sans;
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba($white, 0.65);
-    text-decoration: none;
-    transition: color 180ms ease;
-
-    &:hover { color: $white; }
-  }
-
-  &__dot {
-    font-size: 0.5rem;
-    color: rgba($white, 0.25);
-    line-height: 1;
-  }
-}
-
-// ─── Hero inner ────────────────────────────────────────────────────────────────
-.wp-hero__inner {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.wp-hero__family {
-  font-family: $ff-sans;
-  font-size: 0.58rem;
-  font-weight: 400;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: rgba($white, 0.4);
-  margin: 0 0 1.25rem;
-}
-
-.wp-hero__vline {
-  display: block;
-  width: 1px;
-  height: 54px;
-  background: linear-gradient(to bottom, transparent, rgba($white, 0.3), transparent);
-  margin-bottom: 1.5rem;
-}
-
-.wp-hero__names {
-  font-family: $ff-script;
-  font-size: clamp(3.75rem, 15vw, 10rem);
-  font-weight: 400;
-  line-height: 1;
-  color: $white;
-  margin: 0 0 1.1rem;
-  letter-spacing: 0.01em;
-}
-
-.wp-hero__date {
-  font-family: $ff-serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: clamp(0.82rem, 1.8vw, 1rem);
-  letter-spacing: 0.1em;
-  color: rgba($white, 0.6);
-  margin: 0 0 0.3rem;
-}
-
-.wp-hero__location {
-  font-family: $ff-serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: clamp(0.8rem, 1.6vw, 0.95rem);
-  letter-spacing: 0.1em;
-  color: rgba($white, 0.42);
-  margin: 0 0 1.75rem;
-}
-
-.wp-hero__hline {
-  display: block;
-  width: 64px;
-  height: 1px;
-  background: rgba($white, 0.18);
-  margin-bottom: 2rem;
-}
-
-// ─── Countdown ────────────────────────────────────────────────────────────────
-.wp-hero__countdown {
-  display: flex;
-  align-items: flex-start;
-  gap: clamp(1.5rem, 6vw, 4rem);
-  margin-bottom: 2.75rem;
-}
-
-.wp-hero__unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.wp-hero__num {
-  font-family: $ff-serif;
-  font-weight: 300;
-  font-size: clamp(2.75rem, 9vw, 5.5rem);
-  line-height: 1;
-  color: $white;
-  letter-spacing: -0.02em;
-}
-
-.wp-hero__unit-label {
-  font-family: $ff-sans;
-  font-size: 0.52rem;
-  font-weight: 700;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: rgba($white, 0.38);
-}
-
-// ─── Hero CTA pill ────────────────────────────────────────────────────────────
-.wp-hero__cta {
-  font-family: $ff-sans;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: $white;
-  background: rgba($white, 0.08);
-  border: 1.5px solid rgba($white, 0.28);
-  border-radius: 100px;
-  padding: 0.9rem 2.5rem;
-  text-decoration: none;
-  transition: background 220ms ease, border-color 220ms ease, transform 160ms ease;
-
-  &:hover {
-    background: rgba($maroon, 0.5);
-    border-color: rgba($white, 0.5);
-    color: $white;
-    text-decoration: none;
-    transform: translateY(-2px);
-  }
-
-  &:active { transform: translateY(0); }
-}
-
-// ─── INVITATION ───────────────────────────────────────────────────────────────
-.wp-invite {
-  background: $white;
-  padding: 6rem 1.5rem;
-  text-align: center;
-
-  &__body {
-    max-width: 500px;
-    margin: 0 auto;
-  }
-
-  &__request {
-    font-family: $ff-sans;
-    font-size: 0.68rem;
-    font-weight: 400;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: $text-mid;
-    line-height: 2;
-    margin: 0 0 1.5rem;
-
-    strong {
-      color: $text-dark;
-      font-weight: 700;
-    }
-  }
-
-  &__big-date {
-    font-family: $ff-serif;
-    font-weight: 600;
-    font-size: clamp(1.25rem, 3.5vw, 1.85rem);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: $text-dark;
-    margin: 0 0 1rem;
-  }
-
-  &__venue-name {
-    font-family: $ff-serif;
-    font-style: italic;
-    font-size: 1.05rem;
-    color: $text-mid;
-    margin: 0 0 0.25rem;
-  }
-
-  &__venue-addr {
-    font-family: $ff-sans;
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: $text-muted;
-    margin: 0 0 2.25rem;
-  }
-
-  &__rsvp-btn {
-    display: inline-block;
-    font-family: $ff-sans;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: $text-dark;
-    border: 1.5px solid $text-dark;
-    padding: 0.8rem 2.75rem;
-    text-decoration: none;
-    transition: background 200ms ease, color 200ms ease;
-
-    &:hover {
-      background: $text-dark;
-      color: $white;
-      text-decoration: none;
-    }
-  }
-}
-
-// ─── PHOTO BANDS ──────────────────────────────────────────────────────────────
-.wp-band {
-  height: 380px;
-  // Add your couple photo: background-image: url('/assets/Images/hands.jpg');
-  background-color: $dark;
-  background-image: linear-gradient(120deg, #1A0C0F 0%, #3A000F 45%, #0C0608 100%);
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  overflow: hidden;
 
   &::after {
+    content: 'A\A K';
+    white-space: pre-line;
+    position: absolute;
+    right: 118px;
+    bottom: 72px;
+    width: 128px;
+    height: 128px;
+    border: 1px solid rgba(111, 31, 43, 0.14);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-family: $serif;
+    font-size: 48px;
+    line-height: 0.7;
+    color: rgba(111, 31, 43, 0.13);
+    pointer-events: none;
+
+    @media (max-width: 620px) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
+
+.story-image {
+  position: relative;
+  width: min(100%, 310px);
+  height: 390px;
+  justify-self: end;
+  background: #d8cfc5;
+  box-shadow: 0 18px 36px rgba(72, 55, 48, 0.15);
+  z-index: 2;
+  margin: 0;
+
+  @media (max-width: 980px) {
+    justify-self: center;
+  }
+}
+
+.story-text {
+  position: relative;
+  z-index: 2;
+}
+
+// ─── Wedding Weekend ──────────────────────────────────────────────────────────
+.weekend {
+  background: linear-gradient(180deg, #eee4d8 0%, #f3eae0 100%);
+  text-align: center;
+  padding-top: 72px;
+  padding-bottom: 76px;
+
+  .script {
+    display: block;
+    margin-top: 4px;
+    margin-bottom: 58px;
+    font-size: 29px;
+  }
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 42px;
+  max-width: 860px;
+  margin: 0 auto;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+}
+
+.event-card {
+  position: relative;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 26px;
+
+  &:not(:last-child)::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba($dark, 0.25) 0%,
-      transparent 30%,
-      transparent 70%,
-      rgba($dark, 0.25) 100%
-    );
-  }
+    right: -21px;
+    top: 54px;
+    width: 1px;
+    height: 112px;
+    background: rgba(95, 76, 66, 0.18);
 
-  &--alt {
-    // Add your couple photo: background-image: url('/assets/Images/couple.jpg');
-    background-image: linear-gradient(240deg, #1A0C0F 0%, #3A000F 45%, #0C0608 100%);
-    background-position: 60% center;
+    @media (max-width: 980px) {
+      display: none;
+    }
   }
 }
 
-// ─── OUR STORY ────────────────────────────────────────────────────────────────
-.wp-story {
-  background: $cream;
-  padding: 6rem 1.5rem;
-  max-width: 780px;
-  margin: 0 auto;
+.event-icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 22px;
+  color: $taupe;
+}
+
+.event-date {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: $maroon;
+  margin-bottom: 9px;
+}
+
+.event-name {
+  font-family: $script;
+  font-size: 24px;
+  color: $maroon-soft;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+.event-detail {
+  font-size: 11px;
+  line-height: 1.85;
+  color: #4f4642;
+}
+
+// ─── Travel & Stay ────────────────────────────────────────────────────────────
+.travel {
+  display: grid;
+  grid-template-columns: 52% 48%;
+  align-items: stretch;
+  padding: 0;
+  background: $ivory-2;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.travel-copy {
+  position: relative;
+  padding: 84px clamp(40px, 7vw, 115px) 84px clamp(40px, 7vw, 130px);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: center;
 
-  &__block {
-    text-align: center;
-    width: 100%;
-    margin-bottom: 4.5rem;
-
-    &:last-child { margin-bottom: 0; }
+  &::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    bottom: 26px;
+    width: 230px;
+    height: 260px;
+    background-image: var(--floral-svg);
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.36;
+    transform: rotate(-10deg);
   }
 
-  &__body {
-    font-family: $ff-serif;
-    font-size: clamp(0.95rem, 2vw, 1.1rem);
-    line-height: 1.9;
-    color: $text-mid;
-    max-width: 620px;
-    margin: 0 auto;
-  }
-}
-
-// ─── EVENTS ───────────────────────────────────────────────────────────────────
-.wp-events {
-  background: $white;
-  padding: 6rem 1.5rem;
-  text-align: center;
-
-  &__row {
-    display: flex;
-    gap: 0;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 1rem;
-    border-top: 1px solid rgba($text-muted, 0.15);
+  >* {
+    position: relative;
+    z-index: 2;
   }
 }
 
-.wp-event-card {
-  flex: 1 1 260px;
-  max-width: 340px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.travel-photo {
+  min-height: 340px;
+  background: #d5c7b8;
+  margin: 0;
+}
+
+// ─── Gallery ──────────────────────────────────────────────────────────────────
+.gallery {
+  padding: 54px 0 64px;
+  background: #f4eee6;
   text-align: center;
-  padding: 2.5rem 2rem;
-  border-right: 1px solid rgba($text-muted, 0.15);
 
-  &:last-child { border-right: none; }
+  .section-title {
+    font-size: clamp(32px, 3vw, 44px);
+    margin-bottom: 38px;
+  }
+}
 
-  @media (max-width: 575px) {
-    border-right: none;
-    border-bottom: 1px solid rgba($text-muted, 0.15);
+.gallery-strip {
+  display: grid;
+  grid-template-columns: 1.08fr 1fr 1fr 1.06fr 1fr 1.08fr;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 32px;
 
-    &:last-child { border-bottom: none; }
+  @media (max-width: 980px) {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 16px;
   }
 
-  &__type {
-    font-family: $ff-sans;
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: $maroon;
-    margin: 0 0 0.5rem;
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
   }
+}
 
-  &__time {
-    font-family: $ff-serif;
-    font-style: italic;
-    font-size: 0.95rem;
-    color: $text-mid;
-    margin: 0 0 1.25rem;
+.gallery-item {
+  height: 178px;
+  background: #d8d0c7;
+  overflow: hidden;
+  margin: 0;
+
+  @media (max-width: 620px) {
+    height: 220px;
   }
+}
 
-  &__rule {
-    width: 36px;
-    height: 1px;
-    background: rgba($maroon, 0.35);
-    margin-bottom: 1.25rem;
+// ─── Registry ────────────────────────────────────────────────────────────────
+.registry {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 280px;
+  background: $maroon;
+  position: relative;
+  overflow: hidden;
+  padding: 72px clamp(40px, 7vw, 120px);
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
   }
+}
 
-  &__venue {
-    font-family: $ff-serif;
-    font-weight: 500;
-    font-size: 1.1rem;
-    color: $text-dark;
-    margin: 0 0 0.3rem;
+.registry-copy {
+  position: relative;
+  z-index: 2;
+}
+
+.registry-title {
+  font-family: $serif;
+  font-size: clamp(38px, 4vw, 56px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 245, 235, 0.92);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.registry-script {
+  font-family: $script;
+  font-size: 26px;
+  color: rgba(255, 235, 210, 0.72);
+  margin-bottom: 28px;
+}
+
+.registry-copy-text {
+  font-size: 14px;
+  line-height: 1.95;
+  color: rgba(255, 240, 225, 0.78);
+  margin-bottom: 0;
+}
+
+.registry-rule {
+  border: none;
+  border-top: 1px solid rgba(255, 235, 210, 0.25);
+  margin: 24px 0;
+  width: 80%;
+}
+
+.registry-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 245, 235, 0.88);
+  cursor: pointer;
+  transition: gap 180ms ease, opacity 180ms ease;
+
+  &:hover {
+    gap: 26px;
+    opacity: 1;
   }
+}
 
-  &__addr {
-    font-family: $ff-sans;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    color: $text-muted;
-    margin: 0 0 1rem;
-  }
+.registry-floral {
+  position: relative;
+  height: 280px;
+  justify-self: end;
+  width: min(100%, 320px);
+  background-image: var(--floral-svg);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center right;
+  opacity: 0.22;
+  transform: rotate(8deg) scale(1.15);
+  filter: brightness(3);
 
-  &__note {
-    font-family: $ff-serif;
-    font-style: italic;
-    font-size: 0.85rem;
-    color: $text-muted;
-    margin: auto 0 0;
-    padding-top: 1rem;
-    border-top: 1px solid rgba($text-muted, 0.15);
-    width: 100%;
+  @media (max-width: 980px) {
+    display: none;
   }
 }
 
 // ─── RSVP ─────────────────────────────────────────────────────────────────────
-.wp-rsvp {
-  background: $dark;
-  padding: 6rem 1.5rem;
-  text-align: center;
-
-  &__deadline {
-    font-family: $ff-sans;
-    font-size: 0.62rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: rgba($white, 0.3);
-    margin: 0 0 3rem;
-  }
-
-  &__form {
-    max-width: 580px;
-    margin: 0 auto;
-    text-align: left;
-  }
-
-  &__btn {
-    font-family: $ff-sans;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: $dark;
-    background: $white;
-    border: none;
-    border-radius: 100px;
-    padding: 0.9rem 2.75rem;
-    cursor: pointer;
-    transition: background 200ms ease, transform 160ms ease;
-
-    &:hover {
-      background: $cream;
-      transform: translateY(-2px);
-    }
-
-    &:active { transform: translateY(0); }
-  }
-
-  &__thanks {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.6rem;
-    color: $white;
-
-    h3 {
-      font-family: $ff-script;
-      font-size: clamp(2rem, 6vw, 3rem);
-      font-weight: 400;
-      color: $white;
-      margin: 0;
-    }
-
-    p {
-      font-family: $ff-serif;
-      font-style: italic;
-      font-size: 1rem;
-      color: rgba($white, 0.6);
-      margin: 0;
-    }
-  }
-}
-
-// ─── Form fields (dark bg) ────────────────────────────────────────────────────
-.wp-field {
-  display: block;
-  width: 100%;
-  font-family: $ff-serif;
-  font-size: 1rem;
-  color: $white;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid rgba($white, 0.16);
-  padding: 0.75rem 0;
-  outline: none;
-  appearance: none;
-  transition: border-color 180ms ease;
-  border-radius: 0;
-  margin-bottom: 0;
-
-  &::placeholder { color: rgba($white, 0.28); }
-
-  &:focus { border-bottom-color: rgba($maroon, 0.7); }
-
-  option { background: $dark-mid; color: $white; }
-
-  &--textarea {
-    resize: vertical;
-    min-height: 80px;
-    background: rgba($white, 0.04);
-    border: 1px solid rgba($white, 0.12);
-    padding: 0.75rem;
-    border-radius: 0;
-
-    &::placeholder { color: rgba($white, 0.28); }
-    &:focus { border-color: rgba($maroon, 0.5); outline: none; }
-  }
-}
-
-// ─── FOOTER ───────────────────────────────────────────────────────────────────
-.wp-footer {
-  background: $dark-mid;
-  padding: 3.5rem 1.5rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
+.rsvp-final {
+  min-height: 270px;
+  display: grid;
+  grid-template-columns: 28% 44% 28%;
   align-items: center;
-  gap: 0.5rem;
+  background:
+    linear-gradient(90deg, rgba(247, 241, 233, 0.75), rgba(247, 241, 233, 0.92)),
+    $ivory-2;
+  border-top: 1px solid rgba(80, 50, 42, 0.08);
+  position: relative;
+  overflow: hidden;
 
-  &__script {
-    font-family: $ff-script;
-    font-size: 2.75rem;
-    font-weight: 400;
-    color: $white;
-    margin: 0;
-    line-height: 1;
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rsvp-arch {
+  height: 270px;
+  background: #dacbbb;
+  clip-path: polygon(0 0, 100% 0, 76% 100%, 0 100%);
+  opacity: 0.82;
+  margin: 0;
+
+  @media (max-width: 980px) {
+    display: none;
+  }
+}
+
+.rsvp-content {
+  text-align: center;
+  padding: 40px 20px;
+
+  .section-title {
+    font-size: clamp(34px, 3.2vw, 48px);
+    line-height: 1.08;
+    margin-bottom: 6px;
   }
 
-  &__date {
-    font-family: $ff-sans;
-    font-size: 0.56rem;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: rgba($white, 0.28);
-    margin: 0;
+  .script {
+    display: block;
+    margin-bottom: 22px;
+    font-size: 29px;
   }
+}
+
+.rsvp-floral {
+  width: 240px;
+  height: 250px;
+  justify-self: center;
+  background-image: var(--floral-svg);
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.42;
+  transform: rotate(8deg);
+
+  @media (max-width: 980px) {
+    margin-bottom: 30px;
+  }
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+.footer {
+  padding: 34px 20px 38px;
+  text-align: center;
+  background: #f3eadf;
+  color: #5f5551;
+  border-top: 1px solid rgba(80, 50, 42, 0.07);
+
+  .monogram {
+    justify-content: center;
+    margin-bottom: 18px;
+    font-size: 35px;
+    gap: 8px;
+    opacity: 0.84;
+  }
+}
+
+.footer-title {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6a5550;
+  margin-bottom: 8px;
+}
+
+.footer-sub {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8a7b74;
+}
+
+.heart {
+  color: $maroon;
+  margin-top: 14px;
+  font-size: 16px;
 }
 
 // ─── Reduced motion ───────────────────────────────────────────────────────────
 @media (prefers-reduced-motion: reduce) {
-  .wp-hero__cta,
-  .wp-invite__rsvp-btn,
-  .wp-rsvp__btn { transition: none; }
+  .btn {
+    transition: none;
+  }
+
+  .nav a::after {
+    transition: none;
+  }
 }

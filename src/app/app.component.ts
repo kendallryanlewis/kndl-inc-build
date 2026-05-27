@@ -81,4 +81,9 @@ export class AppComponent implements OnInit {
   prepareRoute(outlet: RouterOutlet): string {
     return outlet?.activatedRouteData?.['animation'] ?? '';
   }
+
+  isScrollableRoute(outlet: RouterOutlet): boolean {
+    const animation = this.prepareRoute(outlet);
+    return animation === 'detail' || animation === 'wedding';
+  }
 }

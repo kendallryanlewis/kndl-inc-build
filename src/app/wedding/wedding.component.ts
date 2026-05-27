@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { BackgroundService } from '../services/background.service';
 
 @Component({
   selector: 'app-wedding',
@@ -6,49 +7,55 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
   styleUrls: ['./wedding.component.scss']
 })
 export class WeddingComponent implements OnInit, OnDestroy {
-  readonly weddingDate = new Date('2026-10-10T17:00:00');
-  countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+  @ViewChild('parallaxFg') parallaxFg!: ElementRef<HTMLElement>;
 
-  rsvp = {
-    name: '',
-    email: '',
-    attending: '',
-    guests: 1,
-    message: ''
-  };
-  rsvpSubmitted = false;
+  showCover = true;
+  coverFading = false;
+  pageReady = false;
+  activeSection = 'home';
+  weddingDate = 'Saturday, October 5, 2024';
+  weddingTime = '4:30 PM';
+  weddingVenue = 'The Cedar Room at The Cedar Room';
+  weddingAddress = '123 Main Street, Charleston, SC 29401';
+  weddingCity = 'Dallas';
+  weddingState = 'Texas';
+  weddingLocation = `${this.weddingCity}, ${this.weddingState}`;
+
+  constructor(private bg: BackgroundService) { }
 
   ngOnInit(): void {
-    this.tick();
-    this.countdownInterval = setInterval(() => this.tick(), 1000);
+    this.bg.setTab('wedding', true);
+    setTimeout(() => { this.coverFading = true; }, 3000);
+    setTimeout(() => { this.showCover = false; }, 3700);
+    setTimeout(() => { this.pageReady = true; }, 4700);
   }
 
   ngOnDestroy(): void {
-    if (this.countdownInterval) clearInterval(this.countdownInterval);
+    this.bg.setTab('home', false);
   }
 
-  submitRsvp(): void {
-    if (this.rsvp.name.trim() && this.rsvp.email.trim() && this.rsvp.attending) {
-      this.rsvpSubmitted = true;
+  @HostListener('window:scroll')
+  onScroll(): void {
+    // Active section tracking
+    const sections = ['rsvp', 'gallery', 'travel', 'weekend', 'story', 'home'];
+    for (const id of sections) {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 120) {
+        this.activeSection = id;
+        break;
+      }
+    }
+
+    // Parallax: shift fg image at 40% of scroll speed, preserving horizontal flip
+    if (this.parallaxFg?.nativeElement) {
+      const el = this.parallaxFg.nativeElement;
+      const rect = el.parentElement!.getBoundingClientRect();
+      const offset = rect.top * 0.4;
+      el.style.transform = `scaleX(-1) translateY(${offset}px)`;
     }
   }
 
-  pad(n: number): string {
-    return n.toString().padStart(2, '0');
-  }
-
-  private tick(): void {
-    const diff = this.weddingDate.getTime() - Date.now();
-    if (diff <= 0) {
-      this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-      return;
-    }
-    this.countdown = {
-      days: Math.floor(diff / 86_400_000),
-      hours: Math.floor((diff % 86_400_000) / 3_600_000),
-      minutes: Math.floor((diff % 3_600_000) / 60_000),
-      seconds: Math.floor((diff % 60_000) / 1000)
-    };
+  scrollToSection(id: string): void {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
